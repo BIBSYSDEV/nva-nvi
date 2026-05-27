@@ -15,9 +15,11 @@ import org.opensearch.testcontainers.OpenSearchContainer;
 import org.picocontainer.Startable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.utility.DockerImageName;
 
 public class OpenSearchContainerContext implements Startable {
-  private static final String OPEN_SEARCH_IMAGE = "opensearchproject/opensearch:3.5.0";
+  private static final DockerImageName OPEN_SEARCH_IMAGE =
+      DockerImageName.parse("opensearchproject/opensearch:3.5.0");
   private static final OpenSearchContainer<?> container =
       new OpenSearchContainer<>(OPEN_SEARCH_IMAGE);
   private static CandidateSearchClient searchClient;
