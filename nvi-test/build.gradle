@@ -3,18 +3,14 @@ plugins {
 }
 
 dependencies {
-    implementation nvaCatalog.datafaker
-    implementation nvaCatalog.jackson.databind
-    implementation nvaCatalog.junit.jupiter
-    implementation nvaCatalog.junit.jupiter.api
-    implementation nvaCatalog.junit.jupiter.engine
-    implementation nvaCatalog.junit.jupiter.params
-    implementation nvaCatalog.junit.platform.launcher
-    implementation nvaCatalog.mockito.core
-    implementation nvaLibs.core
-    implementation nvaLibs.identifiers
-    implementation nvaLibs.testutils
-    testFixturesAnnotationProcessor nvaCatalog.errorprone
+    api(nvaCatalog.jackson.databind)
+    api(nvaLibs.identifiers)
+    implementation(nvaCatalog.datafaker)
+    implementation(nvaLibs.core)
+    implementation(nvaLibs.testutils)
+    runtimeOnly(nvaCatalog.junit.jupiter.engine)
+    runtimeOnly(nvaCatalog.junit.platform.launcher)
+    testFixturesAnnotationProcessor(nvaCatalog.errorprone)
 }
 
 test {

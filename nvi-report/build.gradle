@@ -3,36 +3,29 @@ plugins {
 }
 
 dependencies {
-    implementation project(':nvi-commons')
-    implementation nvaCatalog.aws.sdk2.s3
-    implementation nvaCatalog.jackson.core
-    implementation nvaCatalog.jackson.databind
-    implementation nvaCatalog.lambda.log4j
-    implementation nvaCatalog.log4j.api
-    implementation nvaCatalog.log4j.core
-    implementation nvaCatalog.log4j.slf4j.impl
-    implementation nvaCatalog.opencsv
-    implementation nvaCatalog.slf4j.api
-
-    implementation nvaLibs.core
-    implementation nvaLibs.apigateway
-
-    implementation libs.fast.excel
-
-    testFixturesAnnotationProcessor nvaCatalog.errorprone
-    testFixturesImplementation nvaCatalog.opencsv
-    testFixturesImplementation libs.fast.excel.reader
-    testFixturesRuntimeOnly libs.aalto.xml
-    testImplementation nvaLibs.testutils
-    testImplementation libs.fast.excel.reader
-    testImplementation nvaCatalog.assertj.core
-    testImplementation nvaCatalog.junit.jupiter
-    testImplementation nvaCatalog.junit.jupiter.api
-    testImplementation nvaCatalog.junit.jupiter.engine
-    testImplementation nvaCatalog.junit.jupiter.params
-    testImplementation nvaCatalog.junit.platform.launcher
-    testImplementation nvaCatalog.mockito.core
-    testRuntimeOnly libs.aalto.xml
+    api(nvaCatalog.aws.sdk2.s3)
+    api(nvaLibs.apigateway)
+    implementation(libs.fast.excel)
+    implementation(nvaCatalog.log4j.core)
+    implementation(nvaCatalog.opencsv)
+    implementation(nvaCatalog.slf4j.api)
+    implementation(nvaLibs.core)
+    implementation(project(':nvi-commons'))
+    runtimeOnly(nvaCatalog.jackson.core)
+    runtimeOnly(nvaCatalog.jackson.databind)
+    runtimeOnly(nvaCatalog.log4j.api)
+    runtimeOnly(nvaCatalog.log4j.slf4j.impl)
+    testFixturesAnnotationProcessor(nvaCatalog.errorprone)
+    testFixturesImplementation(libs.fast.excel.reader)
+    testFixturesImplementation(nvaCatalog.opencsv)
+    testFixturesRuntimeOnly(libs.aalto.xml)
+    testImplementation(nvaCatalog.assertj.core)
+    testImplementation(nvaCatalog.junit.jupiter.api)
+    testImplementation(nvaCatalog.mockito.core)
+    testImplementation(nvaLibs.testutils)
+    testRuntimeOnly(libs.aalto.xml)
+    testRuntimeOnly(nvaCatalog.junit.jupiter.engine)
+    testRuntimeOnly(nvaCatalog.junit.platform.launcher)
 }
 
 test {

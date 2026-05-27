@@ -3,36 +3,38 @@ plugins {
 }
 
 dependencies {
-    implementation nvaCatalog.aws.sdk2.dynamodbenhanced
-    implementation nvaCatalog.aws.sdk2.dynamo
-    implementation nvaCatalog.httpclient5
-    implementation nvaCatalog.jackson.databind
-    implementation nvaLibs.apigateway
-    implementation nvaLibs.auth
-    implementation nvaLibs.clients
-    implementation nvaLibs.core
-    implementation nvaLibs.json
-    implementation project(':nvi-commons')
-    implementation project(':viewing-scope')
-    testFixturesAnnotationProcessor nvaCatalog.errorprone
-    testFixturesImplementation(testFixtures(project(":nvi-commons")))
-    testImplementation nvaCatalog.aws.sdk2.dynamodblocal
-    testImplementation nvaCatalog.assertj.core
-    testImplementation nvaCatalog.cucumber.java
-    testImplementation nvaCatalog.cucumber.junit.platform.engine
-    testImplementation nvaCatalog.cucumber.picocontainer
-    testImplementation nvaCatalog.hamcrest
-    testImplementation nvaCatalog.junit.jupiter
-    testImplementation nvaCatalog.junit.jupiter.api
-    testImplementation nvaCatalog.junit.jupiter.engine
-    testImplementation nvaCatalog.junit.jupiter.params
-    testImplementation nvaCatalog.junit.platform.launcher
-    testImplementation nvaCatalog.mockito.core
-    testImplementation nvaCatalog.zalando
-    testImplementation nvaLibs.testutils
-    testImplementation project(':nvi-test')
+    api(nvaCatalog.aws.lambda.core)
+    api(nvaCatalog.jackson.annotations)
+    api(nvaCatalog.jackson.databind)
+    api(nvaLibs.apigateway)
+    api(nvaLibs.clients)
+    api(nvaLibs.core)
+    api(nvaLibs.json)
+    api(project(':nvi-commons'))
+    api(project(':viewing-scope'))
+    implementation(nvaCatalog.aws.sdk2.dynamo)
+    implementation(nvaCatalog.slf4j.api)
+    implementation(nvaLibs.auth)
+    testFixturesAnnotationProcessor(nvaCatalog.errorprone)
+    testFixturesApi(testFixtures(project(":nvi-commons")))
+    testImplementation(nvaCatalog.assertj.core)
+    testImplementation(nvaCatalog.aws.sdk2.utils)
+    testImplementation(nvaCatalog.hamcrest)
+    testImplementation(nvaCatalog.httpcore5)
+    testImplementation(nvaCatalog.jackson.core)
+    testImplementation(nvaCatalog.junit.jupiter.api)
+    testImplementation(nvaCatalog.junit.jupiter.params)
+    testImplementation(nvaCatalog.mockito.core)
+    testImplementation(nvaCatalog.zalando)
+    testImplementation(nvaLibs.testutils)
+    testImplementation(project(':nvi-test'))
     testImplementation(testFixtures(project(":nvi-commons")))
     testImplementation(testFixtures(project(":viewing-scope")))
+    testRuntimeOnly(nvaCatalog.cucumber.java)
+    testRuntimeOnly(nvaCatalog.cucumber.junit.platform.engine)
+    testRuntimeOnly(nvaCatalog.cucumber.picocontainer)
+    testRuntimeOnly(nvaCatalog.junit.jupiter.engine)
+    testRuntimeOnly(nvaCatalog.junit.platform.launcher)
 }
 
 test {
