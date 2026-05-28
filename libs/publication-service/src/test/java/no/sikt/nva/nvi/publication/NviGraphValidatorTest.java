@@ -16,7 +16,7 @@ import java.util.UUID;
 import java.util.stream.Stream;
 import no.unit.nva.identifiers.SortableIdentifier;
 import nva.commons.core.ioutils.IoUtils;
-import nva.commons.logutils.LogUtils;
+import nva.commons.logutils.LogRecorder;
 import org.apache.jena.query.QueryExecutionFactory;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
@@ -91,22 +91,22 @@ class NviGraphValidatorTest {
 
   @Test
   void shouldNotLogErrorsWhenThereAreNoErrors() {
-    final var testAppender = LogUtils.getTestingAppender(NviGraphValidator.class);
+    var logRecorder = LogRecorder.forClass(NviGraphValidator.class);
     var model = createModelWithNoErrors();
     var validation = nviGraphValidator.validate(model);
     validation.log(logger);
     assertFalse(validation.hasViolations());
-    assertThat(testAppender.getMessages()).isEmpty();
+    assertThat(logRecorder.asString()).isEmpty();
   }
 
   @Test
   void shouldLogErrorsWhenThereIsNoData() {
-    final var testAppender = LogUtils.getTestingAppender(NviGraphValidator.class);
+    var logRecorder = LogRecorder.forClass(NviGraphValidator.class);
     var model = ModelFactory.createDefaultModel();
     var validation = nviGraphValidator.validate(model);
     validation.log(logger);
     assertTrue(validation.hasViolations());
-    assertThat(testAppender.getMessages())
+    assertThat(logRecorder.asString())
         .containsSequence("Model validation failed: Publication is missing");
   }
 

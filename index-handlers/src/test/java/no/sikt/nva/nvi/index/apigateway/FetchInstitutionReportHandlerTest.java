@@ -1,10 +1,5 @@
 package no.sikt.nva.nvi.index.apigateway;
 
-import static com.google.common.net.HttpHeaders.ACCEPT;
-import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
-import static com.google.common.net.MediaType.ANY_APPLICATION_TYPE;
-import static com.google.common.net.MediaType.MICROSOFT_EXCEL;
-import static com.google.common.net.MediaType.OOXML_SHEET;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
@@ -58,8 +53,13 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.apigateway.AccessRight.MANAGE_NVI;
 import static nva.commons.apigateway.AccessRight.MANAGE_NVI_CANDIDATES;
 import static nva.commons.apigateway.GatewayResponse.fromOutputStream;
+import static nva.commons.apigateway.MediaType.ANY_APPLICATION_TYPE;
+import static nva.commons.apigateway.MediaType.MICROSOFT_EXCEL;
+import static nva.commons.apigateway.MediaType.OOXML_SHEET;
 import static nva.commons.apigateway.RequestInfoConstants.BACKEND_SCOPE_AS_DEFINED_IN_IDENTITY_SERVICE;
 import static nva.commons.core.StringUtils.EMPTY_STRING;
+import static org.apache.hc.core5.http.HttpHeaders.ACCEPT;
+import static org.apache.hc.core5.http.HttpHeaders.CONTENT_TYPE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -105,7 +105,7 @@ import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
-import nva.commons.logutils.LogUtils;
+import nva.commons.logutils.LogRecorder;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -340,10 +340,10 @@ class FetchInstitutionReportHandlerTest {
     when(searchClient.search(any()))
         .thenReturn(aggregationResponse(1))
         .thenReturn(createSearchResponse(indexDocument));
-    var appender = LogUtils.getTestingAppender(NviCandidateIndexDocument.class);
+    var logRecorder = LogRecorder.forClass(NviCandidateIndexDocument.class);
     handler.handleRequest(
         requestWithMediaType(MICROSOFT_EXCEL.toString(), topLevelCristinOrg), output, CONTEXT);
-    assertTrue(appender.getMessages().contains(indexDocument.identifier().toString()));
+    assertTrue(logRecorder.asString().contains(indexDocument.identifier().toString()));
   }
 
   @Test

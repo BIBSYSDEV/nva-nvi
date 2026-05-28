@@ -34,7 +34,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 import static org.mockito.Mockito.doThrow;
 
@@ -62,7 +61,7 @@ import no.sikt.nva.nvi.test.SampleExpandedContributor;
 import no.sikt.nva.nvi.test.SampleExpandedPublication;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.core.paths.UnixPath;
-import nva.commons.logutils.LogUtils;
+import nva.commons.logutils.LogRecorder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -102,10 +101,10 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       String content, URI publicationId) throws IOException {
     var fileUri = s3Driver.insertFile(UnixPath.of(randomString()), content);
     var event = createEvent(new PersistedResourceMessage(fileUri));
-    final var logAppender = LogUtils.getTestingAppender(EvaluatorService.class);
+    var logRecorder = LogRecorder.forClass(EvaluatorService.class);
     handler.handleRequest(event, CONTEXT);
     var expectedLogMessage = "Skipping evaluation due to invalid year format";
-    assertTrue(logAppender.getMessages().contains(expectedLogMessage));
+    assertThat(logRecorder.messages()).anyMatch(message -> message.startsWith(expectedLogMessage));
     assertThatThrownBy(() -> scenario.getCandidateByPublicationId(publicationId))
         .isInstanceOf(CandidateNotFoundException.class);
   }

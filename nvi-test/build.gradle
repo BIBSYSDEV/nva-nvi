@@ -3,14 +3,14 @@ plugins {
 }
 
 dependencies {
-    implementation nvaCatalog.bundles.testing.junit
-    implementation nvaCatalog.datafaker
-    implementation nvaCatalog.jackson.databind
-    implementation nvaCatalog.mockito.core
-    implementation nvaLibs.core
-    implementation nvaLibs.identifiers
-    implementation nvaLibs.testutils
-    testFixturesAnnotationProcessor nvaCatalog.errorprone
+    api(nvaCatalog.jackson.databind)
+    api(nvaLibs.identifiers)
+    implementation(nvaCatalog.datafaker)
+    implementation(nvaLibs.core)
+    implementation(nvaLibs.testutils)
+    runtimeOnly(nvaCatalog.junit.jupiter.engine)
+    runtimeOnly(nvaCatalog.junit.platform.launcher)
+    testFixturesAnnotationProcessor(nvaCatalog.errorprone)
 }
 
 test {
