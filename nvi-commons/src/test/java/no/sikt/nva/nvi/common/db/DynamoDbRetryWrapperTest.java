@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 import java.util.List;
 import java.util.Map;
 import nva.commons.logutils.LogRecorder;
+import org.apache.logging.log4j.core.LogEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -108,7 +109,8 @@ class DynamoDbRetryWrapperTest {
     thread.join();
 
     assertThat(logRecorder.events())
-        .map(event -> event.getThrown().toString())
+        .map(LogEvent::getThrown)
+        .map(Throwable::toString)
         .contains("java.lang.InterruptedException: sleep interrupted");
   }
 
