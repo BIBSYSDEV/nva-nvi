@@ -6,11 +6,8 @@ import static no.sikt.nva.nvi.events.cristin.CristinMapper.FHI_CRISTIN_IDENTIFIE
 import static no.sikt.nva.nvi.events.cristin.CristinTestUtils.expectedCreatorId;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static nva.commons.core.attempt.Try.attempt;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.emptyIterable;
-import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -37,7 +34,6 @@ import no.sikt.nva.nvi.common.model.PublicationDate;
 import no.sikt.nva.nvi.events.cristin.CristinNviReport.Builder;
 import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.core.ioutils.IoUtils;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class CristinMapperTest {
@@ -495,7 +491,7 @@ class CristinMapperTest {
     var expectedSingleCreatorPoints = POINTS_PER_CONTRIBUTOR.setScale(SCALE, RoundingMode.HALF_UP);
     var expectedCreator = expectedCreatorId(firstCreator);
 
-    Assertions.assertThat(institutionPoints.creatorAffiliationPoints())
+    assertThat(institutionPoints.creatorAffiliationPoints())
         .extracting(DbCreatorAffiliationPoints::creatorId, DbCreatorAffiliationPoints::points)
         .containsOnly(tuple(expectedCreator, expectedSingleCreatorPoints));
   }
@@ -514,8 +510,8 @@ class CristinMapperTest {
     var affiliationForInstitutionPoints =
         dbPoints.getFirst().creatorAffiliationPoints().getFirst().affiliationId().toString();
 
-    assertThat(institutionPointsId, containsString("2057"));
-    assertThat(affiliationForInstitutionPoints, containsString("305"));
+    assertThat(institutionPointsId).contains("2057");
+    assertThat(affiliationForInstitutionPoints).contains("305");
   }
 
   @Test
@@ -528,7 +524,7 @@ class CristinMapperTest {
     var dbCandidate = cristinMapper.toDbCandidate(report.build());
 
     var dbPoints = dbCandidate.pointCalculation().institutionPoints();
-    assertThat(dbPoints, is(emptyIterable()));
+    assertThat(dbPoints).isEmpty();
   }
 
   @Test
@@ -542,7 +538,7 @@ class CristinMapperTest {
     var approvals = cristinMapper.toApprovals(report.build());
 
     assertThrows(RuntimeException.class, () -> cristinMapper.toDbCandidate(report.build()));
-    assertThat(approvals, is(emptyIterable()));
+    assertThat(approvals).isEmpty();
   }
 
   @Test
@@ -555,8 +551,7 @@ class CristinMapperTest {
     var approvals = cristinMapper.toApprovals(report.build());
     assertDoesNotThrow(() -> cristinMapper.toDbCandidate(report.build()));
 
-    assertThat(
-        approvals.getFirst().institutionId().toString(), containsString(FHI_CRISTIN_IDENTIFIER));
+    assertThat(approvals.getFirst().institutionId().toString()).contains(FHI_CRISTIN_IDENTIFIER);
   }
 
   @Test
@@ -570,7 +565,7 @@ class CristinMapperTest {
     var approvals = cristinMapper.toApprovals(report.build());
 
     assertThrows(RuntimeException.class, () -> cristinMapper.toDbCandidate(report.build()));
-    assertThat(approvals, is(emptyIterable()));
+    assertThat(approvals).isEmpty();
   }
 
   @Test
@@ -583,7 +578,7 @@ class CristinMapperTest {
     var nviCandidate = cristinMapper.toDbCandidate(report);
 
     var dbChannel = nviCandidate.pointCalculation().publicationChannel();
-    Assertions.assertThat(dbChannel.scientificValue()).isEqualTo(DbLevel.LEVEL_TWO.getValue());
+    assertThat(dbChannel.scientificValue()).isEqualTo(DbLevel.LEVEL_TWO.getValue());
   }
 
   @Test
@@ -598,7 +593,7 @@ class CristinMapperTest {
             .build();
     var approvals = cristinMapper.toApprovals(report);
 
-    assertThat(approvals.size(), is(1));
+    assertThat(approvals).hasSize(1);
   }
 
   private static CristinNviReport nviReportWithInstanceTypeAndReference(

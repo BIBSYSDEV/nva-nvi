@@ -1,8 +1,6 @@
 package no.sikt.nva.nvi.common.notification;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -27,6 +25,6 @@ class NviNotificationClientTest {
 
     var result = notificationClient.publish(TEST_PAYLOAD, TEST_TOPIC);
 
-    assertThat(result.messageId(), is(equalTo(TEST_MESSAGE_ID)));
+    assertEquals(TEST_MESSAGE_ID, result.messageId());
   }
 }

@@ -8,11 +8,9 @@ import static no.sikt.nva.nvi.common.dto.AllowedOperationFixtures.CURATOR_CAN_FI
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -42,8 +40,6 @@ import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.GatewayResponse;
 import nva.commons.apigateway.exceptions.NotFoundException;
-import org.assertj.core.api.Assertions;
-import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.zalando.problem.Problem;
@@ -81,7 +77,7 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
     handler.handleRequest(createRequestWithoutAccessRights(), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
-    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
+    assertEquals(HttpURLConnection.HTTP_UNAUTHORIZED, response.getStatusCode());
   }
 
   @Test
@@ -89,7 +85,7 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
     handler.handleRequest(createRequestWithDifferentInstitution(), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
-    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
+    assertEquals(HttpURLConnection.HTTP_UNAUTHORIZED, response.getStatusCode());
   }
 
   @Test
@@ -99,7 +95,7 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
     handler.handleRequest(createRequest(candidateIdentifier, assignee), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
 
-    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
+    assertEquals(HttpURLConnection.HTTP_UNAUTHORIZED, response.getStatusCode());
   }
 
   @Test
@@ -115,8 +111,7 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
             environment);
     handler.handleRequest(createRequest(candidateIdentifier, assignee), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
-    assertThat(
-        response.getStatusCode(), is(CoreMatchers.equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
+    assertEquals(HttpURLConnection.HTTP_UNAUTHORIZED, response.getStatusCode());
   }
 
   @Test
@@ -126,7 +121,7 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
     handler.handleRequest(createRequestWithNonExistingCandidate(assignee), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
-    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_NOT_FOUND)));
+    assertEquals(HttpURLConnection.HTTP_NOT_FOUND, response.getStatusCode());
   }
 
   @Test
@@ -137,7 +132,7 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
     handler.handleRequest(createRequest(candidateIdentifier, assignee), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
-    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_CONFLICT)));
+    assertEquals(HttpURLConnection.HTTP_CONFLICT, response.getStatusCode());
   }
 
   @Test
@@ -149,7 +144,7 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
     handler.handleRequest(createRequest(candidateIdentifier, assignee), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
-    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_CONFLICT)));
+    assertEquals(HttpURLConnection.HTTP_CONFLICT, response.getStatusCode());
   }
 
   @Test
@@ -159,10 +154,9 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
     handler.handleRequest(createRequest(candidateIdentifier, assignee), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
 
-    assertThat(
-        response.getBodyObject(CandidateDto.class).approvals().getFirst().assignee(),
-        is(equalTo(assignee)));
-    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_OK)));
+    assertEquals(
+        assignee, response.getBodyObject(CandidateDto.class).approvals().getFirst().assignee());
+    assertEquals(HttpURLConnection.HTTP_OK, response.getStatusCode());
   }
 
   @Test
@@ -170,10 +164,8 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
     handler.handleRequest(createRequest(candidateIdentifier, null), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
 
-    assertThat(
-        response.getBodyObject(CandidateDto.class).approvals().getFirst().assignee(),
-        is(nullValue()));
-    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_OK)));
+    assertNull(response.getBodyObject(CandidateDto.class).approvals().getFirst().assignee());
+    assertEquals(HttpURLConnection.HTTP_OK, response.getStatusCode());
   }
 
   @Test
@@ -184,9 +176,8 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
     handler.handleRequest(createRequest(newCandidate.identifier(), newAssignee), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
 
-    assertThat(
-        response.getBodyObject(CandidateDto.class).approvals().getFirst().assignee(),
-        is(equalTo(newAssignee)));
+    assertEquals(
+        newAssignee, response.getBodyObject(CandidateDto.class).approvals().getFirst().assignee());
   }
 
   @Test
@@ -197,8 +188,8 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
     var candidateDto = handleRequest(request);
 
     var actualAllowedOperations = candidateDto.allowedOperations();
-    assertThat(
-        actualAllowedOperations, containsInAnyOrder(CURATOR_CAN_FINALIZE_APPROVAL.toArray()));
+    assertThat(actualAllowedOperations)
+        .containsExactlyInAnyOrderElementsOf(CURATOR_CAN_FINALIZE_APPROVAL);
   }
 
   @Test
@@ -210,9 +201,8 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
     var failingHandler = setupHandlerThatFailsWithTransactionConflict();
     var response = handleRequestExpectingProblem(failingHandler, request);
 
-    Assertions.assertThat(response.getStatus().getStatusCode())
-        .isEqualTo(HttpURLConnection.HTTP_CONFLICT);
-    Assertions.assertThat(response.getDetail()).isEqualTo(TransactionException.USER_MESSAGE);
+    assertThat(response.getStatus().getStatusCode()).isEqualTo(HttpURLConnection.HTTP_CONFLICT);
+    assertThat(response.getDetail()).isEqualTo(TransactionException.USER_MESSAGE);
   }
 
   private UpsertAssigneeHandler setupHandlerThatFailsWithTransactionConflict() {

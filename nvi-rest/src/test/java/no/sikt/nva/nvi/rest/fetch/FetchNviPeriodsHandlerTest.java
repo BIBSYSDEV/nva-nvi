@@ -5,10 +5,8 @@ import static no.sikt.nva.nvi.rest.EnvironmentFixtures.FETCH_NVI_PERIODS_HANDLER
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -52,7 +50,7 @@ class FetchNviPeriodsHandlerTest {
         createRequestWithAccessRight(AccessRight.MANAGE_PUBLISHING_REQUESTS), output, context);
     var response = GatewayResponse.fromOutputStream(output, NviPeriodsResponse.class);
 
-    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
+    assertEquals(HttpURLConnection.HTTP_UNAUTHORIZED, response.getStatusCode());
   }
 
   @Test
@@ -62,8 +60,8 @@ class FetchNviPeriodsHandlerTest {
     handler.handleRequest(createRequestWithAccessRight(AccessRight.MANAGE_NVI), output, context);
     var response = GatewayResponse.fromOutputStream(output, NviPeriodsResponse.class);
 
-    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_OK)));
-    assertThat(response.getBodyObject(NviPeriodsResponse.class).periods(), hasSize(2));
+    assertEquals(HttpURLConnection.HTTP_OK, response.getStatusCode());
+    assertThat(response.getBodyObject(NviPeriodsResponse.class).periods()).hasSize(2);
   }
 
   @Test
@@ -71,8 +69,8 @@ class FetchNviPeriodsHandlerTest {
     handler.handleRequest(createRequestWithAccessRight(AccessRight.MANAGE_NVI), output, context);
     var response = GatewayResponse.fromOutputStream(output, NviPeriodsResponse.class);
 
-    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_OK)));
-    assertThat(response.getBodyObject(NviPeriodsResponse.class).periods(), hasSize(0));
+    assertEquals(HttpURLConnection.HTTP_OK, response.getStatusCode());
+    assertThat(response.getBodyObject(NviPeriodsResponse.class).periods()).isEmpty();
   }
 
   private InputStream createRequestWithAccessRight(AccessRight accessRight)

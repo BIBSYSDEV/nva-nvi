@@ -26,9 +26,6 @@ import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -208,7 +205,7 @@ class CandidateTest extends CandidateTestSetup {
     var candidate = setupRandomApplicableCandidate(scenario);
     var fetchedCandidate =
         candidateService.getCandidateByPublicationId(candidate.getPublicationId());
-    assertThat(fetchedCandidate.identifier(), is(equalTo(candidate.identifier())));
+    assertEquals(candidate.identifier(), fetchedCandidate.identifier());
   }
 
   @Test
@@ -337,7 +334,7 @@ class CandidateTest extends CandidateTestSetup {
   @Test
   void shouldReturnNviCandidateContextAsString() {
     var expectedContext = stringFromResources(Path.of("nviCandidateContext.json"));
-    assertThat(Candidate.getJsonLdContext(), is(equalTo(expectedContext)));
+    assertEquals(expectedContext, Candidate.getJsonLdContext());
   }
 
   @Test

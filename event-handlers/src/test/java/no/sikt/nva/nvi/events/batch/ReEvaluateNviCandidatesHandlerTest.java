@@ -12,9 +12,7 @@ import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static nva.commons.core.attempt.Try.attempt;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsEmptyCollection.empty;
-import static org.hamcrest.core.Is.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -147,7 +145,7 @@ class ReEvaluateNviCandidatesHandlerTest {
       var currentRequest = consumeLatestEmittedEvent();
       handler.handleRequest(eventToInputStream(currentRequest), outputStream, context);
     }
-    assertThat(eventBridgeClient.getRequestEntries(), is(empty()));
+    assertThat(eventBridgeClient.getRequestEntries()).isEmpty();
   }
 
   @Test

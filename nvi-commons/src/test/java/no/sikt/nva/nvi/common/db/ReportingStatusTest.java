@@ -3,10 +3,8 @@ package no.sikt.nva.nvi.common.db;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInstant;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.time.Instant;
@@ -24,14 +22,14 @@ record ReportingStatusTest() {
     var status = randomReportingStatus();
     var json = JsonUtils.dtoObjectMapper.writeValueAsString(status);
     var reconstructedStatus = JsonUtils.dtoObjectMapper.readValue(json, DbReportingStatus.class);
-    assertThat(reconstructedStatus, is(equalTo(status)));
+    assertEquals(status, reconstructedStatus);
   }
 
   @Test
   void shouldCreateCopyOfApprovalPeriod() {
     var period = randomPeriod();
     var copy = period.copy().reportingDate(null).build();
-    assertThat(period, is(not(equalTo(copy))));
+    assertNotEquals(copy, period);
   }
 
   private static DbNviPeriod randomPeriod() {

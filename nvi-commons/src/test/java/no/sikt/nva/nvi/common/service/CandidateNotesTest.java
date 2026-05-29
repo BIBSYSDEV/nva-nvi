@@ -8,11 +8,8 @@ import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizati
 import static no.sikt.nva.nvi.common.model.UserInstanceFixtures.createCuratorUserInstance;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.net.URI;
@@ -40,10 +37,10 @@ class CandidateNotesTest extends CandidateTestSetup {
     var updatedCandidate = candidateService.getCandidateByIdentifier(candidate.identifier());
     var actualNote = getAnyNote(updatedCandidate);
 
-    assertThat(noteRequest.username(), is(equalTo(actualNote.user())));
-    assertThat(noteRequest.text(), is(equalTo(actualNote.text())));
-    assertThat(actualNote.createdDate(), is(notNullValue()));
-    assertThat(actualNote.identifier(), is(notNullValue()));
+    assertEquals(noteRequest.username(), actualNote.user());
+    assertEquals(noteRequest.text(), actualNote.text());
+    assertNotNull(actualNote.createdDate());
+    assertNotNull(actualNote.identifier());
   }
 
   @Test

@@ -55,7 +55,6 @@ dependencies {
     testFixturesRuntimeOnly(nvaCatalog.junit.jupiter.engine)
     testFixturesRuntimeOnly(nvaCatalog.junit.platform.launcher)
     testImplementation(nvaCatalog.assertj.core)
-    testImplementation(nvaCatalog.hamcrest)
     testImplementation(nvaCatalog.junit.jupiter.api)
     testImplementation(nvaCatalog.junit.jupiter.params)
     testImplementation(nvaCatalog.log4j.core)
