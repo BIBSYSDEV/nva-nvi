@@ -22,6 +22,7 @@ public record ReportStatusDto(
     return new Builder();
   }
 
+  @SuppressWarnings({"PMD.ConfusingTernary", "PMD.CyclomaticComplexity"})
   private static StatusDto getStatus(Candidate candidate) {
     var isOpenPeriod = candidate.getPeriod().filter(NviPeriod::isOpen).isPresent();
     if (!candidate.isApplicable()) {

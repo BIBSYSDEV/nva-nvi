@@ -157,6 +157,7 @@ public record CandidateQuery(
         .toList();
   }
 
+  @SuppressWarnings("PMD.CyclomaticComplexity")
   private Optional<Query> constructQueryWithFilter() {
 
     var aggregation =

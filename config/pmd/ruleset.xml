@@ -24,7 +24,6 @@
 
   <rule ref="category/java/bestpractices.xml">
     <exclude name="GuardLogStatement"/>
-    <exclude name="AvoidPrintStackTrace"/>
     <exclude name="UnitTestAssertionsShouldIncludeMessage"/>
     <exclude name="UnitTestContainsTooManyAsserts"/>
 
@@ -33,10 +32,6 @@
 
     <!-- In TableManager we map ResourceNotFoundException to TableNotFoundException -->
     <exclude name="PreserveStackTrace"/>
-
-    <!-- //TODO: This is complaining on private methods that are used?  -->
-    <exclude name="UnusedPrivateMethod"/>
-
   </rule>
 
   <rule ref="category/java/codestyle.xml">
@@ -51,17 +46,12 @@
     <exclude name="MethodArgumentCouldBeFinal"/>
     <exclude name="TooManyStaticImports"/>
     <exclude name="UseExplicitTypes"/>
-    <exclude name="ClassNamingConventions"/>
     <exclude name="UnnecessaryConstructor"/>
     <!-- Conflicts with the rule category/java/codestyle.xml/AvoidProtectedMethodInFinalClassNotExtending -->
     <exclude name="CommentDefaultAccessModifier"/>
     <!-- Conflicts with the rule category/java/codestyle.xml/AvoidProtectedMethodInFinalClassNotExtending -->
 
-    <exclude name="ConfusingTernary"/>
     <exclude name="FieldNamingConventions"/>
-
-    <!-- Sometimes it is useful in debugging to assign the return value to a local variable  -->
-    <exclude name="UnnecessaryLocalBeforeReturn"/>
   </rule>
 
 
@@ -76,12 +66,9 @@
     <exclude name="LawOfDemeter"/>
     <exclude name="DataClass"/>
     <exclude name="ExcessiveImports"/>
-    <exclude name="AvoidCatchingGenericException"/>
-    <exclude name="SignatureDeclareThrowsException"/>
     <exclude name="UseUtilityClass"/>
     <exclude name="UseObjectForClearerAPI"/>
     <exclude name="TooManyMethods"/>
-    <exclude name="CyclomaticComplexity"/>
 
     <!-- This rule does not allow the Lambda Handler to cast  the ContainerInitializationException
         to a RuntimeException.

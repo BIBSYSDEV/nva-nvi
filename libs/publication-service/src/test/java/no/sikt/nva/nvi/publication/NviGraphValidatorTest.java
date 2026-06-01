@@ -32,6 +32,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@SuppressWarnings("PMD.CyclomaticComplexity")
 class NviGraphValidatorTest {
 
   private static final String NVA_ONTOLOGY = "https://nva.sikt.no/ontology/publication#";
