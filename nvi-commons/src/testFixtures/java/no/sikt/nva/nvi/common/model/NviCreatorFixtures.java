@@ -14,7 +14,9 @@ import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 
-public class NviCreatorFixtures {
+public final class NviCreatorFixtures {
+
+  private NviCreatorFixtures() {}
 
   public static List<DbCreatorType> mapToDbCreators(
       Collection<VerifiedNviCreatorDto> verifiedNviCreators,

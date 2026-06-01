@@ -11,7 +11,9 @@ import java.util.UUID;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
 
-public class DbApprovalStatusFixtures {
+public final class DbApprovalStatusFixtures {
+
+  private DbApprovalStatusFixtures() {}
 
   public static DbApprovalStatus randomApproval() {
     return randomApproval(randomUri());

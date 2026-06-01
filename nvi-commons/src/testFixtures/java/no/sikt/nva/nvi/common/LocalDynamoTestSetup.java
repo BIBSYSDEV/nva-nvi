@@ -21,7 +21,7 @@ import software.amazon.awssdk.services.dynamodb.model.ProvisionedThroughput;
 import software.amazon.awssdk.services.dynamodb.model.ScalarAttributeType;
 import software.amazon.dynamodb.services.local.embedded.DynamoDBEmbedded;
 
-public class LocalDynamoTestSetup {
+public final class LocalDynamoTestSetup {
 
   private static final Long CAPACITY_DOES_NOT_MATTER = 1000L;
   private static final ProvisionedThroughput LOCAL_THROUGHPUT =
@@ -29,6 +29,8 @@ public class LocalDynamoTestSetup {
           .readCapacityUnits(CAPACITY_DOES_NOT_MATTER)
           .writeCapacityUnits(CAPACITY_DOES_NOT_MATTER)
           .build();
+
+  private LocalDynamoTestSetup() {}
 
   public static DynamoDbClient initializeTestDatabase(String tableName) {
     var localDynamo = DynamoDBEmbedded.create(null, true).dynamoDbClient();

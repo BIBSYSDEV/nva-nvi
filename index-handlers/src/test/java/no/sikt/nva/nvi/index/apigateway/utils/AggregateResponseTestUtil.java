@@ -12,7 +12,9 @@ import org.opensearch.client.opensearch._types.aggregations.NestedAggregate;
 import org.opensearch.client.opensearch._types.aggregations.StringTermsAggregate;
 import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
 
-public class AggregateResponseTestUtil {
+public final class AggregateResponseTestUtil {
+
+  private AggregateResponseTestUtil() {}
 
   public static Aggregate organizationApprovalStatusAggregate(String topLevelOrg) {
     var pendingBucket = getStringTermsBucket("Pending", Map.of(), 2);

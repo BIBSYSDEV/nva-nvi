@@ -11,7 +11,7 @@ import java.util.Date;
 import no.unit.nva.auth.CachedJwtProvider;
 import no.unit.nva.auth.CognitoAuthenticator;
 
-public class FakeCachedJwtProvider {
+public final class FakeCachedJwtProvider {
 
   private static final String TEST_TOKEN =
       "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJPbmxpbmUgSldUIEJ1"
@@ -20,6 +20,8 @@ public class FakeCachedJwtProvider {
           + "mVuTmFtZSI6IkpvaG5ueSIsIlN1cm5hbWUiOiJSb2NrZXQiLCJFbWFpbCI6Impyb2"
           + "NrZXRAZXhhbXBsZS5jb20iLCJSb2xlIjoiTWFuYWdlciIsInNjb3BlIjoiZXhhbX"
           + "BsZS1zY29wZSJ9.ne8Jb4f2xao1zSJFZxIBRrh4WFNjkaBRV3-Ybp6fHZU";
+
+  private FakeCachedJwtProvider() {}
 
   public static CachedJwtProvider setup() {
     var jwt = mock(DecodedJWT.class);

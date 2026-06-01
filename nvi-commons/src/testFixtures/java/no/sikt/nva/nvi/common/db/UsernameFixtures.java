@@ -5,7 +5,9 @@ import static no.sikt.nva.nvi.common.model.UsernameFixtures.randomUsername;
 
 import no.sikt.nva.nvi.common.db.model.Username;
 
-public class UsernameFixtures {
+public final class UsernameFixtures {
+
+  private UsernameFixtures() {}
 
   public static Username randomDbUsername() {
     return fromUserName(randomUsername());

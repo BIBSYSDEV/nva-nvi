@@ -21,7 +21,9 @@ import no.sikt.nva.nvi.common.db.model.DbPublicationDetails;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.service.model.PageCount;
 
-public class DbPublicationDetailsFixtures {
+public final class DbPublicationDetailsFixtures {
+
+  private DbPublicationDetailsFixtures() {}
 
   public static DbPublicationDetails.Builder randomPublicationBuilder(
       UUID publicationIdentifier, URI organizationId) {

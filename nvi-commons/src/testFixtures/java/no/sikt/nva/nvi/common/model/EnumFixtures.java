@@ -4,7 +4,9 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 
 import java.util.List;
 
-public class EnumFixtures {
+public final class EnumFixtures {
+
+  private EnumFixtures() {}
 
   public static InstanceType randomValidInstanceType() {
     var values =
