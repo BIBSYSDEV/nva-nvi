@@ -7,9 +7,7 @@ import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -55,7 +53,7 @@ class CreateNviPeriodHandlerTest {
     handler.handleRequest(createRequestWithoutAccessRights(), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
-    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
+    assertEquals(HttpURLConnection.HTTP_UNAUTHORIZED, response.getStatusCode());
   }
 
   @Test
@@ -64,7 +62,7 @@ class CreateNviPeriodHandlerTest {
     handler.handleRequest(createRequest(period), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
-    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_BAD_REQUEST)));
+    assertEquals(HttpURLConnection.HTTP_BAD_REQUEST, response.getStatusCode());
   }
 
   @Test
@@ -74,7 +72,7 @@ class CreateNviPeriodHandlerTest {
     var period = upsertRequest(year);
     handler.handleRequest(createRequest(period), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
-    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_BAD_REQUEST)));
+    assertEquals(HttpURLConnection.HTTP_BAD_REQUEST, response.getStatusCode());
   }
 
   @Test
@@ -83,7 +81,7 @@ class CreateNviPeriodHandlerTest {
     var period = upsertRequest(year);
     handler.handleRequest(createRequest(period), output, CONTEXT);
     var persistedPeriod = periodService.getByPublishingYear(year);
-    assertThat(period.publishingYear(), is(equalTo(persistedPeriod.publishingYear().toString())));
+    assertEquals(persistedPeriod.publishingYear().toString(), period.publishingYear());
   }
 
   @Test

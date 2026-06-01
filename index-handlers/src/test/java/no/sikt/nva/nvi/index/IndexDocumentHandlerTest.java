@@ -40,8 +40,7 @@ import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.attempt.Try.attempt;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -97,7 +96,6 @@ import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -285,9 +283,8 @@ class IndexDocumentHandlerTest {
     handler.handleRequest(event, CONTEXT);
     var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
     var expectedPartOf = List.of(HARD_CODED_TOP_LEVEL_ORG, HARD_CODED_INTERMEDIATE_ORGANIZATION);
-    assertThat(
-        extractPartOfAffiliation(actualIndexDocument, subUnitAffiliation),
-        containsInAnyOrder(expectedPartOf.toArray()));
+    assertThat(extractPartOfAffiliation(actualIndexDocument, subUnitAffiliation))
+        .containsExactlyInAnyOrderElementsOf(expectedPartOf);
   }
 
   @Test
@@ -315,7 +312,7 @@ class IndexDocumentHandlerTest {
     mockUriRetrieverOrgResponse(candidate);
     handler.handleRequest(event, CONTEXT);
     var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
-    Assertions.assertThat(actualIndexDocument.approvals())
+    assertThat(actualIndexDocument.approvals())
         .hasSizeGreaterThanOrEqualTo(1)
         .extracting(ApprovalView::labels)
         .allMatch(Map::isEmpty);
@@ -500,7 +497,7 @@ class IndexDocumentHandlerTest {
     handler.handleRequest(event, CONTEXT);
 
     var dlqMessages = sqsClient.getAllSentSqsEvents(INDEX_DLQ_URL);
-    Assertions.assertThat(dlqMessages).hasSize(1);
+    assertThat(dlqMessages).hasSize(1);
   }
 
   @Test
@@ -931,7 +928,7 @@ class IndexDocumentHandlerTest {
   private void assertContentIsEqual(
       IndexDocumentWithConsumptionAttributes expected,
       IndexDocumentWithConsumptionAttributes actual) {
-    Assertions.assertThat(actual)
+    assertThat(actual)
         .usingRecursiveComparison()
         .ignoringFields("indexDocument.indexDocumentCreatedAt")
         .isEqualTo(expected);
@@ -939,7 +936,7 @@ class IndexDocumentHandlerTest {
 
   private void assertContentIsEqual(
       NviCandidateIndexDocument expected, NviCandidateIndexDocument actual) {
-    Assertions.assertThat(actual)
+    assertThat(actual)
         .usingRecursiveComparison()
         .ignoringFields("indexDocumentCreatedAt")
         .isEqualTo(expected);

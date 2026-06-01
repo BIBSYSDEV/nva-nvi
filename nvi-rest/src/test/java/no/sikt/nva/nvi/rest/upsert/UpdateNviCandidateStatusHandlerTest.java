@@ -6,13 +6,9 @@ import static no.sikt.nva.nvi.common.dto.AllowedOperationFixtures.CURATOR_CAN_FI
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.IOException;
@@ -36,8 +32,6 @@ import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.GatewayResponse;
-import org.assertj.core.api.Assertions;
-import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -86,8 +80,7 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
     handler.handleRequest(createRequestWithoutAccessRights(randomStatusRequest()), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
-    assertThat(
-        response.getStatusCode(), is(CoreMatchers.equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
+    assertEquals(HttpURLConnection.HTTP_UNAUTHORIZED, response.getStatusCode());
   }
 
   private InputStream createRequestWithoutAccessRights(NviStatusRequest body)
@@ -114,8 +107,7 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
             environment);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
-    assertThat(
-        response.getStatusCode(), is(CoreMatchers.equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
+    assertEquals(HttpURLConnection.HTTP_UNAUTHORIZED, response.getStatusCode());
   }
 
   private InputStream createRequest(
@@ -147,7 +139,7 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
-    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_FORBIDDEN)));
+    assertEquals(HttpURLConnection.HTTP_FORBIDDEN, response.getStatusCode());
   }
 
   @Test
@@ -159,7 +151,7 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
-    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_CONFLICT)));
+    assertEquals(HttpURLConnection.HTTP_CONFLICT, response.getStatusCode());
   }
 
   @Test
@@ -170,7 +162,7 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
-    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_CONFLICT)));
+    assertEquals(HttpURLConnection.HTTP_CONFLICT, response.getStatusCode());
   }
 
   @Test
@@ -181,7 +173,7 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
 
-    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_OK)));
+    assertEquals(HttpURLConnection.HTTP_OK, response.getStatusCode());
   }
 
   @Test
@@ -193,7 +185,7 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
-    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_CONFLICT)));
+    assertEquals(HttpURLConnection.HTTP_CONFLICT, response.getStatusCode());
   }
 
   @Test
@@ -205,9 +197,8 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
     var failingHandler = setupHandlerThatFailsWithTransactionConflict();
     var response = handleRequestExpectingProblem(failingHandler, request);
 
-    Assertions.assertThat(response.getStatus().getStatusCode())
-        .isEqualTo(HttpURLConnection.HTTP_CONFLICT);
-    Assertions.assertThat(response.getDetail()).isEqualTo(TransactionException.USER_MESSAGE);
+    assertThat(response.getStatus().getStatusCode()).isEqualTo(HttpURLConnection.HTTP_CONFLICT);
+    assertThat(response.getDetail()).isEqualTo(TransactionException.USER_MESSAGE);
   }
 
   private UpdateNviCandidateStatusHandler setupHandlerThatFailsWithTransactionConflict() {
@@ -226,7 +217,7 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
     assertEquals(HttpURLConnection.HTTP_BAD_REQUEST, response.getStatusCode());
-    assertThat(response.getBody(), containsString(ERROR_MISSING_REJECTION_REASON));
+    assertThat(response.getBody()).contains(ERROR_MISSING_REJECTION_REASON);
   }
 
   private InputStream createRequestWithoutReason(UUID candidateIdentifier, URI institutionId)
@@ -247,7 +238,7 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
     var candidateResponse = response.getBodyObject(CandidateDto.class);
     var actualApproval = candidateResponse.approvals().getFirst();
     var expectedStatus = getExpectedApprovalStatus(newStatus);
-    assertThat(actualApproval.status(), is(equalTo(expectedStatus)));
+    assertEquals(expectedStatus, actualApproval.status());
   }
 
   private ApprovalStatusDto getExpectedApprovalStatus(ApprovalStatus status) {
@@ -274,9 +265,9 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
     var candidateResponse = response.getBodyObject(CandidateDto.class);
     var actualApproval = candidateResponse.approvals().getFirst();
-    assertThat(actualApproval.finalizedBy(), is(nullValue()));
-    assertThat(actualApproval.finalizedDate(), is(nullValue()));
-    assertThat(actualApproval.status(), is(equalTo(ApprovalStatusDto.PENDING)));
+    assertNull(actualApproval.finalizedBy());
+    assertNull(actualApproval.finalizedDate());
+    assertEquals(ApprovalStatusDto.PENDING, actualApproval.status());
   }
 
   @ParameterizedTest(name = "shouldUpdateApprovalStatusToRejectedWithReason from old status {0}")
@@ -296,8 +287,8 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
     var candidateResponse = response.getBodyObject(CandidateDto.class);
     var actualApprovalStatus = candidateResponse.approvals().getFirst();
 
-    assertThat(actualApprovalStatus.status(), is(equalTo(ApprovalStatusDto.REJECTED)));
-    assertThat(actualApprovalStatus.reason(), is(equalTo(rejectionReason)));
+    assertEquals(ApprovalStatusDto.REJECTED, actualApprovalStatus.status());
+    assertEquals(rejectionReason, actualApprovalStatus.reason());
   }
 
   private static InputStream createRequest(
@@ -331,8 +322,8 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
     var candidateResponse = response.getBodyObject(CandidateDto.class);
     var actualApproval = candidateResponse.approvals().getFirst();
     var expectedStatus = getExpectedApprovalStatus(newStatus);
-    assertThat(actualApproval.status(), is(equalTo(expectedStatus)));
-    assertThat(actualApproval.reason(), is(nullValue()));
+    assertEquals(expectedStatus, actualApproval.status());
+    assertNull(actualApproval.reason());
   }
 
   @Test
@@ -346,7 +337,7 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
     var candidateResponse = response.getBodyObject(CandidateDto.class);
 
-    assertThat(candidateResponse.approvals().getFirst().assignee(), is(equalTo(assignee)));
+    assertEquals(assignee, candidateResponse.approvals().getFirst().assignee());
   }
 
   @Test
@@ -360,7 +351,7 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
     var candidateDto = handleRequest(request);
 
     var actualAllowedOperations = candidateDto.allowedOperations();
-    assertThat(
-        actualAllowedOperations, containsInAnyOrder(CURATOR_CAN_FINALIZE_APPROVAL.toArray()));
+    assertThat(actualAllowedOperations)
+        .containsExactlyInAnyOrderElementsOf(CURATOR_CAN_FINALIZE_APPROVAL);
   }
 }

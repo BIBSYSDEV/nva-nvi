@@ -45,7 +45,6 @@ dependencies {
     testImplementation(nvaCatalog.aws.sdk2.http.client)
     testImplementation(nvaCatalog.aws.sdk2.sqs)
     testImplementation(nvaCatalog.datafaker)
-    testImplementation(nvaCatalog.hamcrest)
     testImplementation(nvaCatalog.junit.jupiter.api)
     testImplementation(nvaCatalog.junit.jupiter.params)
     testImplementation(nvaCatalog.mockito.core)

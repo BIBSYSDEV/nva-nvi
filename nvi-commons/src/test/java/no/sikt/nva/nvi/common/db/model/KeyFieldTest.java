@@ -1,8 +1,6 @@
 package no.sikt.nva.nvi.common.db.model;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIn.in;
-import static org.hamcrest.core.Is.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -21,7 +19,7 @@ class KeyFieldTest {
   void shouldAcceptTextualValueForEnum(String textualValue) throws JsonProcessingException {
     var jsonString = String.format("\"%s\"", textualValue);
     var actualValue = JsonUtils.dtoObjectMapper.readValue(jsonString, KeyField.class);
-    assertThat(actualValue, is(in(KeyField.values())));
+    assertThat(actualValue).isIn((Object[]) KeyField.values());
   }
 
   @Test

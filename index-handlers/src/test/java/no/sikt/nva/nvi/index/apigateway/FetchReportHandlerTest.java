@@ -17,8 +17,6 @@ import static nva.commons.apigateway.GatewayResponse.fromOutputStream;
 import static nva.commons.apigateway.MediaType.JSON_UTF_8;
 import static nva.commons.apigateway.RequestInfoConstants.BACKEND_SCOPE_AS_DEFINED_IN_IDENTITY_SERVICE;
 import static nva.commons.core.StringUtils.EMPTY_STRING;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.ArgumentMatchers.any;
@@ -152,7 +150,7 @@ class FetchReportHandlerTest {
 
     var response = fromOutputStream(output, ReportResponse.class);
 
-    assertThat(response.getHeaders().get(HttpHeaders.CONTENT_TYPE), is(JSON_UTF_8.toString()));
+    assertEquals(JSON_UTF_8.toString(), response.getHeaders().get(HttpHeaders.CONTENT_TYPE));
   }
 
   @Test
@@ -171,7 +169,7 @@ class FetchReportHandlerTest {
 
     var response = fromOutputStream(output, ReportResponse.class);
 
-    assertThat(response.getHeaders().get(HttpHeaders.CONTENT_TYPE), is(JSON_UTF_8.toString()));
+    assertEquals(JSON_UTF_8.toString(), response.getHeaders().get(HttpHeaders.CONTENT_TYPE));
   }
 
   @Test
@@ -187,7 +185,7 @@ class FetchReportHandlerTest {
 
     var response = fromOutputStream(output, ReportResponse.class);
 
-    assertThat(response.getHeaders().get(HttpHeaders.CONTENT_TYPE), is(JSON_UTF_8.toString()));
+    assertEquals(JSON_UTF_8.toString(), response.getHeaders().get(HttpHeaders.CONTENT_TYPE));
   }
 
   @Test

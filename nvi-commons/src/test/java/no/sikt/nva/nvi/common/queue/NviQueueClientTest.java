@@ -2,10 +2,7 @@ package no.sikt.nva.nvi.common.queue;
 
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganization;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -68,7 +65,7 @@ class NviQueueClientTest {
 
     var result = client.sendMessage(TEST_PAYLOAD, TEST_QUEUE_URL);
 
-    assertThat(result.messageId(), is(equalTo(TEST_MESSAGE_ID)));
+    assertEquals(TEST_MESSAGE_ID, result.messageId());
   }
 
   @Test
@@ -80,7 +77,7 @@ class NviQueueClientTest {
 
     var result = client.sendMessage(TEST_PAYLOAD, TEST_QUEUE_URL, candidateIdentifier);
 
-    assertThat(result.messageId(), is(equalTo(TEST_MESSAGE_ID)));
+    assertEquals(TEST_MESSAGE_ID, result.messageId());
   }
 
   private static Stream<Arguments> queueMessageProvider() {
@@ -131,8 +128,8 @@ class NviQueueClientTest {
     var client = new NviQueueClient(sqsClient);
 
     var result = client.sendMessageBatch(List.of(TEST_PAYLOAD), TEST_QUEUE_URL);
-    assertThat(result.successful(), containsInAnyOrder(TEST_MESSAGE_ID));
-    assertThat(result.failed(), containsInAnyOrder(MESSAGE_FAILED_ID));
+    assertThat(result.successful()).containsExactlyInAnyOrder(TEST_MESSAGE_ID);
+    assertThat(result.failed()).containsExactlyInAnyOrder(MESSAGE_FAILED_ID);
   }
 
   @Test

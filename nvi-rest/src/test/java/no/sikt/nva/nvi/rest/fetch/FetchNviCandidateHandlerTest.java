@@ -11,10 +11,7 @@ import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizati
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
@@ -43,8 +40,6 @@ import nva.commons.apigateway.GatewayResponse;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpHeaders;
 import org.apache.hc.core5.http.HttpStatus;
-import org.assertj.core.api.Assertions;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -101,7 +96,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
         createRequest(candidate.identifier().toString(), randomOrganizationId, accessRight);
     var responseDto = handleRequest(request);
 
-    Assertions.assertThat(responseDto)
+    assertThat(responseDto)
         .extracting(CandidateDto::id, CandidateDto::publicationId)
         .containsExactly(expectedCandidateUri(candidate), candidate.getPublicationId());
   }
@@ -117,7 +112,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
     var request = createRequest(candidate.identifier().toString(), randomUri(), accessRight);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
-    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
+    assertEquals(HttpURLConnection.HTTP_UNAUTHORIZED, response.getStatusCode());
   }
 
   @Test
@@ -127,7 +122,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
-    assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
+    assertEquals(HttpURLConnection.HTTP_UNAUTHORIZED, response.getStatusCode());
   }
 
   @Test
@@ -143,7 +138,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
-    assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
+    assertEquals(HttpURLConnection.HTTP_UNAUTHORIZED, response.getStatusCode());
   }
 
   @Test
@@ -153,7 +148,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
 
     var responseDto = handleRequest(request);
 
-    Assertions.assertThat(responseDto)
+    assertThat(responseDto)
         .extracting(CandidateDto::id, CandidateDto::publicationId)
         .containsExactly(expectedCandidateUri(candidate), candidate.getPublicationId());
   }
@@ -178,7 +173,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
 
     var responseDto = handleRequest(request);
 
-    Assertions.assertThat(responseDto)
+    assertThat(responseDto)
         .extracting(
             CandidateDto::id, CandidateDto::publicationId,
             CandidateDto::allowedOperations, CandidateDto::problems)
@@ -194,8 +189,8 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
     var candidateDto = handleRequest(request);
 
     var actualAllowedOperations = candidateDto.allowedOperations();
-    assertThat(
-        actualAllowedOperations, containsInAnyOrder(CURATOR_CAN_FINALIZE_APPROVAL.toArray()));
+    assertThat(actualAllowedOperations)
+        .containsExactlyInAnyOrderElementsOf(CURATOR_CAN_FINALIZE_APPROVAL);
   }
 
   @Test
@@ -206,7 +201,8 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
     var candidateDto = handleRequest(request);
 
     var actualAllowedOperations = candidateDto.allowedOperations();
-    assertThat(actualAllowedOperations, containsInAnyOrder(CURATOR_CAN_ONLY_REJECT.toArray()));
+    assertThat(actualAllowedOperations)
+        .containsExactlyInAnyOrderElementsOf(CURATOR_CAN_ONLY_REJECT);
   }
 
   @Test
@@ -218,8 +214,8 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
     var candidateDto = handleRequest(request);
 
     var actualAllowedOperations = candidateDto.allowedOperations();
-    assertThat(
-        actualAllowedOperations, containsInAnyOrder(CURATOR_CAN_FINALIZE_APPROVAL.toArray()));
+    assertThat(actualAllowedOperations)
+        .containsExactlyInAnyOrderElementsOf(CURATOR_CAN_FINALIZE_APPROVAL);
   }
 
   @Test
@@ -230,7 +226,8 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
     var candidateDto = handleRequest(request);
 
     var actualAllowedOperations = candidateDto.allowedOperations();
-    assertThat(actualAllowedOperations, containsInAnyOrder(CURATOR_CAN_RESET_APPROVAL.toArray()));
+    assertThat(actualAllowedOperations)
+        .containsExactlyInAnyOrderElementsOf(CURATOR_CAN_RESET_APPROVAL);
   }
 
   @Test
@@ -292,7 +289,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
     var request = createRequestWithCuratorAccess(candidate.identifier().toString());
     var candidateDto = handleRequest(request);
 
-    Assertions.assertThat(candidateDto.allowedOperations())
+    assertThat(candidateDto.allowedOperations())
         .containsExactlyInAnyOrderElementsOf(CURATOR_CAN_FINALIZE_APPROVAL);
   }
 
@@ -308,7 +305,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
     var request = createRequestWithCuratorAccess(candidate.identifier().toString());
     var candidateDto = handleRequest(request);
 
-    Assertions.assertThat(candidateDto.allowedOperations())
+    assertThat(candidateDto.allowedOperations())
         .containsExactlyInAnyOrderElementsOf(CURATOR_CAN_FINALIZE_APPROVAL);
   }
 
@@ -328,7 +325,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
             candidate.identifier().toString(), topLevelOrganization.id());
     var candidateDto = handleRequest(request);
 
-    Assertions.assertThat(candidateDto.allowedOperations())
+    assertThat(candidateDto.allowedOperations())
         .containsExactlyInAnyOrderElementsOf(CURATOR_CAN_FINALIZE_APPROVAL);
   }
 
