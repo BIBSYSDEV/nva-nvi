@@ -4,10 +4,7 @@ import static no.sikt.nva.nvi.common.dto.AllowedOperationFixtures.CURATOR_CAN_FI
 import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateByPublicationIdHandler.CANDIDATE_PUBLICATION_ID;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
@@ -22,7 +19,6 @@ import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.GatewayResponse;
 import org.apache.hc.core5.http.HttpStatus;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -79,7 +75,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandl
         createRequest(candidate.getPublicationId().toString(), randomOrganizationId, accessRight);
     var responseDto = handleRequest(request);
 
-    Assertions.assertThat(responseDto)
+    assertThat(responseDto)
         .extracting(CandidateDto::id, CandidateDto::publicationId)
         .containsExactly(expectedCandidateUri(candidate), candidate.getPublicationId());
   }
@@ -95,7 +91,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandl
     var request = createRequest(candidate.identifier().toString(), randomUri(), accessRight);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
-    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
+    assertEquals(HttpURLConnection.HTTP_UNAUTHORIZED, response.getStatusCode());
   }
 
   @Test
@@ -107,7 +103,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandl
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
     var responseDto = response.getBodyObject(CandidateDto.class);
 
-    Assertions.assertThat(responseDto)
+    assertThat(responseDto)
         .extracting(CandidateDto::id, CandidateDto::publicationId)
         .containsExactly(expectedCandidateUri(candidate), candidate.getPublicationId());
   }
@@ -146,7 +142,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandl
     var candidateDto = handleRequest(request);
 
     var actualAllowedOperations = candidateDto.allowedOperations();
-    assertThat(
-        actualAllowedOperations, containsInAnyOrder(CURATOR_CAN_FINALIZE_APPROVAL.toArray()));
+    assertThat(actualAllowedOperations)
+        .containsExactlyInAnyOrderElementsOf(CURATOR_CAN_FINALIZE_APPROVAL);
   }
 }

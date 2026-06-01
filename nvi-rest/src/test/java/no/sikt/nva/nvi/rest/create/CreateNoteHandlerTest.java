@@ -5,10 +5,7 @@ import static no.sikt.nva.nvi.common.dto.AllowedOperationFixtures.CURATOR_CAN_FI
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -34,8 +31,6 @@ import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.GatewayResponse;
-import org.assertj.core.api.Assertions;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.zalando.problem.Problem;
@@ -64,7 +59,7 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
         requestWithoutAccessRights(UUID.randomUUID(), randomNote()), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
-    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
+    assertEquals(HttpURLConnection.HTTP_UNAUTHORIZED, response.getStatusCode());
   }
 
   @Test
@@ -78,7 +73,7 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
             candidateService, noteService, viewingScopeValidatorReturningFalse, environment);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
-    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
+    assertEquals(HttpURLConnection.HTTP_UNAUTHORIZED, response.getStatusCode());
   }
 
   @Test
@@ -91,7 +86,7 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
-    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_BAD_REQUEST)));
+    assertEquals(HttpURLConnection.HTTP_BAD_REQUEST, response.getStatusCode());
   }
 
   @Test
@@ -105,8 +100,8 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
     var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateDto.class);
     var actualNote = gatewayResponse.getBodyObject(CandidateDto.class).notes().getFirst();
 
-    assertThat(actualNote.text(), is(equalTo(theNote)));
-    assertThat(actualNote.user(), is(equalTo(userName)));
+    assertEquals(theNote, actualNote.text());
+    assertEquals(userName, actualNote.user());
   }
 
   @Test
@@ -118,7 +113,7 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
-    assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_CONFLICT)));
+    assertEquals(HttpURLConnection.HTTP_CONFLICT, response.getStatusCode());
   }
 
   @Test
@@ -130,9 +125,8 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
     var failingHandler = setupHandlerThatFailsWithTransactionConflict();
     var response = handleRequestExpectingProblem(failingHandler, request);
 
-    Assertions.assertThat(response.getStatus().getStatusCode())
-        .isEqualTo(HttpURLConnection.HTTP_CONFLICT);
-    Assertions.assertThat(response.getDetail()).isEqualTo(TransactionException.USER_MESSAGE);
+    assertThat(response.getStatus().getStatusCode()).isEqualTo(HttpURLConnection.HTTP_CONFLICT);
+    assertThat(response.getDetail()).isEqualTo(TransactionException.USER_MESSAGE);
   }
 
   private CreateNoteHandler setupHandlerThatFailsWithTransactionConflict() {
@@ -151,7 +145,7 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
-    assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_BAD_METHOD)));
+    assertEquals(HttpURLConnection.HTTP_BAD_METHOD, response.getStatusCode());
   }
 
   @Test
@@ -197,8 +191,8 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
     var candidateDto = handleRequest(request);
 
     var actualAllowedOperations = candidateDto.allowedOperations();
-    assertThat(
-        actualAllowedOperations, containsInAnyOrder(CURATOR_CAN_FINALIZE_APPROVAL.toArray()));
+    assertThat(actualAllowedOperations)
+        .containsExactlyInAnyOrderElementsOf(CURATOR_CAN_FINALIZE_APPROVAL);
   }
 
   private static String getActualAssignee(CandidateDto response, URI institutionId) {
