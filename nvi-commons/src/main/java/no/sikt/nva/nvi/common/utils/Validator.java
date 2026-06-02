@@ -59,6 +59,7 @@ public final class Validator {
     }
   }
 
+  @SuppressWarnings("PMD.CyclomaticComplexity")
   public static void doesNotHaveNullValues(UpsertPeriodRequest upsertPeriodRequest) {
     if (isNull(upsertPeriodRequest.publishingYear())) {
       throw new IllegalArgumentException("Publishing year can not be null!");

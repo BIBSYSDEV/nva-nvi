@@ -449,7 +449,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
 
   @Nested
   @DisplayName("Test cases with dynamic test data")
-  class evaluateNviCandidatesWithDynamicTestData {
+  class EvaluateNviCandidatesWithDynamicTestData {
     private SampleExpandedPublicationFactory factory;
     private Organization nviOrganization;
     private PublicationDate publicationDate;

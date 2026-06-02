@@ -785,16 +785,6 @@ class IndexDocumentHandlerTest {
         constructPublicationBucketPath(extractResourceIdentifier(candidate)));
   }
 
-  private void setupResourceWithInvalidObjectInS3(JsonNode expandedResource, Candidate candidate) {
-    var invalidObject = objectMapper.createObjectNode();
-    invalidObject.put("invalidKey", "invalidValue");
-    ((ObjectNode) expandedResource).remove("topLevelOrganizations");
-    ((ObjectNode) expandedResource).set("topLevelOrganizations", invalidObject);
-    insertResourceInS3(
-        createResourceIndexDocument(expandedResource),
-        constructPublicationBucketPath(extractResourceIdentifier(candidate)));
-  }
-
   private JsonNode removeTopLevelOrganization(ObjectNode expandedResource) {
     expandedResource.remove("topLevelOrganizations");
     return expandedResource;

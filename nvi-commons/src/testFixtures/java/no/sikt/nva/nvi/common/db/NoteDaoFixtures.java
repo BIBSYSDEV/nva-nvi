@@ -8,7 +8,9 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.NoteDao.DbNote;
 
-public class NoteDaoFixtures {
+public final class NoteDaoFixtures {
+
+  private NoteDaoFixtures() {}
 
   public static NoteDao randomNoteDao() {
     return randomNoteDao(randomUUID());

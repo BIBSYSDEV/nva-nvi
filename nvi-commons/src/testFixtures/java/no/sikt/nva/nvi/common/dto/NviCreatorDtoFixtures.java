@@ -11,7 +11,9 @@ import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 
-public class NviCreatorDtoFixtures {
+public final class NviCreatorDtoFixtures {
+
+  private NviCreatorDtoFixtures() {}
 
   public static VerifiedNviCreatorDto verifiedNviCreatorDtoCopiedFrom(
       VerifiedNviCreatorDto originalCreator, Collection<URI> newAffiliations) {

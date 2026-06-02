@@ -58,6 +58,7 @@ public enum SearchAggregation {
     return searchAggregation != ORGANIZATION_APPROVAL_STATUS_AGGREGATION;
   }
 
+  @SuppressWarnings("PMD.CyclomaticComplexity")
   public Aggregation generateAggregation(String username, String topLevelCristinOrg) {
     return switch (this) {
       case NEW_AGG -> pendingAggregation(topLevelCristinOrg);

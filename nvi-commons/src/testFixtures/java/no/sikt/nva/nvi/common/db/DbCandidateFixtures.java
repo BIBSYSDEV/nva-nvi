@@ -21,7 +21,9 @@ import no.sikt.nva.nvi.common.db.model.DbPublicationDetails;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 
-public class DbCandidateFixtures {
+public final class DbCandidateFixtures {
+
+  private DbCandidateFixtures() {}
 
   public static DbCandidate randomCandidate() {
     return randomCandidateBuilder(true).build();

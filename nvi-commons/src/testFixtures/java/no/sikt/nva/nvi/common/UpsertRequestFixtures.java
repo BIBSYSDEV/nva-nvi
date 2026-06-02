@@ -22,7 +22,9 @@ import no.sikt.nva.nvi.common.model.UserInstance;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 
-public class UpsertRequestFixtures {
+public final class UpsertRequestFixtures {
+
+  private UpsertRequestFixtures() {}
 
   public static UpsertNonNviCandidateRequest createUpsertNonCandidateRequest(URI publicationId) {
     return new UpsertNonNviCandidateRequest(publicationId);

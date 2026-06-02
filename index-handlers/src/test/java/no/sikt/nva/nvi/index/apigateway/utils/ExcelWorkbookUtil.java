@@ -16,11 +16,13 @@ import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
-public class ExcelWorkbookUtil {
+public final class ExcelWorkbookUtil {
 
   private static final int FIRST_SHEET_INDEX = 0;
   private static final int FIRST_ROW_INDEX = 0;
   private static final int FIRST_DATA_ROW_INDEX = 1;
+
+  private ExcelWorkbookUtil() {}
 
   public static ExcelWorkbookGenerator fromInputStream(InputStream inputStream) {
     try (var workbook = new XSSFWorkbook(inputStream)) {

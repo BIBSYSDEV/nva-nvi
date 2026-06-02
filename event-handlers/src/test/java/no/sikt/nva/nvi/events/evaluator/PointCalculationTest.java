@@ -4,8 +4,18 @@ import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.dto.CustomerDtoFixtures.getDefaultCustomers;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDate;
+import static no.sikt.nva.nvi.test.TestConstants.ACADEMIC_ARTICLE;
+import static no.sikt.nva.nvi.test.TestConstants.ACADEMIC_CHAPTER;
+import static no.sikt.nva.nvi.test.TestConstants.ACADEMIC_COMMENTARY;
+import static no.sikt.nva.nvi.test.TestConstants.ACADEMIC_LITERATURE_REVIEW;
+import static no.sikt.nva.nvi.test.TestConstants.ACADEMIC_MONOGRAPH;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_SWEDEN;
+import static no.sikt.nva.nvi.test.TestConstants.JOURNAL_TYPE;
+import static no.sikt.nva.nvi.test.TestConstants.LEVEL_ONE;
+import static no.sikt.nva.nvi.test.TestConstants.LEVEL_TWO;
+import static no.sikt.nva.nvi.test.TestConstants.PUBLISHER_TYPE;
+import static no.sikt.nva.nvi.test.TestConstants.SERIES_TYPE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -28,10 +38,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-// FIXME: Suppressing AvoidDuplicateLiterals because I don't want to touch the test data now.
-// We should consider moving the test data to a separate CSV file or something later.
-@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class PointCalculationTest extends EvaluationTest {
+  private static final String SQUARE_ROOT_OF_ONE_HALF = "0.7071";
   private SampleExpandedPublicationFactory factory;
   private URI publicationId;
   private Organization nviOrganization1;
@@ -166,7 +174,7 @@ class PointCalculationTest extends EvaluationTest {
 
     handleEvaluation(publication);
 
-    var expectedPoints = asBigDecimal("0.7071");
+    var expectedPoints = asBigDecimal(SQUARE_ROOT_OF_ONE_HALF);
     assertCandidateHasPointsFromSingleInstitution(nviOrganization1.id(), expectedPoints);
   }
 
@@ -200,7 +208,7 @@ class PointCalculationTest extends EvaluationTest {
 
     handleEvaluation(publication);
 
-    var expectedPoints = asBigDecimal("0.7071");
+    var expectedPoints = asBigDecimal(SQUARE_ROOT_OF_ONE_HALF);
     assertCandidateHasPointsFromSingleInstitution(nviOrganization1.id(), expectedPoints);
     assertCandidateHasTotalPointsAndCreatorShares(expectedPoints, 2);
   }
@@ -283,7 +291,7 @@ class PointCalculationTest extends EvaluationTest {
             .withCreatorAffiliatedWith(nviOrganization1.hasPart().getFirst())
             .withCreatorAffiliatedWith(nonNviOrganization)
             .withCreatorAffiliatedWith(nviOrganization1.getTopLevelOrg(), nonNviOrganization)
-            .withPublicationChannel("Journal", "LevelOne");
+            .withPublicationChannel(JOURNAL_TYPE, LEVEL_ONE);
 
     handleEvaluation(publication);
 
@@ -328,121 +336,121 @@ class PointCalculationTest extends EvaluationTest {
     return Stream.of(
         // example from cristin calculations, publicationYear 2022
         new PointParameters(
-            "AcademicArticle",
-            "Journal",
-            "LevelOne",
+            ACADEMIC_ARTICLE,
+            JOURNAL_TYPE,
+            LEVEL_ONE,
             false,
             2,
-            asBigDecimal("0.7071"),
-            asBigDecimal("0.7071"),
+            asBigDecimal(SQUARE_ROOT_OF_ONE_HALF),
+            asBigDecimal(SQUARE_ROOT_OF_ONE_HALF),
             asBigDecimal("1.4142")));
   }
 
   private static Stream<PointParameters> twoCreatorsAffiliatedWithOneInstitutionPointProvider() {
     return Stream.of(
         new PointParameters(
-            "AcademicCommentary",
-            "Series",
-            "LevelOne",
+            ACADEMIC_COMMENTARY,
+            SERIES_TYPE,
+            LEVEL_ONE,
             false,
             3,
             asBigDecimal("4.0825"),
             asBigDecimal("2.8868"),
             asBigDecimal("6.9693")),
         new PointParameters(
-            "AcademicCommentary",
-            "Series",
-            "LevelTwo",
+            ACADEMIC_COMMENTARY,
+            SERIES_TYPE,
+            LEVEL_TWO,
             true,
             4,
             asBigDecimal("7.3539"),
             asBigDecimal("5.2000"),
             asBigDecimal("12.5539")),
         new PointParameters(
-            "AcademicCommentary",
-            "Series",
-            "LevelTwo",
+            ACADEMIC_COMMENTARY,
+            SERIES_TYPE,
+            LEVEL_TWO,
             false,
             4,
             asBigDecimal("5.6569"),
             asBigDecimal("4.0000"),
             asBigDecimal("9.6569")),
         new PointParameters(
-            "AcademicMonograph",
-            "Series",
-            "LevelOne",
+            ACADEMIC_MONOGRAPH,
+            SERIES_TYPE,
+            LEVEL_ONE,
             false,
             3,
             asBigDecimal("4.0825"),
             asBigDecimal("2.8868"),
             asBigDecimal("6.9693")),
         new PointParameters(
-            "AcademicMonograph",
-            "Series",
-            "LevelTwo",
+            ACADEMIC_MONOGRAPH,
+            SERIES_TYPE,
+            LEVEL_TWO,
             true,
             4,
             asBigDecimal("7.3539"),
             asBigDecimal("5.2000"),
             asBigDecimal("12.5539")),
         new PointParameters(
-            "AcademicMonograph",
-            "Series",
-            "LevelTwo",
+            ACADEMIC_MONOGRAPH,
+            SERIES_TYPE,
+            LEVEL_TWO,
             false,
             4,
             asBigDecimal("5.6569"),
             asBigDecimal("4.0000"),
             asBigDecimal("9.6569")),
         new PointParameters(
-            "AcademicChapter",
-            "Series",
-            "LevelOne",
+            ACADEMIC_CHAPTER,
+            SERIES_TYPE,
+            LEVEL_ONE,
             true,
             5,
             asBigDecimal("0.8222"),
             asBigDecimal("0.5814"),
             asBigDecimal("1.4036")),
         new PointParameters(
-            "AcademicChapter",
-            "Series",
-            "LevelTwo",
+            ACADEMIC_CHAPTER,
+            SERIES_TYPE,
+            LEVEL_TWO,
             false,
             5,
             asBigDecimal("1.8974"),
             asBigDecimal("1.3416"),
             asBigDecimal("3.2390")),
         new PointParameters(
-            "AcademicArticle",
-            "Journal",
-            "LevelOne",
+            ACADEMIC_ARTICLE,
+            JOURNAL_TYPE,
+            LEVEL_ONE,
             false,
             7,
             asBigDecimal("0.5345"),
             asBigDecimal("0.3780"),
             asBigDecimal("0.9125")),
         new PointParameters(
-            "AcademicArticle",
-            "Journal",
-            "LevelTwo",
+            ACADEMIC_ARTICLE,
+            JOURNAL_TYPE,
+            LEVEL_TWO,
             false,
             7,
             asBigDecimal("1.6036"),
             asBigDecimal("1.1339"),
             asBigDecimal("2.7375")),
         new PointParameters(
-            "AcademicLiteratureReview",
-            "Journal",
-            "LevelOne",
+            ACADEMIC_LITERATURE_REVIEW,
+            JOURNAL_TYPE,
+            LEVEL_ONE,
             true,
             8,
             asBigDecimal("0.6500"),
             asBigDecimal("0.4596"),
             asBigDecimal("1.1096")),
         new PointParameters(
-            "AcademicLiteratureReview",
-            "Journal",
-            "LevelTwo",
+            ACADEMIC_LITERATURE_REVIEW,
+            JOURNAL_TYPE,
+            LEVEL_TWO,
             true,
             8,
             asBigDecimal("1.9500"),
@@ -453,144 +461,144 @@ class PointCalculationTest extends EvaluationTest {
   private static Stream<PointParameters> singleCreatorSingleInstitutionPointProvider() {
     return Stream.of(
         new PointParameters(
-            "AcademicCommentary",
-            "Series",
-            "LevelOne",
+            ACADEMIC_COMMENTARY,
+            SERIES_TYPE,
+            LEVEL_ONE,
             false,
             1,
             asBigDecimal("5"),
             null,
             asBigDecimal("5")),
         new PointParameters(
-            "AcademicCommentary",
-            "Series",
-            "LevelTwo",
+            ACADEMIC_COMMENTARY,
+            SERIES_TYPE,
+            LEVEL_TWO,
             false,
             1,
             asBigDecimal("8"),
             null,
             asBigDecimal("8")),
         new PointParameters(
-            "AcademicCommentary",
-            "Publisher",
-            "LevelOne",
+            ACADEMIC_COMMENTARY,
+            PUBLISHER_TYPE,
+            LEVEL_ONE,
             false,
             1,
             asBigDecimal("5"),
             null,
             asBigDecimal("5")),
         new PointParameters(
-            "AcademicCommentary",
-            "Publisher",
-            "LevelTwo",
+            ACADEMIC_COMMENTARY,
+            PUBLISHER_TYPE,
+            LEVEL_TWO,
             false,
             1,
             asBigDecimal("8"),
             null,
             asBigDecimal("8")),
         new PointParameters(
-            "AcademicMonograph",
-            "Series",
-            "LevelOne",
+            ACADEMIC_MONOGRAPH,
+            SERIES_TYPE,
+            LEVEL_ONE,
             false,
             1,
             asBigDecimal("5"),
             null,
             asBigDecimal("5")),
         new PointParameters(
-            "AcademicMonograph",
-            "Series",
-            "LevelTwo",
+            ACADEMIC_MONOGRAPH,
+            SERIES_TYPE,
+            LEVEL_TWO,
             false,
             1,
             asBigDecimal("8"),
             null,
             asBigDecimal("8")),
         new PointParameters(
-            "AcademicMonograph",
-            "Publisher",
-            "LevelOne",
+            ACADEMIC_MONOGRAPH,
+            PUBLISHER_TYPE,
+            LEVEL_ONE,
             false,
             1,
             asBigDecimal("5"),
             null,
             asBigDecimal("5")),
         new PointParameters(
-            "AcademicMonograph",
-            "Publisher",
-            "LevelTwo",
+            ACADEMIC_MONOGRAPH,
+            PUBLISHER_TYPE,
+            LEVEL_TWO,
             false,
             1,
             asBigDecimal("8"),
             null,
             asBigDecimal("8")),
         new PointParameters(
-            "AcademicChapter",
-            "Series",
-            "LevelOne",
+            ACADEMIC_CHAPTER,
+            SERIES_TYPE,
+            LEVEL_ONE,
             false,
             1,
             asBigDecimal("1"),
             null,
             asBigDecimal("1")),
         new PointParameters(
-            "AcademicChapter",
-            "Series",
-            "LevelTwo",
+            ACADEMIC_CHAPTER,
+            SERIES_TYPE,
+            LEVEL_TWO,
             false,
             1,
             asBigDecimal("3"),
             null,
             asBigDecimal("3")),
         new PointParameters(
-            "AcademicChapter",
-            "Publisher",
-            "LevelOne",
+            ACADEMIC_CHAPTER,
+            PUBLISHER_TYPE,
+            LEVEL_ONE,
             false,
             1,
             asBigDecimal("0.7"),
             null,
             asBigDecimal("0.7")),
         new PointParameters(
-            "AcademicChapter",
-            "Publisher",
-            "LevelTwo",
+            ACADEMIC_CHAPTER,
+            PUBLISHER_TYPE,
+            LEVEL_TWO,
             false,
             1,
             asBigDecimal("1"),
             null,
             asBigDecimal("1")),
         new PointParameters(
-            "AcademicArticle",
-            "Journal",
-            "LevelOne",
+            ACADEMIC_ARTICLE,
+            JOURNAL_TYPE,
+            LEVEL_ONE,
             false,
             1,
             asBigDecimal("1"),
             null,
             asBigDecimal("1")),
         new PointParameters(
-            "AcademicArticle",
-            "Journal",
-            "LevelTwo",
+            ACADEMIC_ARTICLE,
+            JOURNAL_TYPE,
+            LEVEL_TWO,
             false,
             1,
             asBigDecimal("3"),
             null,
             asBigDecimal("3")),
         new PointParameters(
-            "AcademicLiteratureReview",
-            "Journal",
-            "LevelOne",
+            ACADEMIC_LITERATURE_REVIEW,
+            JOURNAL_TYPE,
+            LEVEL_ONE,
             false,
             1,
             asBigDecimal("1"),
             null,
             asBigDecimal("1")),
         new PointParameters(
-            "AcademicLiteratureReview",
-            "Journal",
-            "LevelTwo",
+            ACADEMIC_LITERATURE_REVIEW,
+            JOURNAL_TYPE,
+            LEVEL_TWO,
             false,
             1,
             asBigDecimal("3"),

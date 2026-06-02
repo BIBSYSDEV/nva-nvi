@@ -15,7 +15,9 @@ import org.opensearch.client.opensearch.core.search.HitsMetadata;
 import org.opensearch.client.opensearch.core.search.TotalHits;
 import org.opensearch.client.opensearch.core.search.TotalHitsRelation;
 
-public class MockOpenSearchUtil {
+public final class MockOpenSearchUtil {
+
+  private MockOpenSearchUtil() {}
 
   public static SearchResponse<NviCandidateIndexDocument> createSearchResponse(
       NviCandidateIndexDocument document) {

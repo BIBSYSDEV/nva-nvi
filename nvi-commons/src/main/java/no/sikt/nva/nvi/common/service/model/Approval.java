@@ -146,6 +146,7 @@ public record Approval(
     }
   }
 
+  @SuppressWarnings("PMD.CyclomaticComplexity")
   private void validateUpdateStatusRequest(UpdateStatusRequest request) {
     status.validateStateTransition(request.approvalStatus());
     if (isNull(request.institutionId())) {

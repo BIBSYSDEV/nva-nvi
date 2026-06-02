@@ -21,8 +21,10 @@ import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import nva.commons.core.paths.UriWrapper;
 
-public class CandidateDaoFixtures {
+public final class CandidateDaoFixtures {
   private static final String UUID_SEPARATOR = "-";
+
+  private CandidateDaoFixtures() {}
 
   public static CandidateDao randomApplicableCandidateDao() {
     return CandidateDao.builder()
