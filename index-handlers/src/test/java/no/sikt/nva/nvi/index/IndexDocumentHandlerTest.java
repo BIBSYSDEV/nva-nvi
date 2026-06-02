@@ -89,6 +89,7 @@ import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.document.NviContributor;
 import no.sikt.nva.nvi.index.model.document.OrganizationType;
 import no.sikt.nva.nvi.index.model.document.ReportingPeriod;
+import no.sikt.nva.nvi.index.utils.JsonNodeIndexDocumentGeneratorFactory;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeContext;
@@ -159,11 +160,11 @@ class IndexDocumentHandlerTest {
     sqsClient = new FakeSqsClient();
     handler =
         new IndexDocumentHandler(
-            new S3StorageReader(s3Client, BUCKET_NAME),
             new S3StorageWriter(s3Client, BUCKET_NAME),
             sqsClient,
             candidateService,
-            uriRetriever,
+            new JsonNodeIndexDocumentGeneratorFactory(
+                new S3StorageReader(s3Client, BUCKET_NAME), uriRetriever, ENVIRONMENT),
             ENVIRONMENT);
   }
 
@@ -511,11 +512,11 @@ class IndexDocumentHandlerTest {
     var mockedSqsClient = setupFailingSqsClient(candidateToFail);
     var handler =
         new IndexDocumentHandler(
-            new S3StorageReader(s3Client, BUCKET_NAME),
             new S3StorageWriter(s3Client, BUCKET_NAME),
             mockedSqsClient,
             candidateService,
-            uriRetriever,
+            new JsonNodeIndexDocumentGeneratorFactory(
+                new S3StorageReader(s3Client, BUCKET_NAME), uriRetriever, ENVIRONMENT),
             ENVIRONMENT);
     var event = createEvent(candidateToFail.identifier(), candidateToSucceed.identifier());
     assertDoesNotThrow(() -> handler.handleRequest(event, CONTEXT));
@@ -559,11 +560,11 @@ class IndexDocumentHandlerTest {
     var s3Writer = mockS3WriterFailingForOneCandidate(candidateToSucceed, candidateToFail);
     var handler =
         new IndexDocumentHandler(
-            new S3StorageReader(s3Client, BUCKET_NAME),
             s3Writer,
             sqsClient,
             candidateService,
-            uriRetriever,
+            new JsonNodeIndexDocumentGeneratorFactory(
+                new S3StorageReader(s3Client, BUCKET_NAME), uriRetriever, ENVIRONMENT),
             ENVIRONMENT);
     assertDoesNotThrow(() -> handler.handleRequest(event, CONTEXT));
   }
