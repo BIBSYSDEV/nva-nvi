@@ -10,6 +10,7 @@ import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.NVI_CANDIDATES_FOLDER
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
+import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -20,26 +21,22 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
 import no.sikt.nva.nvi.common.client.model.Organization;
+import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.dto.PublicationDetailsDtoBuilder;
 import no.sikt.nva.nvi.common.model.Sector;
-import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.index.IndexDocumentHandler;
 import no.sikt.nva.nvi.index.IndexDocumentScenario;
-import no.sikt.nva.nvi.index.aws.S3StorageWriter;
 import no.sikt.nva.nvi.index.model.document.ApprovalView;
 import no.sikt.nva.nvi.index.model.document.IndexDocumentWithConsumptionAttributes;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
-import no.sikt.nva.nvi.test.uriretriever.CristinOrganizationFixtures;
-import no.sikt.nva.nvi.test.uriretriever.FakeCristinOrganization;
-import no.sikt.nva.nvi.test.uriretriever.FakeUriRetriever;
+import no.sikt.nva.nvi.index.model.document.NviContributor;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.stubs.FakeS3Client;
@@ -53,56 +50,38 @@ import org.junit.jupiter.params.provider.ValueSource;
 import software.amazon.awssdk.services.s3.S3Client;
 
 /**
- * Handler-level tests exercising the {@link IndexDocumentGenerator} contract through the public
- * {@link IndexDocumentHandler} entry point. The {@link #handlerFor(IndexDocumentScenario)} method
- * is the swap point: replacing its body with code that wires in a different generator
- * implementation lets us run the same test suite against any {@code IndexDocumentGenerator}.
+ * Shared test surface for any {@link IndexDocumentGenerator} implementation. Each concrete subclass
+ * provides its own {@link #handlerFor(IndexDocumentScenario)} that wires the scenario into an
+ * {@link IndexDocumentHandler} using whichever generator it wants to exercise. The test cases
+ * assert observable properties of the persisted document so they're agnostic to how the generator
+ * built it.
  */
-class IndexDocumentGeneratorTest {
+abstract class IndexDocumentGeneratorTestBase {
 
-  private static final Environment ENVIRONMENT = getIndexDocumentHandlerEnvironment();
-  private static final String BUCKET_NAME = ENVIRONMENT.readEnv("EXPANDED_RESOURCES_BUCKET");
-  private static final Context CONTEXT = new FakeContext();
-  private static final String CRISTIN_VERSION = "; version=2023-05-26";
-  private static final String MEDIA_TYPE_JSON_V2 = "application/json" + CRISTIN_VERSION;
-  private static final int HTTP_OK = 200;
+  protected static final Environment ENVIRONMENT = getIndexDocumentHandlerEnvironment();
+  protected static final String BUCKET_NAME = ENVIRONMENT.readEnv("EXPANDED_RESOURCES_BUCKET");
+  protected static final Context CONTEXT = new FakeContext();
 
-  private final S3Client s3Client = new FakeS3Client();
-  private S3Driver s3Reader;
-  private S3Driver s3Writer;
-  private CandidateService candidateService;
-  private FakeUriRetriever uriRetriever;
-  private IndexDocumentHandler handler;
+  protected final S3Client s3Client = new FakeS3Client();
+  protected S3Driver s3Writer;
+  protected CandidateService candidateService;
+  protected CandidateRepository candidateRepository;
 
   @BeforeEach
-  void setup() {
+  void baseSetup() {
     var testScenario = new TestScenario();
     setupOpenPeriod(testScenario, CURRENT_YEAR);
     candidateService = testScenario.getCandidateService();
-    s3Reader = new S3Driver(s3Client, BUCKET_NAME);
+    candidateRepository = testScenario.getCandidateRepository();
     s3Writer = new S3Driver(s3Client, BUCKET_NAME);
-    uriRetriever = FakeUriRetriever.newInstance();
-    handler =
-        new IndexDocumentHandler(
-            new S3StorageReader(s3Client, BUCKET_NAME),
-            new S3StorageWriter(s3Client, BUCKET_NAME),
-            new FakeSqsClient(),
-            candidateService,
-            uriRetriever,
-            ENVIRONMENT);
   }
 
   /**
-   * Swap point. Wires the scenario into the handler in whatever way the mapper-under-test needs.
-   * Today this uploads the expanded resource to S3 and registers stub Cristin responses on the fake
-   * UriRetriever; the new SPARQL-based mapper will instead receive a {@code PublicationDto} via a
-   * {@code PublicationLoaderService}. The same scenario object is the source of truth either way.
+   * Swap point. Wires the scenario into an {@link IndexDocumentHandler} in whatever way the
+   * mapper-under-test needs. The returned handler must be ready to receive an SQS event for the
+   * scenario's candidate.
    */
-  private IndexDocumentHandler handlerFor(IndexDocumentScenario scenario) {
-    uploadExpandedResourceToS3(scenario);
-    registerOrganizationsOnUriRetriever(scenario);
-    return handler;
-  }
+  protected abstract IndexDocumentHandler handlerFor(IndexDocumentScenario scenario);
 
   @ParameterizedTest
   @EnumSource(value = Sector.class, names = "UNKNOWN", mode = EnumSource.Mode.EXCLUDE)
@@ -148,6 +127,19 @@ class IndexDocumentGeneratorTest {
         .containsExactlyInAnyOrderElementsOf(expectedHandles);
   }
 
+  @Test
+  void shouldIncludeUnverifiedNviCreatorInNviContributors() {
+    var institutionId = randomUri();
+    var expectedName = randomString();
+    var candidate = setupCandidateWithUnverifiedCreator(institutionId, expectedName);
+
+    var document = generateAndReadDocument(candidate);
+
+    assertThat(document.publicationDetails().nviContributors())
+        .extracting(NviContributor::name)
+        .contains(expectedName);
+  }
+
   @ParameterizedTest
   @ValueSource(booleans = {true, false})
   void shouldPopulateRboInstitutionInIndexDocumentApprovalView(boolean rboInstitution) {
@@ -161,61 +153,30 @@ class IndexDocumentGeneratorTest {
 
   // --- helpers ---
 
-  private NviCandidateIndexDocument generateAndReadDocument(Candidate candidate) {
+  protected NviCandidateIndexDocument generateAndReadDocument(Candidate candidate) {
     var scenario = IndexDocumentScenario.forCandidate(candidate);
     var wiredHandler = handlerFor(scenario);
     wiredHandler.handleRequest(createEvent(candidate.identifier()), CONTEXT);
     return readPersistedDocument(candidate).indexDocument();
   }
 
-  private IndexDocumentWithConsumptionAttributes readPersistedDocument(Candidate candidate) {
+  protected IndexDocumentWithConsumptionAttributes readPersistedDocument(Candidate candidate) {
     var json = s3Writer.getFile(persistedDocumentPath(candidate));
     return attempt(
             () -> dtoObjectMapper.readValue(json, IndexDocumentWithConsumptionAttributes.class))
         .orElseThrow();
   }
 
-  private static UnixPath persistedDocumentPath(Candidate candidate) {
+  protected static UnixPath persistedDocumentPath(Candidate candidate) {
     return UnixPath.of(NVI_CANDIDATES_FOLDER)
         .addChild(candidate.identifier().toString() + GZIP_ENDING);
   }
 
-  private static ApprovalView approvalFor(NviCandidateIndexDocument document, URI institutionId) {
+  protected static ApprovalView approvalFor(NviCandidateIndexDocument document, URI institutionId) {
     return document.approvals().stream()
         .filter(approval -> approval.institutionId().equals(institutionId))
         .findFirst()
         .orElseThrow();
-  }
-
-  private void uploadExpandedResourceToS3(IndexDocumentScenario scenario) {
-    var resourceIdentifier =
-        scenario.candidate().publicationDetails().publicationIdentifier().toString();
-    var resourceIndexDocument = dtoObjectMapper.createObjectNode();
-    resourceIndexDocument.set("body", scenario.expandedResource());
-    var path = TestScenario.constructPublicationBucketPath(resourceIdentifier);
-    attempt(
-            () ->
-                s3Reader.insertFile(
-                    path, dtoObjectMapper.writeValueAsString(resourceIndexDocument)))
-        .orElseThrow();
-  }
-
-  private void registerOrganizationsOnUriRetriever(IndexDocumentScenario scenario) {
-    scenario
-        .candidate()
-        .publicationDetails()
-        .getNviCreatorAffiliations()
-        .forEach(this::registerOrganizationHierarchy);
-  }
-
-  private void registerOrganizationHierarchy(URI affiliationId) {
-    var leaf = FakeCristinOrganization.asLeafNode(affiliationId);
-    var orgWithSubunits =
-        CristinOrganizationFixtures.randomCristinOrganization(affiliationId)
-            .withHasPart(List.of(leaf))
-            .build();
-    uriRetriever.registerResponse(
-        affiliationId, HTTP_OK, MEDIA_TYPE_JSON_V2, orgWithSubunits.toJsonString());
   }
 
   private Candidate setupCandidateWithSector(URI institutionId, Sector sector) {
@@ -254,6 +215,17 @@ class IndexDocumentGeneratorTest {
         new CreatorAffiliationPoints(verifiedCreatorId, institutionId, creatorPoints);
     return new InstitutionPoints(
         institutionId, points, sector, rboInstitution, List.of(creatorAffiliationPoints));
+  }
+
+  private Candidate setupCandidateWithUnverifiedCreator(URI institutionId, String creatorName) {
+    var unverifiedCreator =
+        no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto.builder()
+            .withName(creatorName)
+            .withAffiliations(List.of(institutionId))
+            .build();
+    var request = randomUpsertRequestBuilder().withNviCreators(unverifiedCreator).build();
+    candidateService.upsertCandidate(request);
+    return candidateService.getCandidateByPublicationId(request.publicationId());
   }
 
   private Candidate setupCandidateWithHandles(Set<URI> handles) {

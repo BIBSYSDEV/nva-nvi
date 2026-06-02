@@ -33,6 +33,7 @@ dependencies {
     implementation(nvaCatalog.slf4j.api)
     implementation(nvaLibs.s3)
     implementation(nvaLibs.secrets)
+    implementation(project(':publication-service'))
     implementation(project(':rdf'))
     runtimeOnly(nvaCatalog.aws.apache.client)
     runtimeOnly(nvaCatalog.log4j.api)
