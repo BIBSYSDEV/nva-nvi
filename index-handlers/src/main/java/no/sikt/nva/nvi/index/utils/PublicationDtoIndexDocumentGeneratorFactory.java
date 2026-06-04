@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.index.utils;
 
-import no.sikt.nva.nvi.publication.PublicationLoaderService;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.publication.PublicationLoaderService;
 import nva.commons.core.Environment;
 
 /**

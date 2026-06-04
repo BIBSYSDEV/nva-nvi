@@ -3,11 +3,14 @@ plugins {
 }
 
 dependencies {
+    api(nvaCatalog.jackson.annotations)
+    api(nvaCatalog.jackson.core)
     api(nvaCatalog.jackson.databind)
     api(nvaLibs.auth)
     api(nvaLibs.identifiers)
     api(nvaLibs.json)
     implementation(nvaCatalog.datafaker)
+    implementation(nvaCatalog.slf4j.api)
     implementation(nvaLibs.core)
     implementation(nvaLibs.testutils)
     runtimeOnly(nvaCatalog.junit.jupiter.engine)

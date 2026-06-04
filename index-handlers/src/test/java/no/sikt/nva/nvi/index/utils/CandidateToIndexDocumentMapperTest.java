@@ -19,11 +19,11 @@ import no.sikt.nva.nvi.common.dto.PublicationDto;
 import no.sikt.nva.nvi.common.model.ChannelType;
 import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
-import no.sikt.nva.nvi.publication.PublicationLoaderService;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.IndexDocumentHandler;
 import no.sikt.nva.nvi.index.IndexDocumentScenario;
 import no.sikt.nva.nvi.index.aws.S3StorageWriter;
+import no.sikt.nva.nvi.publication.PublicationLoaderService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
