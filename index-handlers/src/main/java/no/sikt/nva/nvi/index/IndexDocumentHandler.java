@@ -23,8 +23,8 @@ import no.sikt.nva.nvi.index.aws.S3StorageWriter;
 import no.sikt.nva.nvi.index.model.PersistedIndexDocumentMessage;
 import no.sikt.nva.nvi.index.model.document.IndexDocumentWithConsumptionAttributes;
 import no.sikt.nva.nvi.index.utils.IndexDocumentGeneratorFactory;
-import no.sikt.nva.nvi.index.utils.JsonNodeIndexDocumentGeneratorFactory;
-import no.unit.nva.auth.uriretriever.UriRetriever;
+import no.sikt.nva.nvi.index.utils.PublicationDtoIndexDocumentGeneratorFactory;
+import no.sikt.nva.nvi.publication.PublicationLoaderService;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.attempt.Failure;
@@ -62,9 +62,9 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
         new S3StorageWriter(new Environment().readEnv(EXPANDED_RESOURCES_BUCKET)),
         new NviQueueClient(),
         CandidateService.defaultCandidateService(),
-        new JsonNodeIndexDocumentGeneratorFactory(
-            new S3StorageReader(new Environment().readEnv(EXPANDED_RESOURCES_BUCKET)),
-            new UriRetriever(),
+        new PublicationDtoIndexDocumentGeneratorFactory(
+            new PublicationLoaderService(
+                new S3StorageReader(new Environment().readEnv(EXPANDED_RESOURCES_BUCKET))),
             new Environment()),
         new Environment());
   }
