@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.publication;
+package no.sikt.nva.nvi.rdf;
 
 @FunctionalInterface
 public interface GraphValidable {

@@ -1,11 +1,12 @@
 PREFIX : <https://nva.sikt.no/ontology/publication#>
-# This builds a flattened and simplified version of an expanded publication.
+# Structural normalization of an expanded NVA publication.
+# This flattens and simplifies the publication graph into the NVI shape, without applying any
+# NVI policy filters (those belong in nvi_projection.rq).
 # We assume the JSON contains a single publication object, and we extract the relevant fields.
 # In order to handle edge-cases and to guard against missing data, we use tricks like
 # OPTIONAL, COALESCE, and SAMPLE to ensure the output is as complete as possible.
 # This means that even if a field is set as OPTIONAL in this query, it probably should never be
 # missing in production data.
-# NOTE: The query filters out fields/values that are assumed to be invalid for an NVI candidate.
 
 CONSTRUCT {
   # Build a simplified version of the main publication object
@@ -17,11 +18,7 @@ CONSTRUCT {
   :abstractText ?abstract ;
   :pageCount ?pageCount ;
   :publicationDate ?date ;
-  :publicationType ?instanceType ;
   :parentPublicationType ?parentInstanceType ;
-  :isApplicable ?isApplicable ;
-  :isInternationalCollaboration ?isInternationalCollaboration ;
-  :publicationChannel ?channel ;
   :contributor ?personId ;
   :topLevelOrganization ?topLevelOrganization ;
   :modifiedDate ?modifiedDate ;
@@ -33,16 +30,6 @@ CONSTRUCT {
   :first ?firstPage ;
   :last ?lastPage ;
   :total ?numberOfPages  .
-
-  # Include publication channels
-  ?channel a :PublicationChannel ;
-  :channelType ?channelType ;
-  :identifier ?channelIdentifier ;
-  :name ?channelName ;
-  :scientificValue ?scientificValue ;
-  :year ?channelYear ;
-  :onlineIssn ?onlineIssn ;
-  :printIssn ?printIssn .
 
   # Include the publication date
   ?date a :PublicationDate ;
@@ -98,35 +85,7 @@ WHERE {
     OPTIONAL { ?date :month ?month }
     OPTIONAL { ?date :day ?day }
   } UNION {
-    # Find all publication channels
-    ?publication :entityDescription ?entityDescription .
-    ?entityDescription :reference ?reference .
-
-    ?reference a :Reference ;
-    :publicationInstance ?instance .
-    ?instance a ?instanceType .
-    VALUES ?journalPublications {
-      :AcademicArticle :AcademicLiteratureReview
-    }
-    VALUES ?nonJournalPublications {
-      :AcademicMonograph :AcademicCommentary :AcademicChapter
-    }
-    # In rare cases a channel can be listed as both a Journal and a Series, but only one of these
-    # is relevant for a given publication type.
-    # This filter should ensure that we only keep relevant channel types.
-    ?channel a ?channelType .
-    FILTER (
-    ( ?channelType = :Journal && ?instanceType IN (?journalPublications) ) ||
-    ( ?channelType IN (:Series, :Publisher) && ?instanceType IN (?nonJournalPublications) )
-    )
-
-    OPTIONAL { ?channel :scientificValue ?scientificValue }
-    OPTIONAL { ?channel :name ?channelName }
-    OPTIONAL { ?channel :identifier ?channelIdentifier }
-    OPTIONAL { ?channel :year ?channelYear }
-    OPTIONAL { ?channel :onlineIssn ?onlineIssn }
-    OPTIONAL { ?channel :printIssn ?printIssn }
-  } UNION {
+    # Find ISBNs and the parent publication type
     ?publication :entityDescription ?entityDescription .
     ?entityDescription :reference ?reference .
 
@@ -146,47 +105,6 @@ WHERE {
       ?publicationContext :entityDescription/:reference/:publicationInstance ?parentInstance .
       ?parentInstance a ?parentInstanceType .
     }
-  } UNION {
-    # Check whether the publication is 'applicable', i.e. can be an NVI candidate
-    ?publication a :Publication ;
-    :status ?status .
-
-    ?publication :entityDescription ?entityDescription .
-    ?entityDescription :reference ?reference .
-
-    # Find publication type (if applicable)
-    VALUES ?applicablePublicationType {
-      :AcademicMonograph :AcademicCommentary :AcademicChapter :AcademicArticle :AcademicLiteratureReview
-    }
-    ?reference a :Reference ;
-    :publicationInstance ?instance .
-    ?instance a ?instanceType .
-
-    # Filter on valid status and publication type
-    FILTER (?status = :PUBLISHED)
-    FILTER (?instanceType = ?applicablePublicationType)
-
-    # Reject revised publications
-    OPTIONAL { ?reference :publicationContext ?publicationContext . }
-    OPTIONAL { ?publicationContext :entityDescription/:reference/:publicationContext ?nestedPublicationContext . }
-    FILTER NOT EXISTS { ?publicationContext :revision "Revised" . }
-    FILTER NOT EXISTS { ?nestedPublicationContext :revision "Revised" . }
-
-    # If the publication is part of a series with a scientific value set, use that for filtering.
-    # Otherwise, check other channels for a valid scientific value.
-    OPTIONAL {
-      ?series a :Series ;
-      :scientificValue ?seriesLevel .
-      FILTER (?seriesLevel != "Unassigned")
-    }
-    BIND(COALESCE(?series, ?channel) AS ?channelForLevel)
-
-    # Filter on the scientific value of the channel
-    BIND(EXISTS {
-      VALUES ?applicableLevel {"LevelOne" "LevelTwo"}
-      ?channelForLevel :scientificValue ?scientificLevel .
-      FILTER(?scientificLevel = ?applicableLevel)
-    } AS ?isApplicable)
   } UNION {
     # Find all organizations
     ?organization a :Organization .
@@ -237,17 +155,6 @@ WHERE {
         FILTER(isIRI(?topLevelOrganization))
         FILTER NOT EXISTS { ?topLevelOrganization :partOf ?parent }
       }
-    }
-
-    # Check if any contributor is a Creator with a non-Norwegian affiliation.
-    # If so, the publication counts as an international collaboration.
-    OPTIONAL {
-      BIND(EXISTS {
-        ?contributor :role [ a :Creator ] ;
-        :affiliation [ :country ?countryCode ] .
-        FILTER (?countryCode != "NO")
-      } AS ?isInternationalCollaboration
-      )
     }
   } UNION {
     ?publication :handle ?handle .

@@ -1,0 +1,121 @@
+PREFIX : <https://nva.sikt.no/ontology/publication#>
+# NVI-relevant projections over an expanded NVA publication.
+# These are graph-shaped derivations that determine how the publication relates to NVI:
+# which channel applies to the publication instance type (channel-for-instance pairing),
+# whether the channel qualifies (applicability), and whether the publication is an
+# international collaboration (a non-Norwegian creator affiliation).
+# This query reads the same source graph as nva_normalization.rq; the constructed triples are
+# merged into the same NVI graph.
+
+CONSTRUCT {
+  ?publication a :Publication ;
+  :status ?status ;
+  :publicationType ?instanceType ;
+  :isApplicable ?isApplicable ;
+  :isInternationalCollaboration ?isInternationalCollaboration ;
+  :publicationChannel ?channel .
+
+  # Include the publication channel that applies to the publication type
+  ?channel a :PublicationChannel ;
+  :channelType ?channelType ;
+  :identifier ?channelIdentifier ;
+  :name ?channelName ;
+  :scientificValue ?scientificValue ;
+  :year ?channelYear ;
+  :onlineIssn ?onlineIssn ;
+  :printIssn ?printIssn .
+}
+
+WHERE {
+  ?publication a :Publication .
+  ?publication :status ?status .
+  {
+    # Pair the publication with the channel that is relevant for its instance type
+    ?publication :entityDescription ?entityDescription .
+    ?entityDescription :reference ?reference .
+
+    ?reference a :Reference ;
+    :publicationInstance ?instance .
+    ?instance a ?instanceType .
+    VALUES ?journalPublications {
+      :AcademicArticle :AcademicLiteratureReview
+    }
+    VALUES ?nonJournalPublications {
+      :AcademicMonograph :AcademicCommentary :AcademicChapter
+    }
+    # In rare cases a channel can be listed as both a Journal and a Series, but only one of these
+    # is relevant for a given publication type.
+    # This filter should ensure that we only keep relevant channel types.
+    ?channel a ?channelType .
+    FILTER (
+    ( ?channelType = :Journal && ?instanceType IN (?journalPublications) ) ||
+    ( ?channelType IN (:Series, :Publisher) && ?instanceType IN (?nonJournalPublications) )
+    )
+
+    OPTIONAL { ?channel :scientificValue ?scientificValue }
+    OPTIONAL { ?channel :name ?channelName }
+    OPTIONAL { ?channel :identifier ?channelIdentifier }
+    OPTIONAL { ?channel :year ?channelYear }
+    OPTIONAL { ?channel :onlineIssn ?onlineIssn }
+    OPTIONAL { ?channel :printIssn ?printIssn }
+  } UNION {
+    # Check whether the publication is 'applicable', i.e. can be an NVI candidate
+    ?publication a :Publication ;
+    :status ?status .
+
+    ?publication :entityDescription ?entityDescription .
+    ?entityDescription :reference ?reference .
+
+    # Find publication type (if applicable)
+    VALUES ?applicablePublicationType {
+      :AcademicMonograph :AcademicCommentary :AcademicChapter :AcademicArticle :AcademicLiteratureReview
+    }
+    ?reference a :Reference ;
+    :publicationInstance ?instance .
+    ?instance a ?instanceType .
+
+    # Filter on valid status and publication type
+    FILTER (?status = :PUBLISHED)
+    FILTER (?instanceType = ?applicablePublicationType)
+
+    # Reject revised publications
+    OPTIONAL { ?reference :publicationContext ?publicationContext . }
+    OPTIONAL { ?publicationContext :entityDescription/:reference/:publicationContext ?nestedPublicationContext . }
+    FILTER NOT EXISTS { ?publicationContext :revision "Revised" . }
+    FILTER NOT EXISTS { ?nestedPublicationContext :revision "Revised" . }
+
+    # If the publication is part of a series with a scientific value set, use that for filtering.
+    # Otherwise, check other channels for a valid scientific value.
+    OPTIONAL {
+      ?series a :Series ;
+      :scientificValue ?seriesLevel .
+      FILTER (?seriesLevel != "Unassigned")
+    }
+    BIND(COALESCE(?series, ?channel) AS ?channelForLevel)
+
+    # Filter on the scientific value of the channel
+    BIND(EXISTS {
+      VALUES ?applicableLevel {"LevelOne" "LevelTwo"}
+      ?channelForLevel :scientificValue ?scientificLevel .
+      FILTER(?scientificLevel = ?applicableLevel)
+    } AS ?isApplicable)
+  } UNION {
+    # Check if any contributor is a Creator with a non-Norwegian affiliation.
+    # If so, the publication counts as an international collaboration.
+    ?publication :entityDescription ?entityDescription .
+    ?entityDescription :contributor ?contributor .
+
+    ?contributor :identity ?personId ;
+    :role ?role .
+    ?role a ?roleType .
+
+    OPTIONAL {
+      BIND(EXISTS {
+        ?contributor :role [ a :Creator ] ;
+        :affiliation [ :country ?countryCode ] .
+        FILTER (?countryCode != "NO")
+      } AS ?isInternationalCollaboration
+      )
+    }
+  }
+}
