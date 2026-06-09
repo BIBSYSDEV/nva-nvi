@@ -1,4 +1,5 @@
 PREFIX : <https://nva.sikt.no/ontology/publication#>
+
 # Structural normalization of an expanded NVA publication.
 # This flattens and simplifies the publication graph into the NVI shape, without applying any
 # NVI policy filters (those belong in nvi_projection.rq).
@@ -11,46 +12,42 @@ PREFIX : <https://nva.sikt.no/ontology/publication#>
 CONSTRUCT {
   # Build a simplified version of the main publication object
   ?publication a :Publication ;
-  :identifier ?identifier ;
-  :title ?title ;
-  :status ?status ;
-  :language ?language ;
-  :abstractText ?abstract ;
-  :pageCount ?pageCount ;
-  :publicationDate ?date ;
-  :parentPublicationType ?parentInstanceType ;
-  :contributor ?personId ;
-  :topLevelOrganization ?topLevelOrganization ;
-  :modifiedDate ?modifiedDate ;
-  :isbn ?isbnList ;
-  :handle ?handle .
-
+               :identifier ?identifier ;
+               :title ?title ;
+               :status ?status ;
+               :language ?language ;
+               :abstractText ?abstract ;
+               :pageCount ?pageCount ;
+               :publicationDate ?date ;
+               :parentPublicationType ?parentInstanceType ;
+               :contributor ?personId ;
+               :topLevelOrganization ?topLevelOrganization ;
+               :modifiedDate ?modifiedDate ;
+               :isbn ?isbnList ;
+               :handle ?handle .
   # Include page count
   ?pageCount a :PageCount ;
-  :first ?firstPage ;
-  :last ?lastPage ;
-  :total ?numberOfPages  .
-
+             :first ?firstPage ;
+             :last ?lastPage ;
+             :total ?numberOfPages .
   # Include the publication date
   ?date a :PublicationDate ;
-  :year ?year ;
-  :month ?month ;
-  :day ?day .
-
+        :year ?year ;
+        :month ?month ;
+        :day ?day .
   # Include the organization hierarchy
   ?organization a :Organization ;
-  :country ?country ;
-  :label ?label ;
-  :partOf ?parent ;
-  :hasPart ?child .
-
+                :country ?country ;
+                :label ?label ;
+                :partOf ?parent ;
+                :hasPart ?child .
   # Include all contributors
   ?personId a :Contributor ;
-  :affiliation ?affiliation ;
-  :role ?roleType ;
-  :verificationStatus ?verificationStatus ;
-  :name ?contributorName ;
-  :orcid ?orcid .
+            :affiliation ?affiliation ;
+            :role ?roleType ;
+            :verificationStatus ?verificationStatus ;
+            :name ?contributorName ;
+            :orcid ?orcid .
 }
 
 WHERE {
@@ -124,7 +121,7 @@ WHERE {
     ?entityDescription :contributor ?contributor .
 
     ?contributor :identity ?personId ;
-    :role ?role .
+                 :role ?role .
     ?role a ?roleType .
 
     OPTIONAL {

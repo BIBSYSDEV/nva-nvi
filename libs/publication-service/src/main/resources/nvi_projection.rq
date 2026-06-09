@@ -35,7 +35,7 @@ WHERE {
     ?entityDescription :reference ?reference .
 
     ?reference a :Reference ;
-    :publicationInstance ?instance .
+               :publicationInstance ?instance .
     ?instance a ?instanceType .
     VALUES ?journalPublications {
       :AcademicArticle :AcademicLiteratureReview
@@ -61,7 +61,7 @@ WHERE {
   } UNION {
     # Check whether the publication is 'applicable', i.e. can be an NVI candidate
     ?publication a :Publication ;
-    :status ?status .
+                 :status ?status .
 
     ?publication :entityDescription ?entityDescription .
     ?entityDescription :reference ?reference .
@@ -71,7 +71,7 @@ WHERE {
       :AcademicMonograph :AcademicCommentary :AcademicChapter :AcademicArticle :AcademicLiteratureReview
     }
     ?reference a :Reference ;
-    :publicationInstance ?instance .
+               :publicationInstance ?instance .
     ?instance a ?instanceType .
 
     # Filter on valid status and publication type
@@ -88,7 +88,7 @@ WHERE {
     # Otherwise, check other channels for a valid scientific value.
     OPTIONAL {
       ?series a :Series ;
-      :scientificValue ?seriesLevel .
+              :scientificValue ?seriesLevel .
       FILTER (?seriesLevel != "Unassigned")
     }
     BIND(COALESCE(?series, ?channel) AS ?channelForLevel)
@@ -106,13 +106,13 @@ WHERE {
     ?entityDescription :contributor ?contributor .
 
     ?contributor :identity ?personId ;
-    :role ?role .
+                 :role ?role .
     ?role a ?roleType .
 
     OPTIONAL {
       BIND(EXISTS {
         ?contributor :role [ a :Creator ] ;
-        :affiliation [ :country ?countryCode ] .
+                     :affiliation [ :country ?countryCode ] .
         FILTER (?countryCode != "NO")
       } AS ?isInternationalCollaboration
       )
