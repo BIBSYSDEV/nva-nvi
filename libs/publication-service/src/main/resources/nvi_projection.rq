@@ -9,21 +9,21 @@ PREFIX : <https://nva.sikt.no/ontology/publication#>
 
 CONSTRUCT {
   ?publication a :Publication ;
-  :status ?status ;
-  :publicationType ?instanceType ;
-  :isApplicable ?isApplicable ;
-  :isInternationalCollaboration ?isInternationalCollaboration ;
-  :publicationChannel ?channel .
+              :status ?status ;
+              :publicationType ?instanceType ;
+              :isApplicable ?isApplicable ;
+              :isInternationalCollaboration ?isInternationalCollaboration ;
+              :publicationChannel ?channel .
 
   # Include the publication channel that applies to the publication type
   ?channel a :PublicationChannel ;
-  :channelType ?channelType ;
-  :identifier ?channelIdentifier ;
-  :name ?channelName ;
-  :scientificValue ?scientificValue ;
-  :year ?channelYear ;
-  :onlineIssn ?onlineIssn ;
-  :printIssn ?printIssn .
+          :channelType ?channelType ;
+          :identifier ?channelIdentifier ;
+          :name ?channelName ;
+          :scientificValue ?scientificValue ;
+          :year ?channelYear ;
+          :onlineIssn ?onlineIssn ;
+          :printIssn ?printIssn .
 }
 
 WHERE {
