@@ -128,10 +128,8 @@ WHERE {
                  :role ?role .
     ?role a ?roleType .
 
-    OPTIONAL {
-      BIND(IF(EXISTS { ?personId :verificationStatus "Verified" }, "Verified", "NotVerified")
-      AS ?verificationStatus)
-    }
+    BIND(IF(EXISTS { ?personId :verificationStatus "Verified" }, "Verified", "NotVerified")
+    AS ?verificationStatus)
     OPTIONAL {
       ?personId :name ?contributorName
       # In rare cases, multiple names are given for the same contributor, but we need at most one.
