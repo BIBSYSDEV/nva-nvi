@@ -375,10 +375,9 @@ class NviGraphValidatorTest {
   void shouldReportWhenPublicationChannelIsRepeated() {
     var model = createModelWithNoErrors();
     var modelWithTwoChannels = addPublicationChannel(model);
-    var modelWithThreeChannels = addPublicationChannel(modelWithTwoChannels);
-    var validation = nviGraphValidator.validate(modelWithThreeChannels);
+    var validation = nviGraphValidator.validate(modelWithTwoChannels);
     assertThat(validation.generateReport())
-        .containsSequence("Publication channel is repeated more than twice")
+        .containsSequence("Publication channel is repeated")
         .hasSize(1);
   }
 

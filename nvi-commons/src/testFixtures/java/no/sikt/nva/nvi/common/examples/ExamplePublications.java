@@ -11,7 +11,6 @@ import static no.sikt.nva.nvi.common.examples.ExampleOrganizations.EXAMPLE_TOP_L
 import static no.sikt.nva.nvi.common.examples.ExampleOrganizations.TOP_LEVEL_ORGANIZATION_NTNU;
 import static no.sikt.nva.nvi.common.examples.ExampleOrganizations.TOP_LEVEL_ORGANIZATION_SIKT;
 import static no.sikt.nva.nvi.common.examples.ExamplePublicationChannels.JOURNAL_OF_TESTING;
-import static no.sikt.nva.nvi.common.examples.ExamplePublicationChannels.PUBLISHER_OF_TESTING;
 import static no.sikt.nva.nvi.common.examples.ExamplePublicationChannels.SERIES_OF_ANTHOLOGY;
 import static no.sikt.nva.nvi.common.examples.ExamplePublicationChannels.SERIES_OF_TESTING;
 
@@ -166,7 +165,7 @@ public class ExamplePublications {
           .withPublicationType(InstanceType.ACADEMIC_MONOGRAPH)
           .withModifiedDate(Instant.parse("2025-03-24T08:23:24.859620342Z"))
           .withLanguage("http://lexvo.org/id/iso639-3/eng")
-          .withPublicationChannels(List.of(PUBLISHER_OF_TESTING, SERIES_OF_TESTING))
+          .withPublicationChannels(List.of(SERIES_OF_TESTING))
           .withIsApplicable(true)
           .withIsInternationalCollaboration(true)
           .withContributors(

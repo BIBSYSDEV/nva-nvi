@@ -39,7 +39,9 @@ public class PublicationLoaderService {
       new GraphProjectionPipeline(
           List.of(
               SparqlConstruct.fromResource("nva_normalization.rq"),
-              SparqlConstruct.fromResource("nvi_projection.rq")));
+              SparqlConstruct.fromResource("nvi_channel_pairing.rq"),
+              SparqlConstruct.fromResource("nvi_applicability.rq"),
+              SparqlConstruct.fromResource("nvi_international_collaboration.rq")));
 
   private final Logger logger = LoggerFactory.getLogger(PublicationLoaderService.class);
   private final StorageReader<URI> storageReader;
