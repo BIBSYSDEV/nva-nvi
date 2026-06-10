@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.publication;
+package no.sikt.nva.nvi.rdf;
 
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
