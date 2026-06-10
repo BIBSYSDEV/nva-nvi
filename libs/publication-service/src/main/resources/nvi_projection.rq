@@ -103,19 +103,11 @@ WHERE {
     # Check if any contributor is a Creator with a non-Norwegian affiliation.
     # If so, the publication counts as an international collaboration.
     ?publication :entityDescription ?entityDescription .
-    ?entityDescription :contributor ?contributor .
-
-    ?contributor :identity ?personId ;
-                 :role ?role .
-    ?role a ?roleType .
-
-    OPTIONAL {
-      BIND(EXISTS {
-        ?contributor :role [ a :Creator ] ;
-                     :affiliation [ :country ?countryCode ] .
-        FILTER (?countryCode != "NO")
-      } AS ?isInternationalCollaboration
-      )
-    }
+    BIND(EXISTS {
+      ?entityDescription :contributor ?creatorContributor .
+      ?creatorContributor :role [ a :Creator ] ;
+                          :affiliation [ :country ?creatorCountry ] .
+      FILTER (?creatorCountry != "NO")
+    } AS ?isInternationalCollaboration)
   }
 }
