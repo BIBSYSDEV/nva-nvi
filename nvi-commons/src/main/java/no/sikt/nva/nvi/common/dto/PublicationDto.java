@@ -99,6 +99,10 @@ public record PublicationDto(
     return dtoObjectMapper.readValue(json, PublicationDto.class);
   }
 
+  public PublicationChannelDto getNviChannel() {
+    return publicationChannels.stream().filter(PublicationChannelDto::isValid).toList().getFirst();
+  }
+
   public static Builder builder() {
     return new Builder();
   }
