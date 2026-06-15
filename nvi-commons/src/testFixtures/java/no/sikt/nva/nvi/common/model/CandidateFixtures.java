@@ -16,7 +16,9 @@ import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 
-public class CandidateFixtures {
+public final class CandidateFixtures {
+
+  private CandidateFixtures() {}
 
   public static Candidate setupRandomApplicableCandidate(TestScenario scenario) {
     var candidateRequest = randomUpsertRequestBuilder().build();

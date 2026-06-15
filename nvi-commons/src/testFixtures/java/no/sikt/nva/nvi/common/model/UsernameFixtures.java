@@ -4,7 +4,9 @@ import static no.unit.nva.testutils.RandomDataGenerator.FAKER;
 
 import no.sikt.nva.nvi.common.service.model.Username;
 
-public class UsernameFixtures {
+public final class UsernameFixtures {
+
+  private UsernameFixtures() {}
 
   public static Username randomUsername() {
     var organizationIdentifier = FAKER.numerify("###.###.###.###");

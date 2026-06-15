@@ -23,11 +23,11 @@ public class InitHandler implements RequestHandler<Object, String> {
 
   @Override
   public String handleRequest(Object input, Context context) {
-    if (!this.indexingClient.indexExists()) {
+    if (this.indexingClient.indexExists()) {
+      LOGGER.info("Index already exists");
+    } else {
       LOGGER.info("Creating index");
       this.indexingClient.createIndex();
-    } else {
-      LOGGER.info("Index already exists");
     }
 
     return SUCCESS;

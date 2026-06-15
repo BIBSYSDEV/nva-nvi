@@ -11,11 +11,13 @@ import no.sikt.nva.nvi.common.service.model.CreatePeriodRequest;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.common.service.model.UpdatePeriodRequest;
 
-public class PeriodRepositoryFixtures {
+public final class PeriodRepositoryFixtures {
   private static final Instant previousMonth = ZonedDateTime.now().minusMonths(1).toInstant();
   private static final Instant previousYear = ZonedDateTime.now().minusMonths(12).toInstant();
   private static final Instant nextMonth = ZonedDateTime.now().plusMonths(1).toInstant();
   private static final Instant nextYear = ZonedDateTime.now().plusMonths(12).toInstant();
+
+  private PeriodRepositoryFixtures() {}
 
   public static NviPeriod setupFuturePeriod(TestScenario scenario, String year) {
     return upsertPeriod(year, nextMonth, nextYear, scenario.getPeriodRepository());

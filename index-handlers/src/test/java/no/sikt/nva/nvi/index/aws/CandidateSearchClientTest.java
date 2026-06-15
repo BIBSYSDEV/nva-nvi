@@ -16,13 +16,7 @@ import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.emptyIterable;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasItems;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -58,8 +52,6 @@ import no.sikt.nva.nvi.index.query.SearchAggregation;
 import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UriWrapper;
 import org.apache.hc.core5.http.HttpHost;
-import org.assertj.core.api.Assertions;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -133,10 +125,10 @@ class CandidateSearchClientTest {
             .build();
     var searchResponse = searchClient.search(searchParameters);
 
-    assertThat(extractTotalNumberOfHits(searchResponse), is(equalTo(totalNumberOfDocuments)));
+    assertThat(extractTotalNumberOfHits(searchResponse)).isEqualTo(totalNumberOfDocuments);
 
     int expectedNumberOfHitsReturned = totalNumberOfDocuments - offset;
-    assertThat(searchResponse.hits().hits().size(), is(equalTo(expectedNumberOfHitsReturned)));
+    assertThat(searchResponse.hits().hits()).hasSize(expectedNumberOfHitsReturned);
   }
 
   @ParameterizedTest(name = "shouldOrderResult {0}")
@@ -159,8 +151,8 @@ class CandidateSearchClientTest {
         "asc".equals(sortOrder) ? createdFirst.createdDate() : createdSecond.createdDate();
     var expectedSecond =
         "asc".equals(sortOrder) ? createdSecond.createdDate() : createdFirst.createdDate();
-    assertThat(requireNonNull(hits.get(0).source()).createdDate(), is(equalTo(expectedFirst)));
-    assertThat(requireNonNull(hits.get(1).source()).createdDate(), is(equalTo(expectedSecond)));
+    assertThat(requireNonNull(hits.get(0).source()).createdDate()).isEqualTo(expectedFirst);
+    assertThat(requireNonNull(hits.get(1).source()).createdDate()).isEqualTo(expectedSecond);
   }
 
   @Test
@@ -188,7 +180,7 @@ class CandidateSearchClientTest {
     var searchResponse = searchClient.search(searchParameters);
     var nviCandidateIndexDocument = searchResponse.hits().hits();
 
-    assertThat(nviCandidateIndexDocument, hasSize(0));
+    assertThat(nviCandidateIndexDocument).isEmpty();
   }
 
   @Test
@@ -233,7 +225,7 @@ class CandidateSearchClientTest {
             .build();
     var searchResponse = searchClient.search(searchParameters);
 
-    assertThat(searchResponse.hits().hits(), hasSize(1));
+    assertThat(searchResponse.hits().hits()).hasSize(1);
   }
 
   @Test
@@ -248,7 +240,7 @@ class CandidateSearchClientTest {
             .build();
     var searchResponse = searchClient.search(searchParameters);
 
-    assertThat(searchResponse.hits().hits(), hasSize(1));
+    assertThat(searchResponse.hits().hits()).hasSize(1);
   }
 
   @Test
@@ -267,7 +259,7 @@ class CandidateSearchClientTest {
             .build();
     var searchResponse = searchClient.search(searchParameters);
 
-    assertThat(searchResponse.hits().hits(), hasSize(2));
+    assertThat(searchResponse.hits().hits()).hasSize(2);
   }
 
   @Test
@@ -287,7 +279,7 @@ class CandidateSearchClientTest {
             .build();
     var searchResponse = searchClient.search(searchParameters);
 
-    assertThat(searchResponse.hits().hits(), hasSize(1));
+    assertThat(searchResponse.hits().hits()).hasSize(1);
   }
 
   @ParameterizedTest(name = "shouldReturnSearchResultsUsingFilter {0}")
@@ -313,7 +305,7 @@ class CandidateSearchClientTest {
             .build();
 
     var searchResponse = searchClient.search(searchParameters);
-    assertThat(searchResponse.hits().hits(), hasSize(entry.getValue()));
+    assertThat(searchResponse.hits().hits()).hasSize(entry.getValue());
   }
 
   @Test
@@ -326,7 +318,7 @@ class CandidateSearchClientTest {
         defaultSearchParameters().withFilter(QueryFilterType.DISPUTED_AGG.getValue()).build();
 
     var searchResponse = searchClient.search(searchParameters);
-    assertThat(searchResponse.hits().hits(), hasSize(1));
+    assertThat(searchResponse.hits().hits()).hasSize(1);
     assertTrue(
         requireNonNull(searchResponse.hits().hits().getFirst().source()).approvals().stream()
             .anyMatch(
@@ -341,7 +333,7 @@ class CandidateSearchClientTest {
     var searchTerm = indexDocuments.get(2).publicationDetails().identifier();
     var searchParameters = defaultSearchParameters().withSearchTerm(searchTerm).build();
     var searchResponse = searchClient.search(searchParameters);
-    assertThat(searchResponse.hits().hits(), hasSize(1));
+    assertThat(searchResponse.hits().hits()).hasSize(1);
     assertEquals(searchTerm, getFirstHit(searchResponse).publicationDetails().identifier());
   }
 
@@ -352,7 +344,7 @@ class CandidateSearchClientTest {
     var searchTerm = indexDocuments.get(2).identifier().toString();
     var searchParameters = defaultSearchParameters().withSearchTerm(searchTerm).build();
     var searchResponse = searchClient.search(searchParameters);
-    assertThat(searchResponse.hits().hits(), hasSize(1));
+    assertThat(searchResponse.hits().hits()).hasSize(1);
     assertEquals(searchTerm, getFirstHit(searchResponse).identifier().toString());
   }
 
@@ -363,7 +355,7 @@ class CandidateSearchClientTest {
     var searchTerm = indexDocuments.get(2).publicationDetails().title();
     var searchParameters = defaultSearchParameters().withSearchTerm(searchTerm).build();
     var searchResponse = searchClient.search(searchParameters);
-    assertThat(searchResponse.hits().hits(), hasSize(1));
+    assertThat(searchResponse.hits().hits()).hasSize(1);
     assertEquals(searchTerm, getFirstHit(searchResponse).publicationDetails().title());
   }
 
@@ -381,12 +373,10 @@ class CandidateSearchClientTest {
     var searchTerm = "lorem ipsum";
     var searchParameters = defaultSearchParameters().withSearchTerm(searchTerm).build();
     var searchResponse = searchClient.search(searchParameters);
-    assertThat(searchResponse.hits().hits(), hasSize(2));
-    assertThat(
-        searchResponse.hits().hits().stream()
-            .map(hit -> hit.source().publicationDetails().title())
-            .toList(),
-        containsInAnyOrder(firstTitle, secondTitle));
+    assertThat(searchResponse.hits().hits())
+        .hasSize(2)
+        .map(hit -> hit.source().publicationDetails().title())
+        .containsExactlyInAnyOrder(firstTitle, secondTitle);
   }
 
   @Test
@@ -397,7 +387,7 @@ class CandidateSearchClientTest {
     var searchTerm = expectedHit.publicationDetails().contributors().getFirst().name();
     var searchParameters = defaultSearchParameters().withSearchTerm(searchTerm).build();
     var searchResponse = searchClient.search(searchParameters);
-    assertThat(searchResponse.hits().hits(), hasSize(1));
+    assertThat(searchResponse.hits().hits()).hasSize(1);
     assertEquals(expectedHit.identifier(), getFirstHit(searchResponse).identifier());
   }
 
@@ -408,7 +398,7 @@ class CandidateSearchClientTest {
     var searchTerm = indexDocuments.get(2).publicationDetails().abstractText();
     var searchParameters = defaultSearchParameters().withSearchTerm(searchTerm).build();
     var searchResponse = searchClient.search(searchParameters);
-    assertThat(searchResponse.hits().hits(), hasSize(1));
+    assertThat(searchResponse.hits().hits()).hasSize(1);
     assertEquals(searchTerm, getFirstHit(searchResponse).publicationDetails().abstractText());
   }
 
@@ -418,7 +408,7 @@ class CandidateSearchClientTest {
     addDocumentsToIndex(indexDocuments.toArray(new NviCandidateIndexDocument[0]));
     var searchParameters = defaultSearchParameters().build();
     var searchResponse = searchClient.search(searchParameters);
-    assertThat(searchResponse.hits().hits(), hasSize(DEFAULT_CANDIDATE_COUNT));
+    assertThat(searchResponse.hits().hits()).hasSize(DEFAULT_CANDIDATE_COUNT);
   }
 
   @Test
@@ -431,7 +421,7 @@ class CandidateSearchClientTest {
     addDocumentsToIndex(indexDocuments.toArray(new NviCandidateIndexDocument[0]));
     var searchParameters = defaultSearchParameters().withSearchTerm(searchTerm).build();
     var searchResponse = searchClient.search(searchParameters);
-    assertThat(searchResponse.hits().hits(), hasSize(1));
+    assertThat(searchResponse.hits().hits()).hasSize(1);
     assertEquals(expectedHit.identifier(), getFirstHit(searchResponse).identifier());
   }
 
@@ -454,7 +444,7 @@ class CandidateSearchClientTest {
 
     var searchResponse = searchClient.search(searchParameters);
 
-    assertThat(searchResponse.hits().hits(), hasSize(1));
+    assertThat(searchResponse.hits().hits()).hasSize(1);
   }
 
   @Test
@@ -477,7 +467,7 @@ class CandidateSearchClientTest {
 
     var searchResponse = searchClient.search(searchParameters);
 
-    assertThat(searchResponse.hits().hits(), hasSize(1));
+    assertThat(searchResponse.hits().hits()).hasSize(1);
   }
 
   @ParameterizedTest(name = "shouldReturnSearchResultsUsingFilterAndSearchTermCombined {0}")
@@ -503,7 +493,7 @@ class CandidateSearchClientTest {
             .withAffiliations(List.of(NTNU_INSTITUTION_IDENTIFIER))
             .build();
     var searchResponse = searchClient.search(searchParameters);
-    assertThat(searchResponse.hits().hits(), hasSize(entry.getValue()));
+    assertThat(searchResponse.hits().hits()).hasSize(entry.getValue());
   }
 
   @Test
@@ -520,7 +510,7 @@ class CandidateSearchClientTest {
 
     var searchResponse = searchClient.search(searchParameters);
 
-    assertThat(searchResponse.hits().hits(), hasSize(1));
+    assertThat(searchResponse.hits().hits()).hasSize(1);
   }
 
   @Test
@@ -543,7 +533,7 @@ class CandidateSearchClientTest {
     var searchParameters = CandidateSearchParameters.builder().build();
     var searchResponse = searchClient.search(searchParameters);
 
-    assertThat(searchResponse.hits().hits(), hasSize(2));
+    assertThat(searchResponse.hits().hits()).hasSize(2);
   }
 
   @Test
@@ -570,7 +560,7 @@ class CandidateSearchClientTest {
     // When a query is made with reporting year as the year parameter
     var searchParameters = defaultSearchParameters().withYear(reportedYear).build();
     var searchResponse = searchClient.search(searchParameters);
-    assertThat(searchResponse.hits().hits(), hasSize(1));
+    assertThat(searchResponse.hits().hits()).hasSize(1);
 
     // Then the returned document has the expected publication date and reporting period
     var actualDocument = getFirstHit(searchResponse);
@@ -588,7 +578,7 @@ class CandidateSearchClientTest {
     // When a query is made with reporting year as the year parameter
     var searchParameters = defaultSearchParameters().withYear(reportedYear).build();
     var searchResponse = searchClient.search(searchParameters);
-    assertThat(searchResponse.hits().hits(), hasSize(1));
+    assertThat(searchResponse.hits().hits()).hasSize(1);
 
     // Then the returned document has the expected publication date and reporting period
     var actualDocument = getFirstHit(searchResponse);
@@ -611,7 +601,7 @@ class CandidateSearchClientTest {
     var searchResponse = searchClient.search(searchParameters);
 
     // Then the response does not include the document
-    assertThat(searchResponse.hits().hits(), hasSize(0));
+    assertThat(searchResponse.hits().hits()).isEmpty();
   }
 
   @Test
@@ -627,7 +617,7 @@ class CandidateSearchClientTest {
     var searchResponse = searchClient.search(searchParameters);
 
     // Then the response includes the document
-    assertThat(searchResponse.hits().hits(), hasSize(1));
+    assertThat(searchResponse.hits().hits()).hasSize(1);
     var actualDocument = getFirstHit(searchResponse);
     assertEquals(expectedDocument, actualDocument);
   }
@@ -645,7 +635,7 @@ class CandidateSearchClientTest {
     var searchResponse = searchClient.search(searchParameters);
 
     // Then the response includes the document
-    assertThat(searchResponse.hits().hits(), hasSize(1));
+    assertThat(searchResponse.hits().hits()).hasSize(1);
     var actualDocument = getFirstHit(searchResponse);
     assertEquals(expectedDocument, actualDocument);
   }
@@ -662,9 +652,7 @@ class CandidateSearchClientTest {
 
     var actualDocument = getFirstHit(searchResponse);
     var actualTimestamp = Instant.parse(actualDocument.indexDocumentCreatedAt());
-    Assertions.assertThat(actualTimestamp)
-        .isAfterOrEqualTo(testStartedAt)
-        .isBeforeOrEqualTo(Instant.now());
+    assertThat(actualTimestamp).isAfterOrEqualTo(testStartedAt).isBeforeOrEqualTo(Instant.now());
   }
 
   @Test
@@ -679,7 +667,7 @@ class CandidateSearchClientTest {
             .build();
     var searchResponse = searchClient.search(searchParameters);
 
-    assertThat(searchResponse.hits().hits(), is(emptyIterable()));
+    assertThat(searchResponse.hits().hits()).isEmpty();
   }
 
   @Test
@@ -697,9 +685,8 @@ class CandidateSearchClientTest {
 
     var documentsFromResponse = searchResponse.hits().hits().stream().map(Hit::source).toList();
 
-    assertThat(
-        documentsFromResponse,
-        hasItems(documentsWithApprovalsAtTopLevelOrg.toArray(NviCandidateIndexDocument[]::new)));
+    assertThat(documentsFromResponse)
+        .contains(documentsWithApprovalsAtTopLevelOrg.toArray(NviCandidateIndexDocument[]::new));
   }
 
   @Test
@@ -812,7 +799,6 @@ class CandidateSearchClientTest {
             ORGANIZATION, randomString(), randomString(), YEAR, randomString()));
   }
 
-  @NotNull
   private static SearchResultParameters getSearchResultParameters(int offset, int size) {
     return SearchResultParameters.builder().withOffset(offset).withSize(size).build();
   }

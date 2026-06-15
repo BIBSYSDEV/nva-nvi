@@ -2,8 +2,7 @@ package no.sikt.nva.nvi.events;
 
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.createS3Event;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -15,7 +14,7 @@ import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.unit.nva.stubs.FakeContext;
 import nva.commons.core.Environment;
-import nva.commons.logutils.LogUtils;
+import nva.commons.logutils.LogRecorder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -40,10 +39,11 @@ class QueuePersistedResourceHandlerTest {
   @Test
   void shouldLogErrorAndThrowExceptionWhenInvalidEventReferenceReceived() throws IOException {
     var invalidEvent = createS3Event(null);
-    var appender = LogUtils.getTestingAppenderForRootLogger();
+    var logRecorder = LogRecorder.forClass(QueuePersistedResourceHandler.class);
     assertThrows(
         RuntimeException.class, () -> handler.handleRequest(invalidEvent, output, context));
-    assertThat(appender.getMessages(), containsString("Invalid EventReference, missing uri"));
+    assertThat(logRecorder.messages())
+        .anyMatch(message -> message.startsWith("Invalid EventReference, missing uri"));
   }
 
   @ParameterizedTest(name = "shouldNotQueueResourcesThatAreNotPublications {0}")

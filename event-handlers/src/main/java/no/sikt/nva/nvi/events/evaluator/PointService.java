@@ -4,13 +4,10 @@ import java.net.URI;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.dto.ContributorDto;
 import no.sikt.nva.nvi.common.dto.PointCalculationDto;
-import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
-import no.sikt.nva.nvi.common.model.ChannelType;
 import no.sikt.nva.nvi.common.model.Customer;
 import no.sikt.nva.nvi.events.evaluator.calculator.PointCalculator;
 import no.sikt.nva.nvi.events.evaluator.model.NviCreator;
@@ -24,7 +21,7 @@ public final class PointService {
       Collection<NviCreator> nviCreators,
       Map<URI, Customer> customers) {
     var instanceType = publication.publicationType();
-    var channel = getNviChannel(publication);
+    var channel = publication.getNviChannel();
     var isInternationalCollaboration = publication.isInternationalCollaboration();
     var totalShares = getTotalShares(publication);
 
@@ -36,32 +33,6 @@ public final class PointService {
             totalShares,
             customers)
         .calculatePoints();
-  }
-
-  private static PublicationChannelDto getNviChannel(PublicationDto publication) {
-    return switch (publication.publicationType()) {
-      case ACADEMIC_ARTICLE, ACADEMIC_LITERATURE_REVIEW -> getJournal(publication);
-      case ACADEMIC_MONOGRAPH, ACADEMIC_COMMENTARY, ACADEMIC_CHAPTER ->
-          getSeriesOrPublisher(publication);
-      case NON_CANDIDATE -> throw new IllegalArgumentException("Publication type is invalid");
-    };
-  }
-
-  private static Optional<PublicationChannelDto> getChannel(
-      PublicationDto publication, ChannelType channelType) {
-    return publication.publicationChannels().stream()
-        .filter(channel -> channel.channelType() == channelType)
-        .filter(PublicationChannelDto::isValid)
-        .findFirst();
-  }
-
-  private static PublicationChannelDto getJournal(PublicationDto publication) {
-    return getChannel(publication, ChannelType.JOURNAL).orElseThrow();
-  }
-
-  private static PublicationChannelDto getSeriesOrPublisher(PublicationDto publication) {
-    return getChannel(publication, ChannelType.SERIES)
-        .orElseGet(() -> getChannel(publication, ChannelType.PUBLISHER).orElseThrow());
   }
 
   /**

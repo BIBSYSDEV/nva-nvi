@@ -43,10 +43,6 @@ public final class PointCalculationFixtures {
         totalPoints);
   }
 
-  private static InstitutionPoints randomInstitutionPoints(int scale, Sector sector) {
-    return randomInstitutionPoints(scale, sector, randomBoolean());
-  }
-
   private static InstitutionPoints randomInstitutionPoints(
       int scale, Sector sector, boolean rboInstitution) {
     var institutionId = randomUri();

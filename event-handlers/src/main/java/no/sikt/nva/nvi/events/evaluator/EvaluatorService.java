@@ -25,13 +25,13 @@ import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.exceptions.ValidationException;
 import no.sikt.nva.nvi.common.model.Customer;
 import no.sikt.nva.nvi.common.service.CandidateService;
-import no.sikt.nva.nvi.common.service.PublicationLoaderService;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.CandidateAndPeriods;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.events.evaluator.model.NviCreator;
 import no.sikt.nva.nvi.events.evaluator.model.NviOrganization;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
+import no.sikt.nva.nvi.publication.PublicationLoaderService;
 import no.unit.nva.clients.IdentityServiceClient;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.core.Environment;
@@ -110,6 +110,12 @@ public class EvaluatorService {
       return createNonNviCandidateMessage(publication.id());
     }
 
+    // Skip update if the period is closed and the candidate is still applicable
+    if (isApplicableCandidateInClosedPeriod(candidateAndPeriods, publication.publicationDate())) {
+      logger.info(SKIPPED_EVALUATION_MESSAGE, publication.id());
+      return Optional.empty();
+    }
+
     // Check that the publication can be a candidate in the target period
     if (!canEvaluateInPeriod(candidateAndPeriods, publication.publicationDate())) {
       logger.info("Publication is not applicable in the target period");
@@ -160,20 +166,23 @@ public class EvaluatorService {
     return nonNull(publication.status()) && "published".equalsIgnoreCase(publication.status());
   }
 
-  private boolean canEvaluateInPeriod(
+  private boolean isApplicableCandidateInClosedPeriod(
       CandidateAndPeriods candidateAndPeriods, PublicationDateDto publicationDate) {
     var optionalPeriod = candidateAndPeriods.getPeriod(publicationDate.year());
-    if (optionalPeriod.isEmpty()) {
+    if (optionalPeriod.isEmpty() || !optionalPeriod.get().isClosed()) {
       return false;
     }
     var period = optionalPeriod.get();
+    return candidateAndPeriods
+        .getCandidate()
+        .map(candidate -> isApplicableInPeriod(period, candidate))
+        .orElse(false);
+  }
 
-    var candidateExistsInPeriod =
-        candidateAndPeriods
-            .getCandidate()
-            .map(candidate -> isApplicableInPeriod(period, candidate))
-            .orElse(false);
-    return !period.isClosed() || candidateExistsInPeriod;
+  private boolean canEvaluateInPeriod(
+      CandidateAndPeriods candidateAndPeriods, PublicationDateDto publicationDate) {
+    var optionalPeriod = candidateAndPeriods.getPeriod(publicationDate.year());
+    return optionalPeriod.isPresent() && !optionalPeriod.get().isClosed();
   }
 
   private boolean isApplicableInPeriod(NviPeriod targetPeriod, Candidate candidate) {

@@ -4,9 +4,7 @@ import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupFuturePeri
 import static no.sikt.nva.nvi.rest.EnvironmentFixtures.FETCH_NVI_PERIOD_HANDLER;
 import static no.sikt.nva.nvi.test.TestConstants.THIS_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -51,8 +49,8 @@ class FetchNviPeriodHandlerTest {
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
     var expectedMessage = String.format("Period for year %s does not exist!", periodYear);
 
-    assertThat(response.getBodyObject(Problem.class).getDetail(), is(equalTo(expectedMessage)));
-    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_NOT_FOUND)));
+    assertEquals(expectedMessage, response.getBodyObject(Problem.class).getDetail());
+    assertEquals(HttpURLConnection.HTTP_NOT_FOUND, response.getStatusCode());
   }
 
   @Test
@@ -62,8 +60,8 @@ class FetchNviPeriodHandlerTest {
     handler.handleRequest(createRequestForPeriod(publishingYear), output, context);
     var response = GatewayResponse.fromOutputStream(output, NviPeriodDto.class);
 
-    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_OK)));
-    assertThat(response.getBodyObject(NviPeriodDto.class), is(equalTo(expectedPeriod)));
+    assertEquals(HttpURLConnection.HTTP_OK, response.getStatusCode());
+    assertEquals(expectedPeriod, response.getBodyObject(NviPeriodDto.class));
   }
 
   private InputStream createRequestForPeriod(String period) throws JsonProcessingException {

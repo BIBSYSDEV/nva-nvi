@@ -7,7 +7,9 @@ import no.sikt.nva.nvi.common.db.model.DbPublicationChannel;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.ScientificValue;
 
-public class DbPublicationChannelFixtures {
+public final class DbPublicationChannelFixtures {
+
+  private DbPublicationChannelFixtures() {}
 
   public static DbPublicationChannel.Builder randomDbPublicationChannelBuilder() {
     return DbPublicationChannel.builder()

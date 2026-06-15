@@ -8,134 +8,77 @@ import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_YEAR;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_YEAR_HASH_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_YEAR_RANGE_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
-import static no.sikt.nva.nvi.common.utils.ApplicationConstants.NVI_TABLE_NAME;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.util.ArrayList;
-import java.util.List;
-import org.hamcrest.core.StringContains;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeDefinition;
 import software.amazon.awssdk.services.dynamodb.model.CreateTableRequest;
-import software.amazon.awssdk.services.dynamodb.model.CreateTableResponse;
 import software.amazon.awssdk.services.dynamodb.model.GlobalSecondaryIndex;
 import software.amazon.awssdk.services.dynamodb.model.KeySchemaElement;
 import software.amazon.awssdk.services.dynamodb.model.KeyType;
-import software.amazon.awssdk.services.dynamodb.model.ListTablesResponse;
 import software.amazon.awssdk.services.dynamodb.model.Projection;
 import software.amazon.awssdk.services.dynamodb.model.ProjectionType;
 import software.amazon.awssdk.services.dynamodb.model.ProvisionedThroughput;
 import software.amazon.awssdk.services.dynamodb.model.ScalarAttributeType;
-import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
-import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
-import software.amazon.awssdk.services.dynamodb.model.TableDescription;
-import software.amazon.awssdk.services.dynamodb.model.TableStatus;
 import software.amazon.dynamodb.services.local.embedded.DynamoDBEmbedded;
 
-public class LocalDynamoTestSetup {
+public final class LocalDynamoTestSetup {
 
-  public static final int SINGLE_TABLE_EXPECTED = 1;
   private static final Long CAPACITY_DOES_NOT_MATTER = 1000L;
+  private static final ProvisionedThroughput LOCAL_THROUGHPUT =
+      ProvisionedThroughput.builder()
+          .readCapacityUnits(CAPACITY_DOES_NOT_MATTER)
+          .writeCapacityUnits(CAPACITY_DOES_NOT_MATTER)
+          .build();
 
-  public static DynamoDbClient initializeTestDatabase() {
+  private LocalDynamoTestSetup() {}
+
+  public static DynamoDbClient initializeTestDatabase(String tableName) {
     var localDynamo = DynamoDBEmbedded.create(null, true).dynamoDbClient();
-    var tableName = NVI_TABLE_NAME;
-    var createTableResult = createTable(localDynamo, tableName);
-    var tableDescription = createTableResult.tableDescription();
-    var tables = localDynamo.listTables();
-    validateTableSetup(tableDescription, tables);
+    localDynamo.createTable(buildCreateTableRequest(tableName));
     return localDynamo;
   }
 
-  private static void validateTableSetup(
-      TableDescription tableDescription, ListTablesResponse tables) {
-    assertEquals(NVI_TABLE_NAME, tableDescription.tableName());
-    assertThatTableKeySchemaContainsBothKeys(tableDescription.keySchema());
-    assertEquals(TableStatus.ACTIVE, tableDescription.tableStatus());
-    assertThat(tableDescription.tableArn(), StringContains.containsString(NVI_TABLE_NAME));
-    assertEquals(SINGLE_TABLE_EXPECTED, tables.tableNames().size());
+  private static CreateTableRequest buildCreateTableRequest(String tableName) {
+    return CreateTableRequest.builder()
+        .tableName(tableName)
+        .attributeDefinitions(
+            stringAttribute(HASH_KEY),
+            stringAttribute(SORT_KEY),
+            stringAttribute(SECONDARY_INDEX_1_HASH_KEY),
+            stringAttribute(SECONDARY_INDEX_1_RANGE_KEY),
+            stringAttribute(SECONDARY_INDEX_YEAR_HASH_KEY),
+            stringAttribute(SECONDARY_INDEX_YEAR_RANGE_KEY))
+        .keySchema(keyElement(HASH_KEY, KeyType.HASH), keyElement(SORT_KEY, KeyType.RANGE))
+        .provisionedThroughput(LOCAL_THROUGHPUT)
+        .globalSecondaryIndexes(
+            gsi(
+                SECONDARY_INDEX_PUBLICATION_ID,
+                SECONDARY_INDEX_1_HASH_KEY,
+                SECONDARY_INDEX_1_RANGE_KEY),
+            gsi(
+                SECONDARY_INDEX_YEAR,
+                SECONDARY_INDEX_YEAR_HASH_KEY,
+                SECONDARY_INDEX_YEAR_RANGE_KEY))
+        .build();
   }
 
-  public static ScanResponse scanDB(DynamoDbClient dbClient) {
-    return dbClient.scan(ScanRequest.builder().tableName(NVI_TABLE_NAME).build());
-  }
-
-  private static CreateTableResponse createTable(DynamoDbClient client, String tableName) {
-    List<AttributeDefinition> attributeDefinitions = defineKeyAttributes();
-    List<KeySchemaElement> keySchema = defineKeySchema();
-    ProvisionedThroughput provisionedthroughput = provisionedThroughputForLocalDatabase();
-
-    CreateTableRequest request =
-        CreateTableRequest.builder()
-            .tableName(tableName)
-            .attributeDefinitions(attributeDefinitions)
-            .keySchema(keySchema)
-            .provisionedThroughput(provisionedthroughput)
-            .globalSecondaryIndexes(
-                newGsi(
-                    SECONDARY_INDEX_PUBLICATION_ID,
-                    SECONDARY_INDEX_1_HASH_KEY,
-                    SECONDARY_INDEX_1_RANGE_KEY),
-                newGsi(
-                    SECONDARY_INDEX_YEAR,
-                    SECONDARY_INDEX_YEAR_HASH_KEY,
-                    SECONDARY_INDEX_YEAR_RANGE_KEY))
-            .build();
-
-    return client.createTable(request);
-  }
-
-  private static List<KeySchemaElement> defineKeySchema() {
-    List<KeySchemaElement> keySchemaElements = new ArrayList<>();
-    keySchemaElements.add(
-        KeySchemaElement.builder().attributeName(HASH_KEY).keyType(KeyType.HASH).build());
-    keySchemaElements.add(
-        KeySchemaElement.builder().attributeName(SORT_KEY).keyType(KeyType.RANGE).build());
-    return keySchemaElements;
-  }
-
-  private static List<AttributeDefinition> defineKeyAttributes() {
-    List<AttributeDefinition> attributeDefinitions = new ArrayList<>();
-    attributeDefinitions.add(createAttributeDefinition(HASH_KEY));
-    attributeDefinitions.add(createAttributeDefinition(SORT_KEY));
-    attributeDefinitions.add(createAttributeDefinition(SECONDARY_INDEX_1_HASH_KEY));
-    attributeDefinitions.add(createAttributeDefinition(SECONDARY_INDEX_1_RANGE_KEY));
-    attributeDefinitions.add(createAttributeDefinition(SECONDARY_INDEX_YEAR_HASH_KEY));
-    attributeDefinitions.add(createAttributeDefinition(SECONDARY_INDEX_YEAR_RANGE_KEY));
-    return attributeDefinitions;
-  }
-
-  private static AttributeDefinition createAttributeDefinition(String attributeName) {
+  private static AttributeDefinition stringAttribute(String name) {
     return AttributeDefinition.builder()
-        .attributeName(attributeName)
+        .attributeName(name)
         .attributeType(ScalarAttributeType.S)
         .build();
   }
 
-  private static ProvisionedThroughput provisionedThroughputForLocalDatabase() {
-    return ProvisionedThroughput.builder()
-        .readCapacityUnits(CAPACITY_DOES_NOT_MATTER)
-        .writeCapacityUnits(CAPACITY_DOES_NOT_MATTER)
-        .build();
+  private static KeySchemaElement keyElement(String name, KeyType type) {
+    return KeySchemaElement.builder().attributeName(name).keyType(type).build();
   }
 
-  private static GlobalSecondaryIndex newGsi(String indexName, String hashKey, String rangeKey) {
-    var provisionedthroughput = provisionedThroughputForLocalDatabase();
-
+  private static GlobalSecondaryIndex gsi(String indexName, String hashKey, String rangeKey) {
     return GlobalSecondaryIndex.builder()
         .indexName(indexName)
-        .keySchema(
-            KeySchemaElement.builder().attributeName(hashKey).keyType(KeyType.HASH).build(),
-            KeySchemaElement.builder().attributeName(rangeKey).keyType(KeyType.RANGE).build())
+        .keySchema(keyElement(hashKey, KeyType.HASH), keyElement(rangeKey, KeyType.RANGE))
         .projection(Projection.builder().projectionType(ProjectionType.ALL).build())
-        .provisionedThroughput(provisionedthroughput)
+        .provisionedThroughput(LOCAL_THROUGHPUT)
         .build();
-  }
-
-  private static void assertThatTableKeySchemaContainsBothKeys(
-      List<KeySchemaElement> tableKeySchema) {
-    assertThat(tableKeySchema.toString(), StringContains.containsString(HASH_KEY));
-    assertThat(tableKeySchema.toString(), StringContains.containsString(SORT_KEY));
   }
 }

@@ -13,11 +13,13 @@ import no.sikt.nva.nvi.common.dto.ContributorRole;
 import no.sikt.nva.nvi.common.dto.VerificationStatus;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 
-public class ContributorFixtures {
+public final class ContributorFixtures {
   public static final ContributorRole ROLE_CREATOR = new ContributorRole("Creator");
   public static final ContributorRole ROLE_OTHER = new ContributorRole("ContactPerson");
   public static final VerificationStatus STATUS_VERIFIED = new VerificationStatus("Verified");
   public static final VerificationStatus STATUS_UNVERIFIED = new VerificationStatus("NotVerified");
+
+  private ContributorFixtures() {}
 
   public static Builder randomCreator(Organization... affiliations) {
     return randomCreator(List.of(affiliations));

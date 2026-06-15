@@ -9,11 +9,8 @@ import static no.sikt.nva.nvi.rest.remove.RemoveNoteHandler.PARAM_NOTE_IDENTIFIE
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -24,15 +21,14 @@ import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.Username;
-import no.sikt.nva.nvi.common.validator.FakeViewingScopeValidator;
 import no.sikt.nva.nvi.rest.BaseCandidateRestHandlerTest;
 import no.sikt.nva.nvi.rest.EnvironmentFixtures;
 import no.sikt.nva.nvi.rest.create.NviNoteRequest;
+import no.sikt.nva.nvi.viewingscope.FakeViewingScopeValidator;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.GatewayResponse;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.zalando.problem.Problem;
@@ -70,7 +66,7 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
         CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
-    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
+    assertEquals(HttpURLConnection.HTTP_UNAUTHORIZED, response.getStatusCode());
   }
 
   @Test
@@ -89,7 +85,7 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
             environment);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
-    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
+    assertEquals(HttpURLConnection.HTTP_UNAUTHORIZED, response.getStatusCode());
   }
 
   @Test
@@ -101,7 +97,7 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
     var request = createRequest(candidate.identifier(), noteId, randomString()).build();
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
-    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
+    assertEquals(HttpURLConnection.HTTP_UNAUTHORIZED, response.getStatusCode());
   }
 
   @Test
@@ -114,7 +110,7 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
     handler.handleRequest(request, output, CONTEXT);
     var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateDto.class);
     var body = gatewayResponse.getBodyObject(CandidateDto.class);
-    assertThat(body.notes(), hasSize(0));
+    assertThat(body.notes()).isEmpty();
   }
 
   @Test
@@ -122,7 +118,7 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
     var request = createRequest(UUID.randomUUID(), UUID.randomUUID(), randomString()).build();
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
-    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_NOT_FOUND)));
+    assertEquals(HttpURLConnection.HTTP_NOT_FOUND, response.getStatusCode());
   }
 
   @Test
@@ -135,7 +131,7 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
-    assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_CONFLICT)));
+    assertEquals(HttpURLConnection.HTTP_CONFLICT, response.getStatusCode());
   }
 
   @Test
@@ -149,8 +145,8 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
     var candidateDto = handleRequest(request);
 
     var actualAllowedOperations = candidateDto.allowedOperations();
-    assertThat(
-        actualAllowedOperations, containsInAnyOrder(CURATOR_CAN_FINALIZE_APPROVAL.toArray()));
+    assertThat(actualAllowedOperations)
+        .containsExactlyInAnyOrderElementsOf(CURATOR_CAN_FINALIZE_APPROVAL);
   }
 
   private Candidate createCandidateWithNote() {

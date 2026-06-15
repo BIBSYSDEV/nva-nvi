@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigDecimal;
 import java.net.URI;
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -26,6 +27,7 @@ public record CandidateDto(
     List<NoteDto> notes,
     PeriodStatusDto period,
     String status,
+    Instant reportedDate,
     Set<CandidateOperation> allowedOperations,
     Set<CandidateProblem> problems)
     implements JsonSerializable {
@@ -47,6 +49,7 @@ public record CandidateDto(
     private List<NoteDto> notes;
     private PeriodStatusDto periodStatus;
     private String reportStatus;
+    private Instant reportedDate;
     private Set<CandidateOperation> allowedOperations;
     private Set<CandidateProblem> problems;
 
@@ -97,6 +100,11 @@ public record CandidateDto(
       return this;
     }
 
+    public Builder withReportedDate(Instant reportedDate) {
+      this.reportedDate = reportedDate;
+      return this;
+    }
+
     public Builder withAllowedOperations(Set<CandidateOperation> allowedOperations) {
       this.allowedOperations = allowedOperations;
       return this;
@@ -118,6 +126,7 @@ public record CandidateDto(
           notes,
           periodStatus,
           reportStatus,
+          reportedDate,
           allowedOperations,
           problems);
     }

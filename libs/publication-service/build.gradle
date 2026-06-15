@@ -1,0 +1,25 @@
+plugins {
+    id 'nva.nvi.java-conventions'
+}
+
+dependencies {
+    api(nvaCatalog.jackson.databind)
+    api(nvaCatalog.jena.core)
+    api(project(':nvi-commons'))
+    api(project(':rdf'))
+    implementation(nvaCatalog.jackson.core)
+    implementation(nvaCatalog.jena.arq)
+    implementation(nvaCatalog.jena.shacl)
+    implementation(nvaCatalog.slf4j.api)
+    implementation(nvaLibs.core)
+    implementation(nvaLibs.json)
+    testImplementation(nvaCatalog.assertj.core)
+    testImplementation(nvaCatalog.aws.sdk2.s3)
+    testImplementation(nvaCatalog.junit.jupiter.api)
+    testImplementation(nvaCatalog.junit.jupiter.params)
+    testImplementation(nvaLibs.identifiers)
+    testImplementation(nvaLibs.logutils)
+    testImplementation(nvaLibs.s3)
+    testImplementation(nvaLibs.testutils)
+    testImplementation(testFixtures(project(":nvi-commons")))
+}

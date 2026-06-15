@@ -3,8 +3,6 @@ package no.sikt.nva.nvi.index.utils;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.function.Predicate.not;
-import static no.sikt.nva.nvi.common.utils.GraphUtils.PART_OF_PROPERTY;
-import static no.sikt.nva.nvi.common.utils.GraphUtils.createModel;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_POINTER_JOURNAL_PISSN;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PRT_PAGES_END;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_ABSTRACT;
@@ -33,6 +31,8 @@ import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_YEAR;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.extractJsonNodeTextValue;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.extractOptJsonNodeTextValue;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.streamNode;
+import static no.sikt.nva.nvi.rdf.JsonLdModels.createModel;
+import static no.sikt.nva.nvi.rdf.NvaOntology.PART_OF;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 
@@ -62,6 +62,7 @@ import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
+import no.sikt.nva.nvi.common.utils.EnvironmentUriFactory;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.ApprovalView;
 import no.sikt.nva.nvi.index.model.document.Contributor;
@@ -77,6 +78,7 @@ import no.sikt.nva.nvi.index.model.document.PublicationChannel;
 import no.sikt.nva.nvi.index.model.document.PublicationDetails;
 import no.sikt.nva.nvi.index.model.document.ReportingPeriod;
 import no.unit.nva.auth.uriretriever.UriRetriever;
+import nva.commons.core.Environment;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.NodeIterator;
 import org.slf4j.Logger;
@@ -92,13 +94,18 @@ public final class NviCandidateIndexDocumentGenerator {
   private final OrganizationRetriever organizationRetriever;
   private final JsonNode expandedResource;
   private final Candidate candidate;
+  private final Environment environment;
   private final Map<URI, String> temporaryCache = new HashMap<>();
 
   public NviCandidateIndexDocumentGenerator(
-      UriRetriever uriRetriever, JsonNode expandedResource, Candidate candidate) {
+      UriRetriever uriRetriever,
+      JsonNode expandedResource,
+      Candidate candidate,
+      Environment environment) {
     this.organizationRetriever = new OrganizationRetriever(uriRetriever);
     this.expandedResource = expandedResource;
     this.candidate = candidate;
+    this.environment = environment;
   }
 
   public NviCandidateIndexDocument generateDocument() {
@@ -138,7 +145,7 @@ public final class NviCandidateIndexDocumentGenerator {
 
   private static NodeIterator listNextPartOf(Model model, String resourceId) {
     return model.listObjectsOfProperty(
-        model.createResource(resourceId), model.createProperty(PART_OF_PROPERTY));
+        model.createResource(resourceId), model.createProperty(PART_OF));
   }
 
   private static Optional<Map<String, String>> extractLabels(
@@ -157,12 +164,13 @@ public final class NviCandidateIndexDocumentGenerator {
   private NviCandidateIndexDocument buildDocument(
       List<ApprovalView> approvals, PublicationDetails expandedPublicationDetails) {
     return NviCandidateIndexDocument.builder()
-        .withId(candidate.getId())
-        .withContext(candidate.getContextUri())
+        .withId(EnvironmentUriFactory.candidateId(environment, candidate.identifier()))
+        .withContext(EnvironmentUriFactory.context(environment))
         .withIsApplicable(candidate.isApplicable())
         .withIdentifier(candidate.identifier())
         .withReportingPeriod(ReportingPeriod.fromCandidate(candidate))
         .withReported(candidate.isReported())
+        .withReportedDate(candidate.reportedDate())
         .withApprovals(approvals)
         .withPublicationDetails(expandedPublicationDetails)
         .withNumberOfApprovals(approvals.size())

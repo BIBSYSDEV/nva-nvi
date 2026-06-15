@@ -6,7 +6,6 @@ import static java.util.Collections.emptyList;
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.SampleExpandedPublicationFactory.mapOrganizationToAffiliation;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
-import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.dto.CustomerDtoFixtures.getDefaultCustomers;
@@ -33,8 +32,8 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 import static org.mockito.Mockito.doThrow;
 
@@ -62,7 +61,7 @@ import no.sikt.nva.nvi.test.SampleExpandedContributor;
 import no.sikt.nva.nvi.test.SampleExpandedPublication;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.core.paths.UnixPath;
-import nva.commons.logutils.LogUtils;
+import nva.commons.logutils.LogRecorder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -102,10 +101,10 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       String content, URI publicationId) throws IOException {
     var fileUri = s3Driver.insertFile(UnixPath.of(randomString()), content);
     var event = createEvent(new PersistedResourceMessage(fileUri));
-    final var logAppender = LogUtils.getTestingAppender(EvaluatorService.class);
+    var logRecorder = LogRecorder.forClass(EvaluatorService.class);
     handler.handleRequest(event, CONTEXT);
     var expectedLogMessage = "Skipping evaluation due to invalid year format";
-    assertTrue(logAppender.getMessages().contains(expectedLogMessage));
+    assertThat(logRecorder.messages()).anyMatch(message -> message.startsWith(expectedLogMessage));
     assertThatThrownBy(() -> scenario.getCandidateByPublicationId(publicationId))
         .isInstanceOf(CandidateNotFoundException.class);
   }
@@ -450,7 +449,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
 
   @Nested
   @DisplayName("Test cases with dynamic test data")
-  class evaluateNviCandidatesWithDynamicTestData {
+  class EvaluateNviCandidatesWithDynamicTestData {
     private SampleExpandedPublicationFactory factory;
     private Organization nviOrganization;
     private PublicationDate publicationDate;
@@ -653,6 +652,23 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     }
 
     @Test
+    void shouldNotThrowErrorWhenEvaluatingExistingCandidateInClosedPeriod() {
+      setupOpenPeriod(scenario, publicationDate.year());
+      var publication = factory.withContributor(verifiedCreatorFrom(nviOrganization));
+      setupCandidateMatchingPublication(publication.getExpandedPublication());
+      setupClosedPeriod(scenario, publicationDate.year());
+      var updatedPublication = publication.withContributor(verifiedCreatorFrom(nviOrganization));
+
+      var candidateBeforeUpdate =
+          candidateService.getCandidateByPublicationId(publication.getPublicationId());
+      assertDoesNotThrow(() -> handleEvaluation(updatedPublication));
+
+      var candidateAfterUpdate =
+          candidateService.getCandidateByPublicationId(publication.getPublicationId());
+      assertThat(candidateBeforeUpdate.revision()).isEqualTo(candidateAfterUpdate.revision());
+    }
+
+    @Test
     void shouldEvaluateExistingCandidateInClosedPeriodThatIsNoLongerApplicable() {
       // Given a publication that has been evaluated as an applicable Candidate
       // And the publication is published in a closed period
@@ -713,9 +729,8 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       // Then the evaluation should be skipped
       // And the Candidate entry in the database should not be updated
       setupClosedPeriod(scenario, publicationDate.year());
-      var existingCandidateDao =
-          setupReportedCandidate(scenario.getCandidateRepository(), publicationDate.year());
-      var publicationId = existingCandidateDao.publicationId();
+      var existingCandidate = scenario.setupReportedCandidate(publicationDate.year());
+      var publicationId = existingCandidate.getPublicationId();
       var publication =
           factory
               .withContributor(verifiedCreatorFrom(nviOrganization))
@@ -729,8 +744,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
 
       var candidate = candidateService.getCandidateByPublicationId(publicationId);
       assertThat(candidate.isReported()).isTrue();
-      assertThat(candidate.modifiedDate())
-          .isEqualTo(existingCandidateDao.candidate().modifiedDate());
+      assertThat(candidate.modifiedDate()).isEqualTo(existingCandidate.modifiedDate());
     }
 
     @Test

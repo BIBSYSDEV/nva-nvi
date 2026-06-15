@@ -1,0 +1,23 @@
+plugins {
+    id 'nva.nvi.java-conventions'
+}
+
+dependencies {
+    api(nvaLibs.clients)
+    api(project(':nvi-commons'))
+    implementation(nvaCatalog.slf4j.api)
+    implementation(nvaLibs.core)
+    implementation(project(':publication-service'))
+    testImplementation(nvaCatalog.assertj.core)
+    testImplementation(nvaCatalog.junit.jupiter.api)
+    testImplementation(nvaCatalog.mockito.core)
+    testImplementation(nvaLibs.testutils)
+    testImplementation(project(':nvi-test'))
+    testImplementation(testFixtures(project(":nvi-commons")))
+}
+
+test {
+    environment("API_HOST", "example.org")
+    environment("BACKEND_CLIENT_AUTH_URL", "example.org/auth")
+    environment("NVI_TABLE_NAME", "some-table")
+}

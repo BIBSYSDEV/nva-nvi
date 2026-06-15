@@ -18,7 +18,9 @@ import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.Sector;
 import no.sikt.nva.nvi.test.TestUtils;
 
-public class DbPointCalculationFixtures {
+public final class DbPointCalculationFixtures {
+
+  private DbPointCalculationFixtures() {}
 
   public static DbPointCalculation.Builder randomPointCalculationBuilder(
       URI organizationId, URI creatorId) {

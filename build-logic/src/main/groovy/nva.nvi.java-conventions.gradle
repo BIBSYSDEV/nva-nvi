@@ -4,7 +4,16 @@ plugins {
 }
 
 nva {
+    errorprone {
+        allErrorsAsWarnings = false
+    }
     pmd {
         rulesetFile = rootProject.file('config/pmd/ruleset.xml')
     }
+}
+
+// Deprecated artifact that bundles jakarta.json-api classes inside the impl jar,
+// duplicating the API on the classpath. Use parsson + jakarta.json-api instead.
+configurations.configureEach {
+    exclude group: 'org.glassfish', module: 'jakarta.json'
 }

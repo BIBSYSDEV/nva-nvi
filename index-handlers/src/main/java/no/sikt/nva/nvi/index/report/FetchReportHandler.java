@@ -76,7 +76,9 @@ public class FetchReportHandler extends ApiGatewayHandler<Void, ReportResponse> 
   @Override
   protected void validateRequest(Void unused, RequestInfo requestInfo, Context context)
       throws ApiGatewayException {
-    if (!(isNviAdmin(requestInfo) || isNviCurator(requestInfo))) {
+    if (!(isNviAdmin(requestInfo)
+        || isNviCurator(requestInfo)
+        || requestInfo.clientIsInternalBackend())) {
       throw new ForbiddenException();
     }
   }

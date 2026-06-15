@@ -20,7 +20,9 @@ import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.client.model.Organization.Builder;
 import nva.commons.core.paths.UriWrapper;
 
-public class OrganizationFixtures {
+public final class OrganizationFixtures {
+
+  private OrganizationFixtures() {}
 
   public static String randomOrganizationIdentifier() {
     return FAKER.numerify("###.###.###.###");

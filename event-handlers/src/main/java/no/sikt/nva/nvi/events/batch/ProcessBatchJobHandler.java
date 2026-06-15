@@ -6,8 +6,6 @@ import com.amazonaws.services.lambda.runtime.events.SQSBatchResponse;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.util.ArrayList;
-import no.sikt.nva.nvi.common.MigrationService;
-import no.sikt.nva.nvi.common.RboInstitutionMigrationService;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
@@ -15,6 +13,9 @@ import no.sikt.nva.nvi.events.batch.message.BatchJobMessage;
 import no.sikt.nva.nvi.events.batch.message.MigrateCandidateMessage;
 import no.sikt.nva.nvi.events.batch.message.RefreshCandidateMessage;
 import no.sikt.nva.nvi.events.batch.message.RefreshPeriodMessage;
+import no.sikt.nva.nvi.events.batch.message.ReportCandidateMessage;
+import no.sikt.nva.nvi.migration.MigrationService;
+import no.sikt.nva.nvi.migration.ReportedDateMigrationService;
 import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +31,7 @@ public class ProcessBatchJobHandler implements RequestHandler<SQSEvent, SQSBatch
   public ProcessBatchJobHandler() {
     this(
         CandidateService.defaultCandidateService(),
-        RboInstitutionMigrationService.defaultService(),
+        ReportedDateMigrationService.defaultService(),
         NviPeriodService.defaultNviPeriodService());
   }
 
@@ -67,6 +68,7 @@ public class ProcessBatchJobHandler implements RequestHandler<SQSEvent, SQSBatch
       case RefreshCandidateMessage candidateMessage -> candidateMessage.execute(candidateService);
       case MigrateCandidateMessage candidateMessage -> candidateMessage.execute(migrationService);
       case RefreshPeriodMessage periodMessage -> periodMessage.execute(periodService);
+      case ReportCandidateMessage candidateMessage -> candidateMessage.execute(candidateService);
     }
   }
 }

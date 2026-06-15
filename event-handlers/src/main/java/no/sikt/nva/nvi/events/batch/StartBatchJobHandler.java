@@ -79,14 +79,14 @@ public class StartBatchJobHandler implements RequestStreamHandler {
 
   @Override
   public void handleRequest(InputStream input, OutputStream output, Context context) {
-    if (!processingEnabled) {
-      LOGGER.warn("Processing disabled, aborting batch job");
-    } else {
+    if (processingEnabled) {
       var request = parseRequest(input);
       LOGGER.info("Processing batch job: {}", request);
       var batchJobResult = batchJobFactory.from(request).execute();
       sendMessagesToQueue(batchJobResult.messages());
       sendContinuationEvents(batchJobResult.continuationEvents());
+    } else {
+      LOGGER.warn("Processing disabled, aborting batch job");
     }
   }
 

@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.index.apigateway;
 
-import static com.google.common.net.MediaType.JSON_UTF_8;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.util.Collections.emptyMap;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.ALLOWED_ORIGIN;
@@ -15,9 +14,9 @@ import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.apigateway.GatewayResponse.fromOutputStream;
+import static nva.commons.apigateway.MediaType.JSON_UTF_8;
+import static nva.commons.apigateway.RequestInfoConstants.BACKEND_SCOPE_AS_DEFINED_IN_IDENTITY_SERVICE;
 import static nva.commons.core.StringUtils.EMPTY_STRING;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.ArgumentMatchers.any;
@@ -28,7 +27,6 @@ import static software.amazon.awssdk.http.HttpStatusCode.BAD_REQUEST;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.google.common.net.HttpHeaders;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -49,6 +47,7 @@ import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.MediaType;
 import nva.commons.core.paths.UriWrapper;
+import org.apache.hc.core5.http.HttpHeaders;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -116,6 +115,15 @@ class FetchReportHandlerTest {
   }
 
   @Test
+  void shouldReturnOkWhenClientIsInternalBackend() throws IOException {
+    handler.handleRequest(requestWithBackendScope(), output, CONTEXT);
+
+    var statusCode = fromOutputStream(output, ReportResponse.class).getStatusCode();
+
+    assertEquals(HTTP_OK, statusCode);
+  }
+
+  @Test
   void shouldReturnAllPeriodsReportWhenNoPathParametersAreProvided() {
     var request =
         createRequest(emptyMap(), REPORTS_PATH_SEGMENT, emptyMap(), AccessRight.MANAGE_NVI);
@@ -142,8 +150,7 @@ class FetchReportHandlerTest {
 
     var response = fromOutputStream(output, ReportResponse.class);
 
-    assertThat(
-        response.getHeaders().get(HttpHeaders.CONTENT_TYPE), is(MediaType.JSON_UTF_8.toString()));
+    assertEquals(JSON_UTF_8.toString(), response.getHeaders().get(HttpHeaders.CONTENT_TYPE));
   }
 
   @Test
@@ -162,7 +169,7 @@ class FetchReportHandlerTest {
 
     var response = fromOutputStream(output, ReportResponse.class);
 
-    assertThat(response.getHeaders().get(HttpHeaders.CONTENT_TYPE), is(JSON_UTF_8.toString()));
+    assertEquals(JSON_UTF_8.toString(), response.getHeaders().get(HttpHeaders.CONTENT_TYPE));
   }
 
   @Test
@@ -178,8 +185,7 @@ class FetchReportHandlerTest {
 
     var response = fromOutputStream(output, ReportResponse.class);
 
-    assertThat(
-        response.getHeaders().get(HttpHeaders.CONTENT_TYPE), is(MediaType.JSON_UTF_8.toString()));
+    assertEquals(JSON_UTF_8.toString(), response.getHeaders().get(HttpHeaders.CONTENT_TYPE));
   }
 
   @Test
@@ -267,6 +273,17 @@ class FetchReportHandlerTest {
 
   private static InputStream requestWithoutAccessRights() {
     return createRequest(Map.of(PATH, REPORTS_PATH_SEGMENT), EMPTY_STRING, emptyMap());
+  }
+
+  private static InputStream requestWithBackendScope() {
+    try {
+      return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
+          .withOtherProperties(Map.of(PATH, REPORTS_PATH_SEGMENT))
+          .withScope(BACKEND_SCOPE_AS_DEFINED_IN_IDENTITY_SERVICE)
+          .build();
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   private static InputStream createRequestWithHeader(

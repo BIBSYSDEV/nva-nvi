@@ -37,7 +37,8 @@ public class BatchJobFactory {
   private BatchJob handleInitialRequest(StartBatchJobRequest request) {
     return switch (request.jobType()) {
       case REFRESH_PERIODS -> createRefreshPeriodsJob(periodService, request);
-      case REFRESH_CANDIDATES, MIGRATE_CANDIDATES -> createCandidateJob(request);
+      case REFRESH_CANDIDATES, MIGRATE_CANDIDATES, REPORT_APPROVED_CANDIDATES ->
+          createCandidateJob(request);
     };
   }
 

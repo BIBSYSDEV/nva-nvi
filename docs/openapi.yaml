@@ -22,7 +22,7 @@ tags:
     description: NVI candidate operations
   - name: Report
     description: Institution reports and aggregations
-  - name: Report (not implemented yet)
+  - name: Report (partially implemented)
     description: Report endpoints that are not fully implemented yet
 
 x-authenticated-security: &authenticated
@@ -909,7 +909,7 @@ paths:
   /reports:
     get:
       tags:
-        - Report (not implemented yet)
+        - Report
       description: Get report for all periods
       operationId: getAllPeriodsReport
       security: *authenticated
@@ -942,7 +942,7 @@ paths:
   /reports/{period}:
     get:
       tags:
-        - Report (not implemented yet)
+        - Report
       description: Get report for a specific period
       operationId: getPeriodReport
       parameters:
@@ -989,7 +989,7 @@ paths:
   /reports/{period}/institutions:
     get:
       tags:
-        - Report (not implemented yet)
+        - Report
       description: Get all institutions report for a specific period
       operationId: getAllInstitutionsReport
       parameters:
@@ -1057,7 +1057,7 @@ paths:
   /reports/{period}/institutions/{institution}:
     get:
       tags:
-        - Report (not implemented yet)
+        - Report (partially implemented)
       description: Get specific institution report for a specific period
       operationId: getInstitutionReport
       parameters:
@@ -1329,6 +1329,15 @@ components:
               type: string
             startDate:
               type: string
+        status:
+          type: string
+          description: The report status of the candidate
+          example: "Reported"
+        reportedDate:
+          type: string
+          format: date-time
+          description: Timestamp for when the candidate was marked as reported
+          example: "2026-01-15T12:00:00Z"
         allowedOperations:
           type: array
           description: >

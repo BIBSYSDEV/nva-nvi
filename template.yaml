@@ -22,6 +22,7 @@ Globals:
         CUSTOM_DOMAIN_BASE_PATH: !Ref CustomDomainBasePath
         API_HOST: !Ref ApiDomain
         LOG_LEVEL: !Ref LogLevel
+        LOG4J_CONFIGURATION_FILE: classpath:nva-log4j2.xml
   Api:
     Cors:
       AllowMethods: "'PUT, GET,OPTIONS,DELETE,POST'"
@@ -56,7 +57,7 @@ Parameters:
     Default: /NVA/Events/EventsBusArn
   LogLevel:
     Type: String
-    Default: "debug"
+    Default: "info"
     AllowedValues:
       - "trace"
       - "debug"

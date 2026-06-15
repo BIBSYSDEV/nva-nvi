@@ -14,7 +14,9 @@ import java.util.List;
 import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
 
-public class PublicationDetailsFixtures {
+public final class PublicationDetailsFixtures {
+
+  private PublicationDetailsFixtures() {}
 
   public static PublicationDto.Builder randomPublicationDtoBuilder() {
     var channel =

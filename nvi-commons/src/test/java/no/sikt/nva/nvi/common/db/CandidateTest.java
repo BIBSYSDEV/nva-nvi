@@ -1,9 +1,7 @@
 package no.sikt.nva.nvi.common.db;
 
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidate;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
@@ -17,6 +15,6 @@ class CandidateTest {
     var candidate = randomCandidate();
     var json = JsonUtils.dtoObjectMapper.writeValueAsString(candidate);
     var reconstructedCandidate = JsonUtils.dtoObjectMapper.readValue(json, DbCandidate.class);
-    assertThat(reconstructedCandidate, is(equalTo(candidate)));
+    assertEquals(candidate, reconstructedCandidate);
   }
 }

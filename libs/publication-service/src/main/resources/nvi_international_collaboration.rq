@@ -1,0 +1,19 @@
+PREFIX : <https://nva.sikt.no/ontology/publication#>
+# Determines whether an expanded NVA publication is an international collaboration,
+# i.e. whether any contributor is a Creator with a non-Norwegian affiliation.
+
+CONSTRUCT {
+  ?publication a :Publication ;
+               :isInternationalCollaboration ?isInternationalCollaboration .
+}
+
+WHERE {
+  ?publication a :Publication ;
+               :entityDescription ?entityDescription .
+  BIND(EXISTS {
+    ?entityDescription :contributor ?creatorContributor .
+    ?creatorContributor :role [ a :Creator ] ;
+                        :affiliation [ :country ?creatorCountry ] .
+    FILTER (?creatorCountry != "NO")
+  } AS ?isInternationalCollaboration)
+}
