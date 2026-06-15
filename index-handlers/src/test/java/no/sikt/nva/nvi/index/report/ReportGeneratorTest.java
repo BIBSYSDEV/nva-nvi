@@ -6,6 +6,8 @@ import static no.sikt.nva.nvi.index.IndexDocumentFixtures.createRandomIndexDocum
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.documentForYear;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.documentWithApprovals;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomApproval;
+import static no.sikt.nva.nvi.index.report.request.ReportType.AUTHOR_SHARES_CONTROL;
+import static no.sikt.nva.nvi.index.report.request.ReportType.DEFAULT_REPORT;
 import static no.sikt.nva.nvi.report.generators.utils.CsvReader.parseCsvToRows;
 import static no.sikt.nva.nvi.test.TestConstants.THIS_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -76,7 +78,7 @@ class ReportGeneratorTest {
   void shouldUploadCsvReportForAllInstitutions() {
     CONTAINER.addDocumentsToIndex(documentForYear(THIS_YEAR, false, randomApproval()));
 
-    var message = allInstitutionsMessage(MediaType.CSV_UTF_8);
+    var message = allInstitutionsMessage(MediaType.CSV_UTF_8, DEFAULT_REPORT);
     reportGenerator.generateReport(message);
 
     assertTrue(readPersistedReport(message).contentLength() > 0);
@@ -86,7 +88,7 @@ class ReportGeneratorTest {
   void shouldUploadXlsxReportForAllInstitutions() {
     CONTAINER.addDocumentsToIndex(documentForYear(THIS_YEAR, false, randomApproval()));
 
-    var message = allInstitutionsMessage(MediaType.OOXML_SHEET);
+    var message = allInstitutionsMessage(MediaType.OOXML_SHEET, DEFAULT_REPORT);
     reportGenerator.generateReport(message);
 
     assertTrue(readPersistedReport(message).contentLength() > 0);
@@ -200,6 +202,18 @@ class ReportGeneratorTest {
     assertThat(rboInstitution.string()).isNotEmpty();
   }
 
+  @Test
+  void shouldCreateReportContainingAllContributorsWhenGeneratingAuthorSharesControlReport() {
+    CONTAINER.addDocumentsToIndex(createRandomIndexDocument(randomOrganizationId(), THIS_YEAR));
+
+    var message = allInstitutionsMessage(MediaType.CSV_UTF_8, AUTHOR_SHARES_CONTROL);
+    reportGenerator.generateReport(message);
+
+    var rows = parseCsvToRows(read(message), ReportHeader.class);
+
+    assertThat(rows.size()).isEqualTo(5);
+  }
+
   private byte[] read(GenerateReportMessage message) {
     return s3Client
         .getObject(
@@ -228,20 +242,17 @@ class ReportGeneratorTest {
         .response();
   }
 
-  private GenerateReportMessage allInstitutionsMessage(MediaType mediaType) {
+  private GenerateReportMessage allInstitutionsMessage(MediaType mediaType, ReportType reportType) {
     var request =
         new AllInstitutionsReportRequest(
-            randomUri(), THIS_YEAR, new ReportFormat(mediaType, ReportType.DEFAULT_REPORT));
+            randomUri(), THIS_YEAR, new ReportFormat(mediaType, reportType));
     return GenerateReportMessage.create(request, presignedFile(mediaType));
   }
 
   private GenerateReportMessage institutionMessage(MediaType mediaType, URI institutionId) {
     var request =
         new InstitutionReportRequest(
-            randomUri(),
-            THIS_YEAR,
-            institutionId,
-            new ReportFormat(mediaType, ReportType.DEFAULT_REPORT));
+            randomUri(), THIS_YEAR, institutionId, new ReportFormat(mediaType, DEFAULT_REPORT));
     return GenerateReportMessage.create(request, presignedFile(mediaType));
   }
 

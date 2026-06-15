@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index.model.report;
 
+import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.organizationIdFromIdentifier;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomPages;
@@ -70,6 +71,10 @@ class InstitutionReportMapperTest {
   private static final URI INSTITUTION_ID =
       URI.create("https://example.org/cristin/organization/203.0.0.0");
   private static final String ORGANIZATION_PRESENT_IN_DBH = "203.14.5.0";
+  private static final java.util.function.Predicate<NviContributor> ALL_CONTRIBUTORS =
+      contributor -> true;
+  private static final java.util.function.Predicate<NviContributor> CONTRIBUTOR_WITH_ID =
+      contributor -> nonNull(contributor.id());
 
   @Test
   void shouldHandleMissingInstitutionFromUHInstitutions() {
@@ -355,7 +360,9 @@ class InstitutionReportMapperTest {
                     List.of(newCreatorAffiliationPoints(null, affiliationId)),
                     randomBoolean())));
 
-    var rows = InstitutionReportMapper.mapToReportRows(document, INSTITUTION_ID).toList();
+    var rows =
+        InstitutionReportMapper.mapToReportRows(document, INSTITUTION_ID, CONTRIBUTOR_WITH_ID)
+            .toList();
 
     assertThat(rows).isEmpty();
   }
@@ -365,7 +372,7 @@ class InstitutionReportMapperTest {
     var otherInstitutionId = URI.create("https://example.org/organization/999");
     assertThat(
             InstitutionReportMapper.mapToReportRows(
-                randomDocument(ORGANIZATION_PRESENT_IN_DBH), otherInstitutionId))
+                randomDocument(ORGANIZATION_PRESENT_IN_DBH), otherInstitutionId, ALL_CONTRIBUTORS))
         .isEmpty();
   }
 
@@ -392,7 +399,9 @@ class InstitutionReportMapperTest {
                         newCreatorAffiliationPoints(contributorId2, affiliationId)),
                     randomBoolean())));
 
-    var rows = InstitutionReportMapper.mapToReportRows(document, INSTITUTION_ID).toList();
+    var rows =
+        InstitutionReportMapper.mapToReportRows(document, INSTITUTION_ID, ALL_CONTRIBUTORS)
+            .toList();
 
     assertThat(rows).hasSize(2);
     assertThat(rows)
@@ -421,7 +430,9 @@ class InstitutionReportMapperTest {
                         newCreatorAffiliationPoints(contributorId, affiliationId2)),
                     randomBoolean())));
 
-    var rows = InstitutionReportMapper.mapToReportRows(document, INSTITUTION_ID).toList();
+    var rows =
+        InstitutionReportMapper.mapToReportRows(document, INSTITUTION_ID, ALL_CONTRIBUTORS)
+            .toList();
 
     assertThat(rows).hasSize(2);
     assertThat(rows)
@@ -438,7 +449,7 @@ class InstitutionReportMapperTest {
   }
 
   private Row toRow(ReportDocument document) {
-    return InstitutionReportMapper.mapToReportRows(document, INSTITUTION_ID)
+    return InstitutionReportMapper.mapToReportRows(document, INSTITUTION_ID, ALL_CONTRIBUTORS)
         .findFirst()
         .orElseThrow();
   }
