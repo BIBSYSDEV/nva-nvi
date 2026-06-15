@@ -25,7 +25,7 @@ public record CandidateDto(
     List<ApprovalDto> approvals,
     BigDecimal totalPoints,
     List<NoteDto> notes,
-    PeriodStatusDto period,
+    NviPeriodDto period,
     String status,
     Instant reportedDate,
     Set<CandidateOperation> allowedOperations,
@@ -47,7 +47,7 @@ public record CandidateDto(
     private List<ApprovalDto> approvals;
     private BigDecimal totalPoints;
     private List<NoteDto> notes;
-    private PeriodStatusDto periodStatus;
+    private NviPeriodDto period;
     private String reportStatus;
     private Instant reportedDate;
     private Set<CandidateOperation> allowedOperations;
@@ -90,8 +90,8 @@ public record CandidateDto(
       return this;
     }
 
-    public Builder withPeriod(PeriodStatusDto periodStatus) {
-      this.periodStatus = periodStatus;
+    public Builder withPeriod(NviPeriodDto period) {
+      this.period = period;
       return this;
     }
 
@@ -124,7 +124,7 @@ public record CandidateDto(
           approvals,
           totalPoints,
           notes,
-          periodStatus,
+          period,
           reportStatus,
           reportedDate,
           allowedOperations,

@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.common.service.model;
 
-import static java.util.Objects.isNull;
 import static no.sikt.nva.nvi.common.utils.Validator.shouldNotBeNull;
 
 import java.net.URI;
@@ -12,7 +11,6 @@ import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.exceptions.ValidationException;
 import no.sikt.nva.nvi.common.model.PeriodStatus;
 import no.sikt.nva.nvi.common.service.dto.NviPeriodDto;
-import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.requests.UpdatePeriodRequest;
 
 public record NviPeriod(
@@ -65,35 +63,17 @@ public record NviPeriod(
 
   public NviPeriodDto toDto() {
     return new NviPeriodDto(
-        id, publishingYear.toString(), startDate.toString(), reportingDate.toString());
+        id, publishingYear.toString(), startDate.toString(), reportingDate.toString(), status());
   }
 
-  public static PeriodStatusDto toPeriodStatusDto(NviPeriod period) {
-    var status = mapToPeriodStatus(period);
-    if (isNull(period)) {
-      return PeriodStatusDto.builder().withStatus(status).build();
-    }
-    return PeriodStatusDto.builder()
-        .withId(period.id())
-        .withStatus(status)
-        .withYear(period.publishingYear().toString())
-        .withStartDate(period.startDate().toString())
-        .withReportingDate(period.reportingDate().toString())
-        .build();
-  }
-
-  private static PeriodStatus mapToPeriodStatus(NviPeriod period) {
-    if (isNull(period)) {
-      return PeriodStatus.NONE;
-    }
-
-    if (period.isOpen()) {
+  public PeriodStatus status() {
+    if (isOpen()) {
       return PeriodStatus.OPEN;
     }
-    if (period.isClosed()) {
+    if (isClosed()) {
       return PeriodStatus.CLOSED;
     }
-    if (period.isUnopened()) {
+    if (isUnopened()) {
       return PeriodStatus.UNOPENED;
     }
     return PeriodStatus.NONE;

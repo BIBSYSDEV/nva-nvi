@@ -21,7 +21,7 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.model.PeriodStatus;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
-import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
+import no.sikt.nva.nvi.common.service.dto.NviPeriodDto;
 import no.sikt.nva.nvi.common.service.exception.PeriodAlreadyExistsException;
 import no.sikt.nva.nvi.common.service.exception.PeriodNotFoundException;
 import nva.commons.core.Environment;
@@ -138,34 +138,35 @@ class NviPeriodTest {
   @Test
   void shouldReturnDto() {
     var request = createRequest(YEAR);
-    var expectedId = constructExpectedId(request);
-    var actual = createNviPeriod(request).toDto();
-    assertEquals(expectedId, actual.id());
-    assertEquals(request.publishingYear().toString(), actual.publishingYear());
-    assertEquals(request.startDate().toString(), actual.startDate());
-    assertEquals(request.reportingDate().toString(), actual.reportingDate());
+    var expectedDto =
+        new NviPeriodDto(
+            constructExpectedId(request),
+            request.publishingYear().toString(),
+            request.startDate().toString(),
+            request.reportingDate().toString(),
+            PeriodStatus.UNOPENED);
+    var actualDto = createNviPeriod(request).toDto();
+    assertEquals(expectedDto, actualDto);
   }
 
   @ParameterizedTest()
   @MethodSource("periodToPeriodStatusProvider")
   void shouldConvertPeriodToPeriodStatusCorrectly(NviPeriod period, PeriodStatus expectedStatus) {
-
-    var statusDto = NviPeriod.toPeriodStatusDto(period);
-
-    assertEquals(expectedStatus, statusDto.status());
+    var periodDto = NviPeriodDto.from(period);
+    assertEquals(expectedStatus, periodDto.status());
   }
 
   @Test
   void shouldConvertPeriodToDto() {
     var period = openPeriod();
-    var periodDto = NviPeriod.toPeriodStatusDto(period);
+    var periodDto = NviPeriodDto.from(period);
     Assertions.assertThat(periodDto)
         .extracting(
-            PeriodStatusDto::id,
-            PeriodStatusDto::status,
-            PeriodStatusDto::startDate,
-            PeriodStatusDto::reportingDate,
-            PeriodStatusDto::year)
+            NviPeriodDto::id,
+            NviPeriodDto::status,
+            NviPeriodDto::startDate,
+            NviPeriodDto::reportingDate,
+            NviPeriodDto::publishingYear)
         .containsExactly(
             period.id(),
             PeriodStatus.OPEN,

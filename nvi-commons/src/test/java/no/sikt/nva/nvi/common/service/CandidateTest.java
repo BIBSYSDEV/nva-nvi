@@ -19,7 +19,6 @@ import static no.sikt.nva.nvi.common.dto.PointCalculationDtoBuilder.randomPointC
 import static no.sikt.nva.nvi.common.model.CandidateFixtures.setupRandomApplicableCandidate;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomTopLevelOrganization;
 import static no.sikt.nva.nvi.common.model.UserInstanceFixtures.createCuratorUserInstance;
-import static no.sikt.nva.nvi.common.service.model.NviPeriod.toPeriodStatusDto;
 import static no.sikt.nva.nvi.common.utils.EnvironmentUriFactory.candidateId;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
@@ -50,6 +49,7 @@ import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
+import no.sikt.nva.nvi.common.service.dto.NviPeriodDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
@@ -260,7 +260,7 @@ class CandidateTest extends CandidateTestSetup {
             .withPublicationId(candidate.getPublicationId())
             .withIdentifier(candidate.identifier())
             .withContext(getCandidateContextUri())
-            .withPeriod(toPeriodStatusDto(candidate.period()))
+            .withPeriod(NviPeriodDto.from(candidate.period()))
             .withTotalPoints(candidate.getTotalPoints())
             .withNotes(emptyList())
             .build();
@@ -310,7 +310,7 @@ class CandidateTest extends CandidateTestSetup {
     candidateService.updateCandidate(updateRequest);
     var fetchedCandidate = candidateService.getCandidateByIdentifier(tempCandidate.identifier());
 
-    var periodStatus = toPeriodStatusDto(fetchedCandidate.period()).status();
+    var periodStatus = NviPeriodDto.from(fetchedCandidate.period()).status();
     assertEquals(PeriodStatus.NONE, periodStatus);
   }
 
