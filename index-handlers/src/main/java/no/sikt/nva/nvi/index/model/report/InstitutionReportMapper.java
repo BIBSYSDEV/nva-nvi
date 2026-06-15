@@ -13,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
@@ -43,14 +44,15 @@ public final class InstitutionReportMapper {
 
   private InstitutionReportMapper() {}
 
-  public static Stream<Row> mapToReportRows(ReportDocument document, URI institutionId) {
+  public static Stream<Row> mapToReportRows(
+      ReportDocument document, URI institutionId, Predicate<NviContributor> contributorFilter) {
     var approval = findApproval(document, institutionId);
     if (approval.isEmpty()) {
       LOGGER.warn(NO_APPROVAL_MESSAGE, institutionId, document.identifier());
       return Stream.empty();
     }
     return document.publicationDetails().nviContributors().stream()
-        .filter(nviContributor -> nonNull(nviContributor.id()))
+        .filter(contributorFilter)
         .flatMap(
             contributor -> mapToReportRows(document, approval.get(), contributor, institutionId));
   }
