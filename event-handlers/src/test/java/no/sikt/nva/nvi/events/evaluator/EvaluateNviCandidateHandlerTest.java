@@ -669,21 +669,50 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     }
 
     @Test
-    void shouldEvaluateExistingCandidateInClosedPeriodThatIsNoLongerApplicable() {
-      // Given a publication that has been evaluated as an applicable Candidate
-      // And the publication is published in a closed period
-      // When the publication is updated to be no longer applicable
-      // Then it should be re-evaluated as a NonCandidate
+    void shouldPreserveExistingCandidateInClosedPeriodWhenEditedToNonApplicable() {
+      // Given an applicable Candidate in a closed but not yet reported period
+      // When the publication is edited so that it would no longer be applicable
+      // Then the Candidate must be preserved, not stripped, to protect closed-period numbers
       setupOpenPeriod(scenario, publicationDate.year());
       var publicationFactory = factory.withContributor(verifiedCreatorFrom(nviOrganization));
       setupCandidateMatchingPublication(publicationFactory.getExpandedPublication());
       setupClosedPeriod(scenario, publicationDate.year());
+      var candidateBeforeUpdate =
+          candidateService.getCandidateByPublicationId(publicationFactory.getPublicationId());
 
       var publication = publicationFactory.withPublicationType("ComicBook");
       handleEvaluation(publication);
 
-      var candidate = candidateService.getCandidateByPublicationId(publication.getPublicationId());
-      assertThat(candidate.isApplicable()).isFalse();
+      var candidateAfterUpdate =
+          candidateService.getCandidateByPublicationId(publication.getPublicationId());
+      assertThat(candidateAfterUpdate.isApplicable()).isTrue();
+      assertThat(candidateAfterUpdate.approvals()).isEqualTo(candidateBeforeUpdate.approvals());
+      assertThat(candidateAfterUpdate.revision()).isEqualTo(candidateBeforeUpdate.revision());
+    }
+
+    @Test
+    void shouldMoveExistingClosedPeriodCandidateWhenYearCorrectedToOpenPeriod() {
+      // Given an applicable Candidate in a closed period
+      // When the publication year is corrected to a different, open period
+      // Then the Candidate must be moved and re-evaluated, not frozen
+      var closedYearDate = randomPublicationDateInYear(CURRENT_YEAR);
+      var openYearDate = randomPublicationDateInYear(CURRENT_YEAR + 1);
+      setupOpenPeriod(scenario, closedYearDate.year());
+      setupOpenPeriod(scenario, openYearDate.year());
+      var publicationFactory =
+          factory
+              .withContributor(verifiedCreatorFrom(nviOrganization))
+              .withPublicationDate(closedYearDate);
+      setupCandidateMatchingPublication(publicationFactory.getExpandedPublication());
+      setupClosedPeriod(scenario, closedYearDate.year());
+
+      var movedPublication = publicationFactory.withPublicationDate(openYearDate);
+      handleEvaluation(movedPublication);
+
+      var candidate =
+          candidateService.getCandidateByPublicationId(movedPublication.getPublicationId());
+      assertThat(candidate.isApplicable()).isTrue();
+      assertThat(candidate.publicationDetails().publicationDate()).isEqualTo(openYearDate);
     }
 
     @Test

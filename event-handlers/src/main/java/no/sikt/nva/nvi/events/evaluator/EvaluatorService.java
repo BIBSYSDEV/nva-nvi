@@ -97,6 +97,14 @@ public class EvaluatorService {
       return Optional.empty();
     }
 
+    // Preserve an existing candidate whose period is closed before any non-candidate decision
+    // below, so a publication edit cannot strip a closed-but-not-yet-reported candidate.
+    if (shouldPreserveExistingCandidateInClosedPeriod(
+        candidateAndPeriods, publication.publicationDate())) {
+      logger.info(SKIPPED_EVALUATION_MESSAGE, publication.id());
+      return Optional.empty();
+    }
+
     // Check that the publication meets the basic requirements to be a candidate
     if (isNonCandidate(publication)) {
       return createNonNviCandidateMessage(publication.id());
@@ -108,12 +116,6 @@ public class EvaluatorService {
     if (creators.isEmpty()) {
       logger.info("Publication has no NVI creators");
       return createNonNviCandidateMessage(publication.id());
-    }
-
-    // Skip update if the period is closed and the candidate is still applicable
-    if (isApplicableCandidateInClosedPeriod(candidateAndPeriods, publication.publicationDate())) {
-      logger.info(SKIPPED_EVALUATION_MESSAGE, publication.id());
-      return Optional.empty();
     }
 
     // Check that the publication can be a candidate in the target period
@@ -166,16 +168,31 @@ public class EvaluatorService {
     return nonNull(publication.status()) && "published".equalsIgnoreCase(publication.status());
   }
 
-  private boolean isApplicableCandidateInClosedPeriod(
+  private boolean shouldPreserveExistingCandidateInClosedPeriod(
       CandidateAndPeriods candidateAndPeriods, PublicationDateDto publicationDate) {
-    var optionalPeriod = candidateAndPeriods.getPeriod(publicationDate.year());
-    if (optionalPeriod.isEmpty() || !optionalPeriod.get().isClosed()) {
+    var optionalCandidate = candidateAndPeriods.getCandidate();
+    if (optionalCandidate.isEmpty() || !isInClosedPeriod(optionalCandidate.get())) {
       return false;
     }
-    var period = optionalPeriod.get();
+    if (movesToOpenPeriod(candidateAndPeriods, publicationDate)) {
+      logger.info(
+          "Candidate {} moves from a closed period to open period {}",
+          optionalCandidate.get().identifier(),
+          publicationDate.year());
+      return false;
+    }
+    return true;
+  }
+
+  private static boolean isInClosedPeriod(Candidate candidate) {
+    return candidate.getPeriod().map(NviPeriod::isClosed).orElse(false);
+  }
+
+  private boolean movesToOpenPeriod(
+      CandidateAndPeriods candidateAndPeriods, PublicationDateDto publicationDate) {
     return candidateAndPeriods
-        .getCandidate()
-        .map(candidate -> isApplicableInPeriod(period, candidate))
+        .getPeriod(publicationDate.year())
+        .map(NviPeriod::isOpen)
         .orElse(false);
   }
 
@@ -183,12 +200,6 @@ public class EvaluatorService {
       CandidateAndPeriods candidateAndPeriods, PublicationDateDto publicationDate) {
     var optionalPeriod = candidateAndPeriods.getPeriod(publicationDate.year());
     return optionalPeriod.isPresent() && !optionalPeriod.get().isClosed();
-  }
-
-  private boolean isApplicableInPeriod(NviPeriod targetPeriod, Candidate candidate) {
-    var hasSamePeriod =
-        candidate.getPeriod().filter(period -> targetPeriod.id().equals(period.id())).isPresent();
-    return candidate.isApplicable() && hasSamePeriod;
   }
 
   private UpsertNviCandidateRequest constructNviCandidate(
