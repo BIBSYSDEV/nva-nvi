@@ -174,25 +174,26 @@ public class EvaluatorService {
     if (optionalCandidate.isEmpty() || !isInClosedPeriod(optionalCandidate.get())) {
       return false;
     }
-    if (movesToOpenPeriod(candidateAndPeriods, publicationDate)) {
-      logger.info(
-          "Candidate {} moves from a closed period to open period {}",
-          optionalCandidate.get().identifier(),
-          publicationDate.year());
-      return false;
+    var candidate = optionalCandidate.get();
+    if (remainsInSamePeriod(candidate, publicationDate)) {
+      return true;
     }
-    return true;
+    logger.info(
+        "Candidate {} in a closed period is being moved to year {}",
+        candidate.identifier(),
+        publicationDate.year());
+    return false;
   }
 
   private static boolean isInClosedPeriod(Candidate candidate) {
     return candidate.getPeriod().map(NviPeriod::isClosed).orElse(false);
   }
 
-  private boolean movesToOpenPeriod(
-      CandidateAndPeriods candidateAndPeriods, PublicationDateDto publicationDate) {
-    return candidateAndPeriods
-        .getPeriod(publicationDate.year())
-        .map(NviPeriod::isOpen)
+  private static boolean remainsInSamePeriod(
+      Candidate candidate, PublicationDateDto publicationDate) {
+    return candidate
+        .getPeriod()
+        .map(period -> period.hasPublishingYear(publicationDate.year()))
         .orElse(false);
   }
 

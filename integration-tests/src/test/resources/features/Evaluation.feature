@@ -69,7 +69,7 @@ Feature: Evaluation of Publications as NVI Candidates
       When the Publication title is changed
       Then the Candidate is not updated
 
-  Rule: Unreported Candidates can be demoted in any period
+  Rule: Unreported Candidates can be demoted in pending or open periods
 
     Background:
       Given an applicable Publication published "this" year
@@ -84,7 +84,11 @@ Feature: Evaluation of Publications as NVI Candidates
         | period_state |
         | OPEN         |
         | PENDING      |
-        | CLOSED       |
+
+    Scenario: Candidate in closed period is not demoted
+      Given the reporting period for "this" year is "CLOSED"
+      When the Publication is updated to be non-applicable
+      Then the Candidate is applicable
 
   Rule: Year transitions follow the target period's rules
 
