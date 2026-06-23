@@ -52,6 +52,8 @@ public class EvaluatorService {
       "Skipping evaluation due to invalid year format {}.";
   private static final String REPORTED_CANDIDATE_MESSAGE =
       "Publication is already reported and cannot be updated.";
+  private static final String CLOSED_PERIOD_CANDIDATE_MESSAGE =
+      "Candidate is in a closed period and cannot be updated.";
   private final Logger logger = LoggerFactory.getLogger(EvaluatorService.class);
   private final CandidateService candidateService;
   private final IdentityServiceClient identityServiceClient;
@@ -97,14 +99,6 @@ public class EvaluatorService {
       return Optional.empty();
     }
 
-    // Preserve any existing candidate whose period is closed, before the non-candidate and
-    // move decisions below, so closed-period numbers can never change: a closed-period
-    // candidate is neither stripped in place nor moved out by a publication edit.
-    if (isExistingCandidateInClosedPeriod(candidateAndPeriods)) {
-      logger.info(SKIPPED_EVALUATION_MESSAGE, publication.id());
-      return Optional.empty();
-    }
-
     // Check that the publication meets the basic requirements to be a candidate
     if (isNonCandidate(publication)) {
       return createNonNviCandidateMessage(publication.id());
@@ -138,6 +132,13 @@ public class EvaluatorService {
 
     if (candidateAndPeriods.getCandidate().map(Candidate::isReported).orElse(false)) {
       logger.warn(REPORTED_CANDIDATE_MESSAGE);
+      return true;
+    }
+
+    // Freeze any existing candidate in a closed period: closed-period numbers must never change,
+    // so it is neither stripped in place nor moved out by a publication edit.
+    if (isExistingCandidateInClosedPeriod(candidateAndPeriods)) {
+      logger.info(CLOSED_PERIOD_CANDIDATE_MESSAGE);
       return true;
     }
     return false;
