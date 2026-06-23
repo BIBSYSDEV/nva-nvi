@@ -312,7 +312,7 @@ public record Candidate(
     return getPeriod().map(NviPeriod::isOpen).orElse(false);
   }
 
-  private boolean isInClosedPeriod() {
+  public boolean isInClosedPeriod() {
     return getPeriod().map(NviPeriod::isClosed).orElse(false);
   }
 

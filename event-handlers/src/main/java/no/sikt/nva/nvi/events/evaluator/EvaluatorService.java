@@ -27,7 +27,6 @@ import no.sikt.nva.nvi.common.model.Customer;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.CandidateAndPeriods;
-import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.events.evaluator.model.NviCreator;
 import no.sikt.nva.nvi.events.evaluator.model.NviOrganization;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
@@ -171,11 +170,7 @@ public class EvaluatorService {
 
   private static boolean isExistingCandidateInClosedPeriod(
       CandidateAndPeriods candidateAndPeriods) {
-    return candidateAndPeriods.getCandidate().map(EvaluatorService::isInClosedPeriod).orElse(false);
-  }
-
-  private static boolean isInClosedPeriod(Candidate candidate) {
-    return candidate.getPeriod().map(NviPeriod::isClosed).orElse(false);
+    return candidateAndPeriods.getCandidate().map(Candidate::isInClosedPeriod).orElse(false);
   }
 
   private boolean canEvaluateInPeriod(
