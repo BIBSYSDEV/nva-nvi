@@ -27,7 +27,6 @@ import no.sikt.nva.nvi.common.model.Customer;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.CandidateAndPeriods;
-import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.events.evaluator.model.NviCreator;
 import no.sikt.nva.nvi.events.evaluator.model.NviOrganization;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
@@ -52,6 +51,8 @@ public class EvaluatorService {
       "Skipping evaluation due to invalid year format {}.";
   private static final String REPORTED_CANDIDATE_MESSAGE =
       "Publication is already reported and cannot be updated.";
+  private static final String CLOSED_PERIOD_CANDIDATE_MESSAGE =
+      "Candidate is in a closed period and cannot be updated.";
   private final Logger logger = LoggerFactory.getLogger(EvaluatorService.class);
   private final CandidateService candidateService;
   private final IdentityServiceClient identityServiceClient;
@@ -110,12 +111,6 @@ public class EvaluatorService {
       return createNonNviCandidateMessage(publication.id());
     }
 
-    // Skip update if the period is closed and the candidate is still applicable
-    if (isApplicableCandidateInClosedPeriod(candidateAndPeriods, publication.publicationDate())) {
-      logger.info(SKIPPED_EVALUATION_MESSAGE, publication.id());
-      return Optional.empty();
-    }
-
     // Check that the publication can be a candidate in the target period
     if (!canEvaluateInPeriod(candidateAndPeriods, publication.publicationDate())) {
       logger.info("Publication is not applicable in the target period");
@@ -134,8 +129,15 @@ public class EvaluatorService {
       return true;
     }
 
-    if (candidateAndPeriods.getCandidate().map(Candidate::isReported).orElse(false)) {
+    if (isReportedCandidate(candidateAndPeriods)) {
       logger.warn(REPORTED_CANDIDATE_MESSAGE);
+      return true;
+    }
+
+    // Freeze any existing candidate in a closed period: closed-period numbers must never change,
+    // so it is neither stripped in place nor moved out by a publication edit.
+    if (isExistingCandidateInClosedPeriod(candidateAndPeriods)) {
+      logger.info(CLOSED_PERIOD_CANDIDATE_MESSAGE);
       return true;
     }
     return false;
@@ -166,29 +168,19 @@ public class EvaluatorService {
     return nonNull(publication.status()) && "published".equalsIgnoreCase(publication.status());
   }
 
-  private boolean isApplicableCandidateInClosedPeriod(
-      CandidateAndPeriods candidateAndPeriods, PublicationDateDto publicationDate) {
-    var optionalPeriod = candidateAndPeriods.getPeriod(publicationDate.year());
-    if (optionalPeriod.isEmpty() || !optionalPeriod.get().isClosed()) {
-      return false;
-    }
-    var period = optionalPeriod.get();
-    return candidateAndPeriods
-        .getCandidate()
-        .map(candidate -> isApplicableInPeriod(period, candidate))
-        .orElse(false);
+  private static boolean isReportedCandidate(CandidateAndPeriods candidateAndPeriods) {
+    return candidateAndPeriods.getCandidate().map(Candidate::isReported).orElse(false);
+  }
+
+  private static boolean isExistingCandidateInClosedPeriod(
+      CandidateAndPeriods candidateAndPeriods) {
+    return candidateAndPeriods.getCandidate().map(Candidate::isInClosedPeriod).orElse(false);
   }
 
   private boolean canEvaluateInPeriod(
       CandidateAndPeriods candidateAndPeriods, PublicationDateDto publicationDate) {
     var optionalPeriod = candidateAndPeriods.getPeriod(publicationDate.year());
     return optionalPeriod.isPresent() && !optionalPeriod.get().isClosed();
-  }
-
-  private boolean isApplicableInPeriod(NviPeriod targetPeriod, Candidate candidate) {
-    var hasSamePeriod =
-        candidate.getPeriod().filter(period -> targetPeriod.id().equals(period.id())).isPresent();
-    return candidate.isApplicable() && hasSamePeriod;
   }
 
   private UpsertNviCandidateRequest constructNviCandidate(

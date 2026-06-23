@@ -5,6 +5,7 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.function.Predicate.not;
 import static no.sikt.nva.nvi.common.db.ReportStatus.REPORTED;
+import static no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException.CANDIDATE_IN_CLOSED_PERIOD;
 import static no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException.CANDIDATE_IS_REPORTED;
 import static no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException.CANNOT_MOVE_CANDIDATE_TO_CLOSED_PERIOD;
 import static no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException.NO_APPROVAL_FOUND;
@@ -158,6 +159,9 @@ public record Candidate(
     if (isReported()) {
       throw new IllegalCandidateUpdateException(CANDIDATE_IS_REPORTED);
     }
+    if (isInClosedPeriod()) {
+      throw new IllegalCandidateUpdateException(CANDIDATE_IN_CLOSED_PERIOD);
+    }
     return copy()
         .withPeriod(null)
         .withApplicable(false)
@@ -308,7 +312,7 @@ public record Candidate(
     return getPeriod().map(NviPeriod::isOpen).orElse(false);
   }
 
-  private boolean isInClosedPeriod() {
+  public boolean isInClosedPeriod() {
     return getPeriod().map(NviPeriod::isClosed).orElse(false);
   }
 

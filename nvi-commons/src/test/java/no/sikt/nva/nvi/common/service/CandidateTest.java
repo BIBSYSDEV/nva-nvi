@@ -473,6 +473,16 @@ class CandidateTest extends CandidateTestSetup {
   }
 
   @Test
+  void shouldNotAllowDowngradingCandidateInClosedPeriod() {
+    var candidate = setupRandomApplicableCandidate(scenario, CURRENT_YEAR);
+    setupClosedPeriod(scenario, CURRENT_YEAR);
+    var candidateInClosedPeriod = candidateService.getCandidateByIdentifier(candidate.identifier());
+
+    assertThrows(
+        IllegalCandidateUpdateException.class, candidateInClosedPeriod::updateToNonCandidate);
+  }
+
+  @Test
   @Disabled
   void shouldBeAbleToRoundTripWithNoLossOfData() {
     var candidate = setupRandomApplicableCandidate(scenario);
