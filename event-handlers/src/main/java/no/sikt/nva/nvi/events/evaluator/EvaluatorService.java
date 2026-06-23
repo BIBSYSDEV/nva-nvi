@@ -129,7 +129,7 @@ public class EvaluatorService {
       return true;
     }
 
-    if (candidateAndPeriods.getCandidate().map(Candidate::isReported).orElse(false)) {
+    if (isReportedCandidate(candidateAndPeriods)) {
       logger.warn(REPORTED_CANDIDATE_MESSAGE);
       return true;
     }
@@ -166,6 +166,10 @@ public class EvaluatorService {
 
   private boolean isPublished(PublicationDto publication) {
     return nonNull(publication.status()) && "published".equalsIgnoreCase(publication.status());
+  }
+
+  private static boolean isReportedCandidate(CandidateAndPeriods candidateAndPeriods) {
+    return candidateAndPeriods.getCandidate().map(Candidate::isReported).orElse(false);
   }
 
   private static boolean isExistingCandidateInClosedPeriod(
