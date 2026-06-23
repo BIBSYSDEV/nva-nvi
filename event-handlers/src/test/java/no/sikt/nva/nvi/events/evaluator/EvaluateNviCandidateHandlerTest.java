@@ -691,10 +691,10 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     }
 
     @Test
-    void shouldMoveExistingClosedPeriodCandidateWhenYearCorrectedToOpenPeriod() {
+    void shouldPreserveExistingClosedPeriodCandidateWhenYearCorrectedToOpenPeriod() {
       // Given an applicable Candidate in a closed period
       // When the publication year is corrected to a different, open period
-      // Then the Candidate must be moved and re-evaluated, not frozen
+      // Then the Candidate must be preserved, not moved out, so closed-period numbers do not change
       var closedYearDate = randomPublicationDateInYear(CURRENT_YEAR);
       var openYearDate = randomPublicationDateInYear(CURRENT_YEAR + 1);
       setupOpenPeriod(scenario, closedYearDate.year());
@@ -705,14 +705,18 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
               .withPublicationDate(closedYearDate);
       setupCandidateMatchingPublication(publicationFactory.getExpandedPublication());
       setupClosedPeriod(scenario, closedYearDate.year());
+      var candidateBeforeUpdate =
+          candidateService.getCandidateByPublicationId(publicationFactory.getPublicationId());
 
       var movedPublication = publicationFactory.withPublicationDate(openYearDate);
       handleEvaluation(movedPublication);
 
-      var candidate =
+      var candidateAfterUpdate =
           candidateService.getCandidateByPublicationId(movedPublication.getPublicationId());
-      assertThat(candidate.isApplicable()).isTrue();
-      assertThat(candidate.publicationDetails().publicationDate()).isEqualTo(openYearDate);
+      assertThat(candidateAfterUpdate.isApplicable()).isTrue();
+      assertThat(candidateAfterUpdate.publicationDetails().publicationDate())
+          .isEqualTo(closedYearDate);
+      assertThat(candidateAfterUpdate.revision()).isEqualTo(candidateBeforeUpdate.revision());
     }
 
     @Test

@@ -97,10 +97,10 @@ public class EvaluatorService {
       return Optional.empty();
     }
 
-    // Preserve an existing candidate whose period is closed before any non-candidate decision
-    // below, so a publication edit cannot strip a closed-but-not-yet-reported candidate.
-    if (shouldPreserveExistingCandidateInClosedPeriod(
-        candidateAndPeriods, publication.publicationDate())) {
+    // Preserve any existing candidate whose period is closed, before the non-candidate and
+    // move decisions below, so closed-period numbers can never change: a closed-period
+    // candidate is neither stripped in place nor moved out by a publication edit.
+    if (isExistingCandidateInClosedPeriod(candidateAndPeriods)) {
       logger.info(SKIPPED_EVALUATION_MESSAGE, publication.id());
       return Optional.empty();
     }
@@ -168,33 +168,13 @@ public class EvaluatorService {
     return nonNull(publication.status()) && "published".equalsIgnoreCase(publication.status());
   }
 
-  private boolean shouldPreserveExistingCandidateInClosedPeriod(
-      CandidateAndPeriods candidateAndPeriods, PublicationDateDto publicationDate) {
-    var optionalCandidate = candidateAndPeriods.getCandidate();
-    if (optionalCandidate.isEmpty() || !isInClosedPeriod(optionalCandidate.get())) {
-      return false;
-    }
-    var candidate = optionalCandidate.get();
-    if (remainsInSamePeriod(candidate, publicationDate)) {
-      return true;
-    }
-    logger.info(
-        "Candidate {} in a closed period is being moved to year {}",
-        candidate.identifier(),
-        publicationDate.year());
-    return false;
+  private static boolean isExistingCandidateInClosedPeriod(
+      CandidateAndPeriods candidateAndPeriods) {
+    return candidateAndPeriods.getCandidate().map(EvaluatorService::isInClosedPeriod).orElse(false);
   }
 
   private static boolean isInClosedPeriod(Candidate candidate) {
     return candidate.getPeriod().map(NviPeriod::isClosed).orElse(false);
-  }
-
-  private static boolean remainsInSamePeriod(
-      Candidate candidate, PublicationDateDto publicationDate) {
-    return candidate
-        .getPeriod()
-        .map(period -> period.hasPublishingYear(publicationDate.year()))
-        .orElse(false);
   }
 
   private boolean canEvaluateInPeriod(

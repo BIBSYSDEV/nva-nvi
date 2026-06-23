@@ -107,7 +107,6 @@ Feature: Evaluation of Publications as NVI Candidates
         | period_state |
         | OPEN         |
         | PENDING      |
-        | CLOSED       |
 
     Scenario Outline: Candidate is moved to open period
       Given the reporting period for "this" year is "<period_state>"
@@ -120,7 +119,18 @@ Feature: Evaluation of Publications as NVI Candidates
         | period_state |
         | OPEN         |
         | PENDING      |
-        | CLOSED       |
+
+    Scenario Outline: Candidate in closed period is not moved when year is corrected
+      Given the reporting period for "this" year is "CLOSED"
+      And the reporting period for "next" year is "<target_state>"
+      When the Publication date is changed to "next" year
+      Then the Candidate is not updated
+      And the reporting period for the Candidate is "this" year
+
+      Examples:
+        | target_state |
+        | OPEN         |
+        | PENDING      |
 
     Scenario: Candidate is demoted when moved to closed period
       Given the reporting period for "this" year is "OPEN"
