@@ -17,3 +17,8 @@ nva {
 configurations.configureEach {
     exclude group: 'org.glassfish', module: 'jakarta.json'
 }
+
+dependencies {
+    testRuntimeOnly(nvaCatalog.junit.jupiter.engine)
+    testRuntimeOnly(nvaCatalog.junit.platform.launcher)
+}

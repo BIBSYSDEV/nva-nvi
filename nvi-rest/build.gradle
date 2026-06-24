@@ -15,7 +15,6 @@ dependencies {
     implementation(nvaCatalog.aws.sdk2.dynamo)
     implementation(nvaCatalog.slf4j.api)
     implementation(nvaLibs.auth)
-    testFixturesAnnotationProcessor(nvaCatalog.errorprone)
     testFixturesApi(testFixtures(project(":nvi-commons")))
     testImplementation(nvaCatalog.assertj.core)
     testImplementation(nvaCatalog.aws.sdk2.utils)
@@ -29,11 +28,6 @@ dependencies {
     testImplementation(project(':nvi-test'))
     testImplementation(testFixtures(project(":nvi-commons")))
     testImplementation(testFixtures(project(":viewing-scope")))
-    testRuntimeOnly(nvaCatalog.cucumber.java)
-    testRuntimeOnly(nvaCatalog.cucumber.junit.platform.engine)
-    testRuntimeOnly(nvaCatalog.cucumber.picocontainer)
-    testRuntimeOnly(nvaCatalog.junit.jupiter.engine)
-    testRuntimeOnly(nvaCatalog.junit.platform.launcher)
 }
 
 test {

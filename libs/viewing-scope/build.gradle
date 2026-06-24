@@ -13,7 +13,6 @@ dependencies {
     implementation(project(':rdf'))
     runtimeOnly(libs.jakarta.json.api)
     runtimeOnly(libs.parsson)
-    testFixturesAnnotationProcessor(nvaCatalog.errorprone)
     testImplementation(nvaCatalog.junit.jupiter.api)
     testImplementation(nvaCatalog.mockito.core)
     testImplementation(nvaLibs.apigateway)

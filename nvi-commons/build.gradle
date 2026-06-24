@@ -27,7 +27,6 @@ dependencies {
     implementation(nvaCatalog.aws.sdk2.urlconnection)
     implementation(nvaCatalog.slf4j.api)
     implementation(nvaLibs.s3)
-    testFixturesAnnotationProcessor(nvaCatalog.errorprone)
     testFixturesApi(libs.picocontainer)
     testFixturesApi(nvaCatalog.aws.lambda.events)
     testFixturesApi(nvaCatalog.aws.sdk2.dynamo)
@@ -50,10 +49,6 @@ dependencies {
     testFixturesImplementation(nvaLibs.identifiers)
     testFixturesImplementation(nvaLibs.json)
     testFixturesImplementation(nvaLibs.testutils)
-    testFixturesRuntimeOnly(nvaCatalog.cucumber.junit.platform.engine)
-    testFixturesRuntimeOnly(nvaCatalog.cucumber.picocontainer)
-    testFixturesRuntimeOnly(nvaCatalog.junit.jupiter.engine)
-    testFixturesRuntimeOnly(nvaCatalog.junit.platform.launcher)
     testImplementation(nvaCatalog.assertj.core)
     testImplementation(nvaCatalog.junit.jupiter.api)
     testImplementation(nvaCatalog.junit.jupiter.params)
@@ -62,12 +57,6 @@ dependencies {
     testImplementation(nvaLibs.logutils)
     testImplementation(nvaLibs.testutils)
     testImplementation(project(':nvi-test'))
-    testRuntimeOnly(nvaCatalog.cucumber.java)
-    testRuntimeOnly(nvaCatalog.cucumber.junit.platform.engine)
-    testRuntimeOnly(nvaCatalog.cucumber.picocontainer)
-    testRuntimeOnly(nvaCatalog.datafaker)
-    testRuntimeOnly(nvaCatalog.junit.jupiter.engine)
-    testRuntimeOnly(nvaCatalog.junit.platform.launcher)
 }
 
 test {

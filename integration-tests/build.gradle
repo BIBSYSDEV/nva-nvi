@@ -3,7 +3,6 @@ plugins {
 }
 
 dependencies {
-    testFixturesAnnotationProcessor(nvaCatalog.errorprone)
     testImplementation(nvaCatalog.assertj.core)
     testImplementation(nvaCatalog.aws.lambda.core)
     testImplementation(nvaCatalog.aws.lambda.events)
@@ -25,10 +24,6 @@ dependencies {
     testImplementation(project(":nvi-test"))
     testImplementation(testFixtures(project(":event-handlers")))
     testImplementation(testFixtures(project(":nvi-commons")))
-    testRuntimeOnly(nvaCatalog.cucumber.junit.platform.engine)
-    testRuntimeOnly(nvaCatalog.cucumber.picocontainer)
-    testRuntimeOnly(nvaCatalog.junit.jupiter.engine)
-    testRuntimeOnly(nvaCatalog.junit.platform.launcher)
 }
 
 test {
