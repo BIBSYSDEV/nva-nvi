@@ -15,9 +15,3 @@ dependencies {
     testImplementation(project(':nvi-test'))
     testImplementation(testFixtures(project(":nvi-commons")))
 }
-
-test {
-    environment("API_HOST", "example.org")
-    environment("BACKEND_CLIENT_AUTH_URL", "example.org/auth")
-    environment("NVI_TABLE_NAME", "some-table")
-}

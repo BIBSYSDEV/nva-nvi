@@ -22,3 +22,15 @@ dependencies {
     testRuntimeOnly(nvaCatalog.junit.jupiter.engine)
     testRuntimeOnly(nvaCatalog.junit.platform.launcher)
 }
+
+test {
+    environment("API_HOST", "api.fake.nva.aws.unit.no")
+    environment("BACKEND_CLIENT_AUTH_URL", "api.fake.nva.aws.unit.no/auth")
+    environment("BACKEND_CLIENT_SECRET_NAME", "My secret name")
+    environment("COGNITO_AUTHORIZER_URLS", "http://localhost:3000")
+    environment("CUSTOM_DOMAIN_BASE_PATH", "scientific-index")
+    environment("LOG_LEVEL", "info")
+    environment("NVI_TABLE_NAME", "some-table")
+    environment("SEARCH_INFRASTRUCTURE_API_HOST", "localhost")
+    environment("SEARCH_INFRASTRUCTURE_AUTH_URI", "localhost")
+}

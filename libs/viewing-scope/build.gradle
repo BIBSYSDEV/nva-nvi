@@ -18,8 +18,3 @@ dependencies {
     testImplementation(nvaLibs.apigateway)
     testImplementation(nvaLibs.testutils)
 }
-
-test {
-    environment("API_HOST", "example.org")
-    environment("BACKEND_CLIENT_AUTH_URL", "example.org/auth")
-}
