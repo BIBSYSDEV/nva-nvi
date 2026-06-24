@@ -14,7 +14,7 @@ public enum EnvironmentFixtures {
   BACKEND_CLIENT_SECRET_NAME("BackendCognitoClientCredentials"),
   COGNITO_AUTHORIZER_URLS("http://localhost:3000,https://localhost:3000"),
   CUSTOM_DOMAIN_BASE_PATH("scientific-index"),
-  LOG_LEVEL("trace"), // Log4j cannot read these, so this must also be set in build.gradle
+  LOG_LEVEL("info"), // Log4j cannot read these, so this must also be set in build.gradle
   NVI_TABLE_NAME("nvi-table-name"),
   SEARCH_INFRASTRUCTURE_API_HOST("https://api.fake.sws.aws.sikt.no"),
   SEARCH_INFRASTRUCTURE_AUTH_URI("https://sws-auth.fake.auth.eu-west-1.amazoncognito.com"),

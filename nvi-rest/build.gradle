@@ -29,9 +29,3 @@ dependencies {
     testImplementation(testFixtures(project(":nvi-commons")))
     testImplementation(testFixtures(project(":viewing-scope")))
 }
-
-test {
-    environment("API_HOST", "api.fake.nva.aws.unit.no")
-    environment("BACKEND_CLIENT_AUTH_URL", "My url")
-    environment("NVI_TABLE_NAME", "some-table")
-}

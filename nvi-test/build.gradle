@@ -9,8 +9,3 @@ dependencies {
     implementation(nvaLibs.core)
     implementation(nvaLibs.testutils)
 }
-
-test {
-    useJUnitPlatform()
-    environment("LOG_LEVEL", "debug")
-}

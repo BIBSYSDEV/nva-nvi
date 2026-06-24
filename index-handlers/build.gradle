@@ -60,21 +60,11 @@ dependencies {
 }
 
 test {
-    useJUnitPlatform()
     environment("EXPANDED_RESOURCES_BUCKET", "persisted-resources")
-    environment("SEARCH_INFRASTRUCTURE_API_HOST", "localhost")
-    environment("SEARCH_INFRASTRUCTURE_AUTH_URI", "localhost")
-    environment("SEARCH_INFRASTRUCTURE_API_URI", "localhost")
-    environment("NVI_TABLE_NAME", "some-table")
     environment("ALLOWED_ORIGIN", "*")
-    environment("API_HOST", "api.fake.nva.aws.unit.no")
-    environment("CUSTOM_DOMAIN_BASE_PATH", "scientific-index")
-    environment("BACKEND_CLIENT_AUTH_URL", "My url")
     environment("BACKEND_CLIENT_SECRET_NAME", "My secret name")
     environment("PERSISTED_INDEX_DOCUMENT_QUEUE_URL", "PersistedIndexDocumentQueue")
     environment("INDEX_DLQ", "IndexDlq")
     environment("INSTITUTION_REPORT_SEARCH_PAGE_SIZE", "4")
-    environment("COGNITO_AUTHORIZER_URLS", "http://localhost:3000")
-    environment("LOG_LEVEL", "trace")
     environment("REPORT_QUEUE", "queue")
 }
