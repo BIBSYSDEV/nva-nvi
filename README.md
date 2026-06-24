@@ -74,3 +74,43 @@ another `count`, provide it as input:
 See template for which DLQs are available for redrive (configured with
 `RedrivePolicy`). To start a DLQ redrive, locate the DLQ in the AWS console
 (SQS) and press _Start DLQ Redrive_.
+
+## Restoring the DynamoDB table from a backup
+
+Restore into a new table with a distinct name and let the stack adopt it via CloudFormation auto-import. This preserves the original (possibly corrupted) table for analysis. The `NvaNviTable` resource already has `DeletionPolicy: Retain` and `UpdateReplacePolicy: Retain`, which are prerequisites for auto-import.
+
+1. In the DynamoDB console, restore the backup into a new table, e.g. `nva-nvi-<stack>-restored-YYYYMMDD`. Do not attach it to any stack.
+2. Redeploy the stack with `NviTableName=<restored-name>` **and** auto-import enabled (instructions below).
+3. Run drift detection on the stack to confirm the adopted table matches the template.
+4. When analysis on the old table are done, delete it manually since it is no longer managed by any stack.
+
+### Via the AWS Console
+
+1. CloudFormation → select the stack → _Stack actions → Create change set for current stack_.
+2. Keep the existing template, click _Next_.
+3. Set the `NviTableName` parameter to the restored table's name. Leave others unchanged.
+4. On the options page, enable **Import existing resources**. If the checkbox is not present, use the CLI flow instead.
+5. Review, create, and execute the change set.
+
+### Via the AWS CLI
+
+```bash
+aws cloudformation create-change-set \
+  --stack-name <stack> \
+  --change-set-name restore-adopt \
+  --change-set-type UPDATE \
+  --use-previous-template \
+  --parameters ParameterKey=NviTableName,ParameterValue=<restored-name> \
+  --import-existing-resources \
+  --capabilities CAPABILITY_IAM
+
+aws cloudformation execute-change-set \
+  --stack-name <stack> \
+  --change-set-name restore-adopt
+```
+
+Pass the full template via `--template-body file://template.yaml` instead of `--use-previous-template` if the deployed template predates the `NviTableName` parameter. Inspect the change set with `describe-change-set` before executing it.
+
+### Interaction with the deploy pipeline
+
+The regular CodePipeline deploy (configured in `nva-common-resources` via `continuous_build_pipeline.yml`) uses the CloudFormation `CREATE_UPDATE` action with a fixed `DeployParameterOverrides` JSON that does not include `NviTableName`. CloudFormation therefore reuses the previously-deployed value of `NviTableName` on subsequent pipeline runs, so the value set during a manual import is preserved automatically — no pipeline or template-config change is needed. Pause the pipeline (or hold merges to `main`) while the restore is in progress to avoid a deploy racing with the import.
