@@ -15,17 +15,12 @@ dependencies {
     runtimeOnly(nvaCatalog.jackson.databind)
     runtimeOnly(nvaCatalog.log4j.api)
     runtimeOnly(nvaCatalog.log4j.slf4j.impl)
-    testFixturesAnnotationProcessor(nvaCatalog.errorprone)
     testFixturesImplementation(libs.fast.excel.reader)
     testFixturesImplementation(nvaCatalog.opencsv)
-    testFixturesRuntimeOnly(libs.aalto.xml)
     testImplementation(nvaCatalog.assertj.core)
     testImplementation(nvaCatalog.junit.jupiter.api)
     testImplementation(nvaCatalog.mockito.core)
     testImplementation(nvaLibs.testutils)
-    testRuntimeOnly(libs.aalto.xml)
-    testRuntimeOnly(nvaCatalog.junit.jupiter.engine)
-    testRuntimeOnly(nvaCatalog.junit.platform.launcher)
 }
 
 test {

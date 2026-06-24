@@ -14,13 +14,4 @@ dependencies {
     runtimeOnly(libs.parsson)
     testImplementation(nvaCatalog.junit.jupiter.api)
     testImplementation(nvaLibs.json)
-    testRuntimeOnly(libs.jackson.dataformat.cbor)
-    testRuntimeOnly(libs.third.party.jackson.core)
-    testRuntimeOnly(nvaCatalog.aws.sdk.s3)
-    testRuntimeOnly(nvaCatalog.datafaker)
-    testRuntimeOnly(nvaCatalog.jackson.datatype.jdk8)
-    testRuntimeOnly(nvaCatalog.jackson.datatype.jsr310)
-    testRuntimeOnly(nvaCatalog.jackson.datatype.problem)
-    testRuntimeOnly(nvaCatalog.junit.jupiter.engine)
-    testRuntimeOnly(nvaCatalog.junit.platform.launcher)
 }

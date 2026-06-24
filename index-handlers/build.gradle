@@ -37,7 +37,6 @@ dependencies {
     runtimeOnly(nvaCatalog.aws.apache.client)
     runtimeOnly(nvaCatalog.log4j.api)
     runtimeOnly(nvaCatalog.log4j.slf4j.impl)
-    testFixturesAnnotationProcessor(nvaCatalog.errorprone)
     testImplementation(libs.picocontainer)
     testImplementation(nvaCatalog.assertj.core)
     testImplementation(nvaCatalog.aws.sdk2.aws.core)
@@ -58,11 +57,6 @@ dependencies {
     testImplementation(testFixtures(project(":nvi-commons")))
     testImplementation(testFixtures(project(":nvi-report")))
     testImplementation(testFixtures(project(":viewing-scope")))
-    testRuntimeOnly(nvaCatalog.cucumber.java)
-    testRuntimeOnly(nvaCatalog.cucumber.junit.platform.engine)
-    testRuntimeOnly(nvaCatalog.cucumber.picocontainer)
-    testRuntimeOnly(nvaCatalog.junit.jupiter.engine)
-    testRuntimeOnly(nvaCatalog.junit.platform.launcher)
 }
 
 test {
