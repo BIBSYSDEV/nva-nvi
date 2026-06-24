@@ -1113,7 +1113,10 @@ paths:
                     period:
                       type: NviPeriod
                       id: https://api.nva.unit.no/scientific-index/period/2025
-                      year: "2025"
+                      publishingYear: "2025"
+                      startDate: "2025-04-01T00:00:00Z"
+                      reportingDate: "2026-04-01T00:00:00Z"
+                      status: ClosedPeriod
                     sector: UHI
                     institution: *org-20754-0-0-0
                     institutionSummary:
@@ -1190,20 +1193,32 @@ components:
   schemas:
     NviPeriod:
       type: object
+      description: An NVI reporting period.
       properties:
         type:
           type: string
           enum: [NviPeriod]
+        id:
+          type: string
+          format: uri
         publishingYear:
           type: string
         reportingDate:
           type: string
         startDate:
           type: string
+        status:
+          $ref: "#/components/schemas/PeriodStatus"
       required:
-        - publishingYear
-        - reportingDate
-        - startDate
+        - status
+    PeriodStatus:
+      type: string
+      description: Lifecycle state of the reporting period.
+      enum:
+        - UnopenedPeriod
+        - OpenPeriod
+        - ClosedPeriod
+        - NoPeriod
     NviPeriods:
       type: array
       items:
@@ -1316,19 +1331,8 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Note"
-        periodStatus:
-          type: object
-          properties:
-            status:
-              type: string
-              enum:
-                - OpenPeriod
-                - ClosedPeriod
-                - NoPeriod
-            reportingDate:
-              type: string
-            startDate:
-              type: string
+        period:
+          $ref: "#/components/schemas/NviPeriod"
         status:
           type: string
           description: The report status of the candidate

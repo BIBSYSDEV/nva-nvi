@@ -199,9 +199,9 @@
   ] ;
   sh:property [
     sh:severity sh:Violation ;
-    sh:message "Publication channel is repeated more than twice" ;
+    sh:message "Publication channel is repeated" ;
     sh:path :publicationChannel ;
-    sh:maxCount 2
+    sh:maxCount 1
   ] ;
   sh:property [
     sh:severity sh:Violation ;

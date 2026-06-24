@@ -81,11 +81,13 @@ public final class IndexDocumentFixtures {
 
   public static Builder createRandomIndexDocumentBuilder(
       URI userTopLevelOrganization, String year) {
-    var contributor = randomNviContributorBuilder(userTopLevelOrganization).build();
     var details =
         randomPublicationDetailsBuilder()
             .withPublicationDate(randomPublicationDateDtoInYear(year))
-            .withContributors(List.of(contributor))
+            .withContributors(
+                List.of(
+                    randomNviContributorBuilder(userTopLevelOrganization).build(),
+                    randomNviContributorBuilder(userTopLevelOrganization).withId(null).build()))
             .build();
     var approvals = new ArrayList<>(randomApprovalList());
     approvals.add(randomApproval(randomString(), userTopLevelOrganization));
@@ -144,7 +146,10 @@ public final class IndexDocumentFixtures {
         .withPublicationDate(randomPublicationDateDtoInYear(DEFAULT_YEAR))
         .withPublicationChannel(randomPublicationChannel())
         .withPages(randomPages())
-        .withContributors(List.of(randomNviContributor(randomOrganizationId())));
+        .withContributors(
+            List.of(
+                randomNviContributor(randomOrganizationId()),
+                randomNviContributorBuilder(randomOrganizationId()).withId(null).build()));
   }
 
   public static List<ApprovalView> randomApprovalList() {

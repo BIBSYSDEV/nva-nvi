@@ -2,7 +2,6 @@ package no.sikt.nva.nvi.common.service;
 
 import static java.util.function.Predicate.not;
 import static no.sikt.nva.nvi.common.model.NviCreator.isAffiliatedWithTopLevelOrganization;
-import static no.sikt.nva.nvi.common.service.model.NviPeriod.toPeriodStatusDto;
 import static no.sikt.nva.nvi.common.utils.EnvironmentUriFactory.candidateId;
 import static no.sikt.nva.nvi.common.utils.EnvironmentUriFactory.context;
 
@@ -20,6 +19,7 @@ import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
 import no.sikt.nva.nvi.common.service.dto.NoteDto;
+import no.sikt.nva.nvi.common.service.dto.NviPeriodDto;
 import no.sikt.nva.nvi.common.service.dto.problem.CandidateProblem;
 import no.sikt.nva.nvi.common.service.dto.problem.UnverifiedCreatorFromOrganizationProblem;
 import no.sikt.nva.nvi.common.service.dto.problem.UnverifiedCreatorProblem;
@@ -43,7 +43,7 @@ public final class CandidateResponseFactory {
         .withAllowedOperations(getAllowedOperations(candidate, userInstance))
         .withProblems(getProblems(candidate, userInstance))
         .withNotes(getNotesAsDto(candidate))
-        .withPeriod(toPeriodStatusDto(candidate.period()))
+        .withPeriod(NviPeriodDto.from(candidate.period()))
         .withTotalPoints(candidate.getTotalPoints())
         .withReportStatus(getReportStatus(candidate))
         .withReportedDate(candidate.reportedDate())

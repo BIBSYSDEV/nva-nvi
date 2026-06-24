@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
 import no.sikt.nva.nvi.common.client.model.Organization;
+import no.sikt.nva.nvi.common.model.PeriodStatus;
 import no.sikt.nva.nvi.common.model.Sector;
 import no.sikt.nva.nvi.common.service.dto.NviPeriodDto;
 import no.sikt.nva.nvi.index.report.response.InstitutionJsonReport;
@@ -199,7 +200,7 @@ class InstitutionJsonReportMapperTest {
       List<UnitSummary> units) {
     return new InstitutionJsonReport(
         randomUri(),
-        new NviPeriodDto(randomUri(), year, null, null),
+        new NviPeriodDto(randomUri(), year, null, null, PeriodStatus.CLOSED),
         sector,
         institution,
         summary,

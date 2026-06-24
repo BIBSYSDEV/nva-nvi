@@ -1,0 +1,166 @@
+PREFIX : <https://nva.sikt.no/ontology/publication#>
+
+# Structural normalization of an expanded NVA publication.
+# This flattens and simplifies the publication graph into the NVI shape, without applying any
+# NVI policy filters (those belong in nvi_projection.rq).
+# We assume the JSON contains a single publication object, and we extract the relevant fields.
+# In order to handle edge-cases and to guard against missing data, we use tricks like
+# OPTIONAL, COALESCE, and SAMPLE to ensure the output is as complete as possible.
+# This means that even if a field is set as OPTIONAL in this query, it probably should never be
+# missing in production data.
+
+CONSTRUCT {
+  # Build a simplified version of the main publication object
+  ?publication a :Publication ;
+               :identifier ?identifier ;
+               :title ?title ;
+               :status ?status ;
+               :language ?language ;
+               :abstractText ?abstract ;
+               :pageCount ?pageCount ;
+               :publicationDate ?date ;
+               :parentPublicationType ?parentInstanceType ;
+               :contributor ?personId ;
+               :topLevelOrganization ?topLevelOrganization ;
+               :modifiedDate ?modifiedDate ;
+               :isbn ?isbnList ;
+               :handle ?handle .
+
+  # Include page count
+  ?pageCount a :PageCount ;
+             :first ?firstPage ;
+             :last ?lastPage ;
+             :total ?numberOfPages .
+
+  # Include the publication date
+  ?date a :PublicationDate ;
+        :year ?year ;
+        :month ?month ;
+        :day ?day .
+
+  # Include the organization hierarchy
+  ?organization a :Organization ;
+                :country ?country ;
+                :label ?label ;
+                :partOf ?parent ;
+                :hasPart ?child .
+
+  # Include all contributors
+  ?personId a :Contributor ;
+            :affiliation ?affiliation ;
+            :role ?roleType ;
+            :verificationStatus ?verificationStatus ;
+            :name ?contributorName ;
+            :orcid ?orcid .
+}
+
+WHERE {
+  # Find the main publication object and top-level values
+  ?publication a :Publication .
+  ?publication :status ?status .
+  {
+    OPTIONAL { ?publication :identifier ?identifier }
+    OPTIONAL { ?publication :modifiedDate ?modifiedDate }
+  } UNION {
+    # Find basic values under the entityDescription node
+    ?publication :entityDescription ?entityDescription .
+    OPTIONAL { ?entityDescription :abstract ?abstract }
+    OPTIONAL { ?entityDescription :mainTitle ?title }
+    OPTIONAL { ?entityDescription :language ?language }
+  } UNION {
+    # Find page count
+    ?publication :entityDescription ?entityDescription .
+    ?entityDescription :reference ?reference .
+    ?reference a :Reference .
+    ?reference :publicationInstance ?instance .
+    ?instance :pages ?pageCount .
+    OPTIONAL { ?pageCount :begin ?firstPage }
+    OPTIONAL { ?pageCount :end ?lastPage }
+    OPTIONAL { ?pageCount :pages ?numberOfPages }
+  } UNION {
+    # Find the publication date
+    ?publication :entityDescription ?entityDescription .
+    ?entityDescription :publicationDate ?date .
+    ?date a :PublicationDate .
+    ?date :year ?year
+    OPTIONAL { ?date :month ?month }
+    OPTIONAL { ?date :day ?day }
+  } UNION {
+    # Find ISBNs and the parent publication type
+    ?publication :entityDescription ?entityDescription .
+    ?entityDescription :reference ?reference .
+
+    ?reference a :Reference .
+    {
+      ?reference :publicationContext ?publicationContext .
+    } UNION {
+      ?reference :publicationContext/:entityDescription/:reference/:publicationContext ?publicationContext .
+    }
+    {
+      ?publicationContext :isbn ?isbnList .
+    } UNION {
+      ?publicationContext :additionalIdentifier ?additionalId .
+      ?additionalId :sourceName "ISBN" ;
+                    :value ?isbnList .
+    } UNION {
+      ?publicationContext :entityDescription/:reference/:publicationInstance ?parentInstance .
+      ?parentInstance a ?parentInstanceType .
+    }
+  } UNION {
+    # Find all organizations
+    ?organization a :Organization .
+    OPTIONAL { ?organization :partOf ?parent }
+    OPTIONAL { ?organization :hasPart ?child }
+    OPTIONAL {
+      ?organization :label ?label .
+      FILTER NOT EXISTS {
+        ?organization :label ?otherLabel .
+        FILTER(LANG(?otherLabel) = LANG(?label) && STRLEN(STR(?otherLabel)) > STRLEN(STR(?label)))
+      }
+    }
+    OPTIONAL { ?organization :country ?country }
+  } UNION {
+    # Find all contributors (all roles, not just Creator)
+    ?publication :entityDescription ?entityDescription .
+    ?entityDescription :contributor ?contributor .
+
+    ?contributor :identity ?personId ;
+                 :role ?role .
+    ?role a ?roleType .
+
+    BIND(IF(EXISTS { ?personId :verificationStatus "Verified" }, "Verified", "NotVerified")
+    AS ?verificationStatus)
+    OPTIONAL {
+      ?personId :name ?contributorName
+      # In rare cases, multiple names are given for the same contributor, but we need at most one.
+      # This filter works as a "MAX(name)" while avoiding the use of subqueries.
+      FILTER NOT EXISTS {
+        ?personId :name ?otherName .
+        FILTER(?otherName > ?contributorName)
+      }
+    }
+    OPTIONAL { ?personId :orcid ?orcid }
+
+    # Find all valid affiliations for the contributor
+    OPTIONAL {
+      ?contributor :affiliation ?affiliation .
+      ?affiliation a :Organization .
+      FILTER(isIRI(?affiliation))
+
+      # Find the top-level organization for each affiliation
+      OPTIONAL {
+        ?affiliation :partOf* ?topLevelOrganization .
+        ?topLevelOrganization a :Organization .
+        FILTER(isIRI(?topLevelOrganization))
+        FILTER NOT EXISTS { ?topLevelOrganization :partOf ?parent }
+      }
+    }
+  } UNION {
+    ?publication :handle ?handle .
+  } UNION {
+    ?publication :additionalIdentifier ?additionalId .
+    ?additionalId a :HandleIdentifier ;
+                  :value ?handleValue .
+    BIND(IRI(?handleValue) AS ?handle)
+  }
+}

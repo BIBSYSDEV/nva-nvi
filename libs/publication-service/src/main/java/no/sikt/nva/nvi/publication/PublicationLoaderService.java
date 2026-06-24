@@ -8,16 +8,24 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.List;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
 import no.sikt.nva.nvi.common.exceptions.ParsingException;
+import no.sikt.nva.nvi.rdf.Graph;
+import no.sikt.nva.nvi.rdf.GraphProjectionPipeline;
+import no.sikt.nva.nvi.rdf.GraphValidation;
+import no.sikt.nva.nvi.rdf.JsonLdFrame;
+import no.sikt.nva.nvi.rdf.RdfProcessingException;
+import no.sikt.nva.nvi.rdf.SparqlConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /*
- * This utility class is intended for extracting and transforming expanded publications
- * stored as JSON documents in an S3 bucket. It is a wrapper around a SPARQL query that
- * extracts and flattens relevant fields, and a JSON-LD frame that structures the output.
+ * This utility class extracts and transforms expanded publications stored as JSON documents in an
+ * S3 bucket. It parses the document into a publication source graph, validates it, projects it
+ * through a pipeline of SPARQL queries into the NVI graph, validates that, and frames the result
+ * into a PublicationDto.
  */
 public class PublicationLoaderService {
 
@@ -25,6 +33,15 @@ public class PublicationLoaderService {
   private static final String JSON_PTR_BODY = "/body";
   private static final String INPUT_CONTEXT_FILE = "nva_context.json";
   private static final JsonNode INPUT_CONTEXT = getInputContext();
+  private static final JsonLdFrame PUBLICATION_FRAME =
+      JsonLdFrame.fromResource("publication_frame.json");
+  private static final GraphProjectionPipeline NVI_PROJECTIONS =
+      new GraphProjectionPipeline(
+          List.of(
+              SparqlConstruct.fromResource("nva_normalization.rq"),
+              SparqlConstruct.fromResource("nvi_channel_pairing.rq"),
+              SparqlConstruct.fromResource("nvi_applicability.rq"),
+              SparqlConstruct.fromResource("nvi_international_collaboration.rq")));
 
   private final Logger logger = LoggerFactory.getLogger(PublicationLoaderService.class);
   private final StorageReader<URI> storageReader;
@@ -34,43 +51,46 @@ public class PublicationLoaderService {
   }
 
   public PublicationDto extractAndTransform(URI publicationBucketUri) {
-    logger.info("Parsing expanded publication from S3 ({})", publicationBucketUri);
-
     logger.info("Extracting publication from S3 ({})", publicationBucketUri);
     var content = extractContentFromStorage(publicationBucketUri);
-    var graph = extractNvaGraph(ExpandedDocumentTool.prepareJsonNodeForModel(content));
-    var resultJson = extractNviData(graph).toJsonLd();
-    logger.info("Parsing publication with SPARQL query ({})", publicationBucketUri);
+    var resultJson = projectToNviJson(content, publicationBucketUri);
+    return toPublicationDto(resultJson, publicationBucketUri);
+  }
+
+  private PublicationDto toPublicationDto(String resultJson, URI publicationBucketUri) {
     try {
       logger.info("Transforming JSON-LD to PublicationDto ({})", publicationBucketUri);
       return PublicationDto.from(resultJson);
-    } catch (JsonProcessingException e) {
-      logger.error("Failed to transform JSON-LD to PublicationDto ({})", publicationBucketUri);
-      logger.error("Unexpected error when framing output JSON: {}", e.getMessage());
+    } catch (JsonProcessingException exception) {
+      logger.error(
+          "Failed to transform JSON-LD to PublicationDto ({})", publicationBucketUri, exception);
       logger.error(resultJson);
-      throw new ParsingException(e.getMessage());
+      throw new ParsingException(exception.getMessage());
     }
   }
 
-  private NviGraph extractNviData(NvaGraph graph) {
-    var nviGraph = graph.toNviGraph();
-    var nviValidationReport = nviGraph.validate(new NviGraphValidator());
-    // TODO: once the validation is in place, we will throw exceptions at this point
-    if (nviValidationReport.isNonConformant()) {
-      nviValidationReport.log(logger);
+  private String projectToNviJson(JsonNode content, URI publicationBucketUri) {
+    var publicationGraph =
+        PublicationGraph.fromJsonLd(ExpandedDocumentTool.prepareJsonNodeForModel(content));
+    logIfNonConformant(publicationGraph.validate(new NvaGraphValidator()));
+
+    logger.info("Projecting NVI data with SPARQL queries ({})", publicationBucketUri);
+    var nviGraph = Graph.of(publicationGraph.model()).project(NVI_PROJECTIONS);
+    logIfNonConformant(nviGraph.validate(new NviGraphValidator()));
+
+    try {
+      return nviGraph.frame(PUBLICATION_FRAME);
+    } catch (RdfProcessingException exception) {
+      logger.error("Failed to frame graph model as JSON-LD", exception);
+      throw new ParsingException(exception.getMessage());
     }
-    return nviGraph;
   }
 
-  private NvaGraph extractNvaGraph(JsonNode content) {
-    var graph = NvaGraph.fromJsonLd(content);
-    var nvaValidator = new NvaGraphValidator();
-    var nvaValidationReport = graph.validate(nvaValidator);
+  private void logIfNonConformant(GraphValidation validationReport) {
     // TODO: once the validation is in place, we will throw exceptions at this point
-    if (nvaValidationReport.isNonConformant()) {
-      nvaValidationReport.log(logger);
+    if (validationReport.isNonConformant()) {
+      validationReport.log(logger);
     }
-    return graph;
   }
 
   /**

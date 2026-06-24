@@ -1,0 +1,55 @@
+PREFIX : <https://nva.sikt.no/ontology/publication#>
+# Determines whether an expanded NVA publication is 'applicable', i.e. can be an NVI candidate.
+# A publication is applicable when it has an applicable publication type, is published,
+# is not revised, and has a publication channel with an applicable scientific value.
+
+CONSTRUCT {
+  ?publication a :Publication ;
+               :publicationType ?instanceType ;
+               :isApplicable ?isApplicable .
+}
+
+WHERE {
+  ?publication a :Publication ;
+               :entityDescription ?entityDescription .
+  ?entityDescription :reference ?reference .
+  ?reference a :Reference ;
+             :publicationInstance ?instance .
+  ?instance a ?instanceType .
+  VALUES ?instanceType {
+    :AcademicMonograph :AcademicCommentary :AcademicChapter :AcademicArticle :AcademicLiteratureReview
+  }
+
+  # Evaluate each part of the applicability rule as a named boolean
+  BIND(EXISTS { ?publication :status :PUBLISHED } AS ?isPublished)
+
+  BIND(EXISTS {
+    ?reference (:publicationContext | :publicationContext/:entityDescription/:reference/:publicationContext)/:revision "Revised" .
+  } AS ?isRevised)
+
+  BIND(EXISTS {
+    ?assignedSeries a :Series ;
+                    :scientificValue ?assignedSeriesLevel .
+    FILTER (?assignedSeriesLevel != "Unassigned")
+  } AS ?hasSeriesWithAssignedLevel)
+
+  BIND(EXISTS {
+    ?applicableSeries a :Series ;
+                      :scientificValue ?applicableSeriesLevel .
+    FILTER (?applicableSeriesLevel IN ("LevelOne", "LevelTwo"))
+  } AS ?hasApplicableSeries)
+
+  BIND(EXISTS {
+    ?anyChannel a ?anyChannelType ;
+                :scientificValue ?anyChannelLevel .
+    FILTER (?anyChannelType IN (:Journal, :Publisher))
+    FILTER (?anyChannelLevel IN ("LevelOne", "LevelTwo"))
+  } AS ?hasApplicableChannel)
+
+  # A series with an assigned scientific value decides the channel level and overrides
+  # other channels; otherwise any channel with an applicable value counts.
+  BIND(IF(?hasSeriesWithAssignedLevel, ?hasApplicableSeries, ?hasApplicableChannel)
+  AS ?hasApplicableChannelLevel)
+
+  BIND(?isPublished && !?isRevised && ?hasApplicableChannelLevel AS ?isApplicable)
+}

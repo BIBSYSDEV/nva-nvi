@@ -19,7 +19,7 @@ import org.opensearch.client.opensearch.core.search.SourceConfig;
 public class ReportDocumentClient {
 
   private static final String SCROLL_TIMEOUT = "1m";
-  private static final int SCROLL_PAGE_SIZE = 1000;
+  private static final int SCROLL_PAGE_SIZE = 250;
   static final SourceConfig REPORT_SOURCE_CONFIG =
       SourceConfig.of(
           s ->
@@ -79,6 +79,7 @@ public class ReportDocumentClient {
             .source(REPORT_SOURCE_CONFIG)
             .scroll(builder -> builder.time(SCROLL_TIMEOUT))
             .build();
+
     var response = attempt(() -> client.search(request, ReportDocument.class)).orElseThrow();
     addHits(response.hits(), documents);
     return response.scrollId();

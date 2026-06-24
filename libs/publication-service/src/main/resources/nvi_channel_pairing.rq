@@ -1,0 +1,60 @@
+PREFIX : <https://nva.sikt.no/ontology/publication#>
+# Pairs an expanded NVA publication with the single publication channel that determines its
+# NVI level, and extracts the details of that channel.
+
+CONSTRUCT {
+  ?publication a :Publication ;
+               :publicationChannel ?channel .
+
+  ?channel a :PublicationChannel ;
+           :channelType ?channelType ;
+           :identifier ?channelIdentifier ;
+           :name ?channelName ;
+           :scientificValue ?scientificValue ;
+           :year ?channelYear ;
+           :onlineIssn ?onlineIssn ;
+           :printIssn ?printIssn .
+}
+
+WHERE {
+  ?publication a :Publication ;
+               :entityDescription ?entityDescription .
+  ?entityDescription :reference ?reference .
+  ?reference a :Reference ;
+             :publicationInstance ?instance .
+  ?instance a ?instanceType .
+
+  # In rare cases a channel is listed as both a Journal and a Series, but only one of these
+  # is relevant for a given publication type; the pairing table keeps the relevant one.
+  VALUES (?instanceType ?channelType) {
+    (:AcademicArticle :Journal)
+    (:AcademicLiteratureReview :Journal)
+    (:AcademicMonograph :Series)
+    (:AcademicMonograph :Publisher)
+    (:AcademicCommentary :Series)
+    (:AcademicCommentary :Publisher)
+    (:AcademicChapter :Series)
+    (:AcademicChapter :Publisher)
+  }
+  ?channel a ?channelType .
+
+  # Book-type publications can have both a Series and a Publisher, but only one channel
+  # determines the NVI level. Select the series when it has an assigned scientific value,
+  # otherwise the publisher, keeping the series as fallback when no publisher exists.
+  BIND(EXISTS {
+    ?assignedSeries a :Series ;
+                    :scientificValue ?assignedSeriesLevel .
+    FILTER (?assignedSeriesLevel != "Unassigned")
+  } AS ?hasSeriesWithAssignedLevel)
+  BIND(EXISTS { ?anyPublisher a :Publisher } AS ?hasPublisher)
+  BIND(IF(?hasSeriesWithAssignedLevel || !?hasPublisher, :Series, :Publisher)
+  AS ?bookChannelType)
+  FILTER (?channelType = :Journal || ?channelType = ?bookChannelType)
+
+  OPTIONAL { ?channel :scientificValue ?scientificValue }
+  OPTIONAL { ?channel :name ?channelName }
+  OPTIONAL { ?channel :identifier ?channelIdentifier }
+  OPTIONAL { ?channel :year ?channelYear }
+  OPTIONAL { ?channel :onlineIssn ?onlineIssn }
+  OPTIONAL { ?channel :printIssn ?printIssn }
+}

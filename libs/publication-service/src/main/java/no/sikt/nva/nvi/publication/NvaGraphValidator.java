@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.publication;
 
+import no.sikt.nva.nvi.rdf.GraphValidation;
+import no.sikt.nva.nvi.rdf.GraphValidator;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.shacl.ShaclValidator;
