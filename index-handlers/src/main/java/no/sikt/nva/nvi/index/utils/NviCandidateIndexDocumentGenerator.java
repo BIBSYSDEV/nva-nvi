@@ -86,7 +86,7 @@ import org.slf4j.LoggerFactory;
 
 // Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
 @SuppressWarnings({"PMD.GodClass", "PMD.CouplingBetweenObjects"})
-public final class NviCandidateIndexDocumentGenerator {
+public final class NviCandidateIndexDocumentGenerator implements IndexDocumentGenerator {
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(NviCandidateIndexDocumentGenerator.class);
@@ -108,7 +108,8 @@ public final class NviCandidateIndexDocumentGenerator {
     this.environment = environment;
   }
 
-  public NviCandidateIndexDocument generateDocument() {
+  @Override
+  public NviCandidateIndexDocument generate() {
     var expandedContributors = expandContributors();
     var approvals = createApprovals(expandedContributors);
     var expandedPublicationDetails = expandPublicationDetails(expandedContributors);

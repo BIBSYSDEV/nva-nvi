@@ -18,6 +18,7 @@ dependencies {
     api(nvaLibs.pagination)
     api(project(':nvi-commons'))
     api(project(':nvi-report'))
+    api(project(':publication-service'))
     api(project(':viewing-scope'))
     implementation(libs.jakarta.json.api)
     implementation(nvaCatalog.apache.poi)

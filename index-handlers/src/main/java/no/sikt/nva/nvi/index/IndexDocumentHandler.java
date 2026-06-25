@@ -13,7 +13,6 @@ import java.net.URI;
 import java.util.Objects;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.S3StorageReader;
-import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.StorageWriter;
 import no.sikt.nva.nvi.common.queue.DynamoDbChangeMessage;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
@@ -22,9 +21,10 @@ import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.aws.S3StorageWriter;
 import no.sikt.nva.nvi.index.model.PersistedIndexDocumentMessage;
-import no.sikt.nva.nvi.index.model.PersistedResource;
 import no.sikt.nva.nvi.index.model.document.IndexDocumentWithConsumptionAttributes;
-import no.unit.nva.auth.uriretriever.UriRetriever;
+import no.sikt.nva.nvi.index.utils.IndexDocumentGeneratorFactory;
+import no.sikt.nva.nvi.index.utils.PublicationDtoIndexDocumentGeneratorFactory;
+import no.sikt.nva.nvi.publication.PublicationLoaderService;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.attempt.Failure;
@@ -49,41 +49,38 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
       "Failed to generate index document for candidate with identifier: {}";
   private static final String BLANK_ERROR_MESSAGE_PASSED_TO_ERROR_HANDLER =
       "An unexpected error occurred with a blank message passed to error handler.";
-  private final StorageReader<URI> storageReader;
   private final StorageWriter<IndexDocumentWithConsumptionAttributes> storageWriter;
   private final CandidateService candidateService;
-  private final UriRetriever uriRetriever;
+  private final IndexDocumentGeneratorFactory generatorFactory;
   private final QueueClient sqsClient;
   private final String queueUrl;
   private final String dlqUrl;
-  private final Environment environment;
 
   @JacocoGenerated
   public IndexDocumentHandler() {
     this(
-        new S3StorageReader(new Environment().readEnv(EXPANDED_RESOURCES_BUCKET)),
         new S3StorageWriter(new Environment().readEnv(EXPANDED_RESOURCES_BUCKET)),
         new NviQueueClient(),
         CandidateService.defaultCandidateService(),
-        new UriRetriever(),
+        new PublicationDtoIndexDocumentGeneratorFactory(
+            new PublicationLoaderService(
+                new S3StorageReader(new Environment().readEnv(EXPANDED_RESOURCES_BUCKET))),
+            new Environment()),
         new Environment());
   }
 
   public IndexDocumentHandler(
-      StorageReader<URI> storageReader,
       StorageWriter<IndexDocumentWithConsumptionAttributes> storageWriter,
       QueueClient sqsClient,
       CandidateService candidateService,
-      UriRetriever uriRetriever,
+      IndexDocumentGeneratorFactory generatorFactory,
       Environment environment) {
-    this.storageReader = storageReader;
     this.storageWriter = storageWriter;
     this.sqsClient = sqsClient;
     this.candidateService = candidateService;
-    this.uriRetriever = uriRetriever;
+    this.generatorFactory = generatorFactory;
     this.queueUrl = environment.readEnv(QUEUE_URL);
     this.dlqUrl = environment.readEnv(INDEX_DLQ);
-    this.environment = environment;
   }
 
   @Override
@@ -164,11 +161,6 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
             });
   }
 
-  private PersistedResource fetchPersistedResource(Candidate candidate) {
-    return PersistedResource.fromUri(
-        candidate.publicationDetails().publicationBucketUri(), storageReader);
-  }
-
   private IndexDocumentWithConsumptionAttributes generateIndexDocument(
       DynamoDbChangeMessage message) {
     var identifier = message.candidateIdentifier();
@@ -202,9 +194,8 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
 
   private IndexDocumentWithConsumptionAttributes generateIndexDocumentWithConsumptionAttributes(
       Candidate candidate) {
-    var persistedResource = fetchPersistedResource(candidate);
-    return IndexDocumentWithConsumptionAttributes.from(
-        candidate, persistedResource, uriRetriever, environment);
+    var indexDocument = generatorFactory.forCandidate(candidate).generate();
+    return IndexDocumentWithConsumptionAttributes.from(indexDocument);
   }
 
   private void validateErrorMessage(String message) {

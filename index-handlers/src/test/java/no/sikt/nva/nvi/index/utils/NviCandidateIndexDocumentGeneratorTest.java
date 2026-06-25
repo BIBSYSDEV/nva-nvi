@@ -1,143 +1,83 @@
 package no.sikt.nva.nvi.index.utils;
 
-import static java.util.Collections.emptyList;
-import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
-import static no.sikt.nva.nvi.test.TestUtils.randomYear;
-import static no.unit.nva.testutils.RandomDataGenerator.randomString;
-import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.Mockito.mock;
+import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
+import static nva.commons.core.attempt.Try.attempt;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URI;
-import java.util.Set;
-import no.sikt.nva.nvi.common.EnvironmentFixtures;
-import no.sikt.nva.nvi.common.model.PublicationDate;
-import no.sikt.nva.nvi.common.model.SampleCandidateGenerator;
-import no.sikt.nva.nvi.common.model.Sector;
-import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.common.service.model.PublicationDetails;
-import no.sikt.nva.nvi.index.ExpandedResourceGenerator;
-import no.sikt.nva.nvi.index.model.document.ApprovalView;
-import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
-import no.unit.nva.auth.uriretriever.UriRetriever;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
-import org.junit.jupiter.params.provider.ValueSource;
+import java.util.List;
+import no.sikt.nva.nvi.common.S3StorageReader;
+import no.sikt.nva.nvi.common.TestScenario;
+import no.sikt.nva.nvi.common.queue.FakeSqsClient;
+import no.sikt.nva.nvi.index.IndexDocumentHandler;
+import no.sikt.nva.nvi.index.IndexDocumentScenario;
+import no.sikt.nva.nvi.index.aws.S3StorageWriter;
+import no.sikt.nva.nvi.test.uriretriever.CristinOrganizationFixtures;
+import no.sikt.nva.nvi.test.uriretriever.FakeCristinOrganization;
+import no.sikt.nva.nvi.test.uriretriever.FakeUriRetriever;
+import no.unit.nva.s3.S3Driver;
+import org.junit.jupiter.api.BeforeEach;
 
-class NviCandidateIndexDocumentGeneratorTest {
+/**
+ * Runs the shared generator test surface against the legacy JsonNode-based mapper. Wires up an S3
+ * fake holding the expanded resource and a fake UriRetriever serving Cristin organization responses
+ * for every NVI affiliation in the candidate.
+ */
+final class NviCandidateIndexDocumentGeneratorTest extends IndexDocumentGeneratorTestBase {
 
-  @ParameterizedTest
-  @EnumSource(
-      value = Sector.class,
-      names = {"UNKNOWN"},
-      mode = EnumSource.Mode.EXCLUDE)
-  void shouldPopulateSectorInApprovalViewWhenSectorIsNotUnknown(Sector sector) {
-    var institutionId = randomUri();
-    var candidate = candidateWithInstitutionSector(institutionId, sector);
+  private static final String CRISTIN_VERSION = "; version=2023-05-26";
+  private static final String MEDIA_TYPE_JSON_V2 = "application/json" + CRISTIN_VERSION;
+  private static final int HTTP_OK = 200;
 
-    var indexDocument = generateIndexDocument(candidate);
+  private S3Driver s3Reader;
+  private FakeUriRetriever uriRetriever;
 
-    var approval = getApprovalView(indexDocument, institutionId);
-
-    assertEquals(sector.toString(), approval.sector());
+  @BeforeEach
+  void mapperSpecificSetup() {
+    s3Reader = new S3Driver(s3Client, BUCKET_NAME);
+    uriRetriever = FakeUriRetriever.newInstance();
   }
 
-  @Test
-  void shouldNotPopulateSectorInApprovalViewWhenSectorIsUnknown() {
-    var institutionId = randomUri();
-    var candidate = candidateWithInstitutionSector(institutionId, Sector.UNKNOWN);
-
-    var indexDocument = generateIndexDocument(candidate);
-
-    var approval = getApprovalView(indexDocument, institutionId);
-
-    assertNull(approval.sector());
+  @Override
+  protected IndexDocumentHandler handlerFor(IndexDocumentScenario scenario) {
+    uploadExpandedResourceToS3(scenario);
+    registerOrganizationsOnUriRetriever(scenario);
+    return new IndexDocumentHandler(
+        new S3StorageWriter(s3Client, BUCKET_NAME),
+        new FakeSqsClient(),
+        candidateService,
+        new JsonNodeIndexDocumentGeneratorFactory(
+            new S3StorageReader(s3Client, BUCKET_NAME), uriRetriever, ENVIRONMENT),
+        ENVIRONMENT);
   }
 
-  @Test
-  void shouldNotPopulateSectorInApprovalViewWhenSectorIsNull() {
-    var institutionId = randomUri();
-    var candidate = candidateWithInstitutionSector(institutionId, null);
-
-    var indexDocument = generateIndexDocument(candidate);
-
-    var approval = getApprovalView(indexDocument, institutionId);
-
-    assertNull(approval.sector());
+  private void uploadExpandedResourceToS3(IndexDocumentScenario scenario) {
+    var resourceIdentifier =
+        scenario.candidate().publicationDetails().publicationIdentifier().toString();
+    var resourceIndexDocument = dtoObjectMapper.createObjectNode();
+    resourceIndexDocument.set("body", scenario.expandedResource());
+    var path = TestScenario.constructPublicationBucketPath(resourceIdentifier);
+    attempt(
+            () ->
+                s3Reader.insertFile(
+                    path, dtoObjectMapper.writeValueAsString(resourceIndexDocument)))
+        .orElseThrow();
   }
 
-  @Test
-  void shouldPopulateHandlesInIndexDocumentFromCandidatePublicationDetails() {
-    var expectedHandles = Set.of(randomUri(), randomUri());
-    var publicationDetails = publicationDetailsWithHandles(expectedHandles);
-    var candidate =
-        new SampleCandidateGenerator().withPublicationDetails(publicationDetails).build();
-
-    var indexDocument = generateIndexDocument(candidate);
-
-    assertThat(indexDocument.publicationDetails().handles())
-        .containsExactlyInAnyOrderElementsOf(expectedHandles);
+  private void registerOrganizationsOnUriRetriever(IndexDocumentScenario scenario) {
+    scenario
+        .candidate()
+        .publicationDetails()
+        .getNviCreatorAffiliations()
+        .forEach(this::registerOrganizationHierarchy);
   }
 
-  @ParameterizedTest
-  @ValueSource(booleans = {true, false})
-  void shouldPopulateRboInstitutionInIndexDocumentApprovalView(boolean rboInstitution) {
-    var institutionId = randomUri();
-    var candidate = candidateWithRboInstitution(institutionId, rboInstitution);
-
-    var indexDocument = generateIndexDocument(candidate);
-
-    var approval = getApprovalView(indexDocument, institutionId);
-
-    assertEquals(rboInstitution, approval.rboInstitution());
-  }
-
-  private static PublicationDetails publicationDetailsWithHandles(Set<URI> handles) {
-    return PublicationDetails.builder()
-        .withId(randomUri())
-        .withTitle(randomString())
-        .withPublicationDate(new PublicationDate(randomYear(), null, null))
-        .withNviCreators(emptyList())
-        .withHandles(handles)
-        .build();
-  }
-
-  private static Candidate candidateWithInstitutionSector(URI institutionId, Sector sector) {
-    return new SampleCandidateGenerator()
-        .withInstitutionPoints(institutionId, sector, randomBigDecimal())
-        .build();
-  }
-
-  private static Candidate candidateWithRboInstitution(URI institutionId, boolean rboInstitution) {
-    return new SampleCandidateGenerator()
-        .withInstitutionPoints(institutionId, Sector.UHI, rboInstitution, randomBigDecimal())
-        .build();
-  }
-
-  private static NviCandidateIndexDocument generateIndexDocument(Candidate candidate) {
-    return new NviCandidateIndexDocumentGenerator(
-            mock(UriRetriever.class),
-            expandedResourceFromCandidate(candidate),
-            candidate,
-            EnvironmentFixtures.getGlobalEnvironment())
-        .generateDocument();
-  }
-
-  private static JsonNode expandedResourceFromCandidate(Candidate candidate) {
-    return ExpandedResourceGenerator.builder()
-        .withCandidate(candidate)
-        .build()
-        .createExpandedResource();
-  }
-
-  private ApprovalView getApprovalView(NviCandidateIndexDocument document, URI institutionId) {
-    return document.approvals().stream()
-        .filter(approval -> approval.institutionId().equals(institutionId))
-        .findFirst()
-        .orElse(null);
+  private void registerOrganizationHierarchy(URI affiliationId) {
+    var leaf = FakeCristinOrganization.asLeafNode(affiliationId);
+    var orgWithSubunits =
+        CristinOrganizationFixtures.randomCristinOrganization(affiliationId)
+            .withHasPart(List.of(leaf))
+            .build();
+    uriRetriever.registerResponse(
+        affiliationId, HTTP_OK, MEDIA_TYPE_JSON_V2, orgWithSubunits.toJsonString());
   }
 }

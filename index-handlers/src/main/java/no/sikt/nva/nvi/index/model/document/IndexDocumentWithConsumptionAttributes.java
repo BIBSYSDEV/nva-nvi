@@ -1,19 +1,13 @@
 package no.sikt.nva.nvi.index.model.document;
 
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
-import static nva.commons.core.attempt.Try.attempt;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.io.IOException;
 import java.net.URI;
 import no.sikt.nva.nvi.common.StorageWriter;
-import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.index.model.PersistedResource;
-import no.unit.nva.auth.uriretriever.UriRetriever;
-import nva.commons.core.Environment;
 
 @JsonSerialize
 public record IndexDocumentWithConsumptionAttributes(
@@ -28,18 +22,6 @@ public record IndexDocumentWithConsumptionAttributes(
         document, ConsumptionAttributes.from(document.identifier()));
   }
 
-  public static IndexDocumentWithConsumptionAttributes from(
-      Candidate candidate,
-      PersistedResource persistedResource,
-      UriRetriever uriRetriever,
-      Environment environment) {
-    var indexDocument =
-        generateIndexDocument(
-            candidate, uriRetriever, persistedResource.getExpandedResource(), environment);
-    var consumptionAttributes = ConsumptionAttributes.from(indexDocument.identifier());
-    return new IndexDocumentWithConsumptionAttributes(indexDocument, consumptionAttributes);
-  }
-
   public URI persist(StorageWriter<IndexDocumentWithConsumptionAttributes> storageWriter)
       throws IOException {
     return storageWriter.write(this);
@@ -47,17 +29,5 @@ public record IndexDocumentWithConsumptionAttributes(
 
   public String toJsonString() throws JsonProcessingException {
     return dtoObjectMapper.writeValueAsString(this);
-  }
-
-  private static NviCandidateIndexDocument generateIndexDocument(
-      Candidate candidate,
-      UriRetriever uriRetriever,
-      JsonNode expandedResource,
-      Environment environment) {
-    return attempt(
-            () ->
-                NviCandidateIndexDocument.from(
-                    expandedResource, candidate, uriRetriever, environment))
-        .orElseThrow();
   }
 }
