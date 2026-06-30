@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.common.model;
 
+import static no.sikt.nva.nvi.test.TestUtils.randomInstitutionName;
+import static no.sikt.nva.nvi.test.TestUtils.randomName;
 import static no.sikt.nva.nvi.test.TestUtils.randomUriWithSuffix;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -37,7 +39,7 @@ public final class ContributorFixtures {
   public static VerifiedNviCreatorDto randomVerifiedNviCreatorDto(URI... affiliations) {
     return VerifiedNviCreatorDto.builder()
         .withId(randomUri())
-        .withName(randomString())
+        .withName(randomName())
         .withAffiliations(List.of(affiliations))
         .build();
   }
@@ -45,7 +47,7 @@ public final class ContributorFixtures {
   public static ContributorDto.Builder randomContributorDtoBuilder(Organization... affiliations) {
     return ContributorDto.builder()
         .withId(randomUri())
-        .withName(randomString())
+        .withName(randomName())
         .withRole(ROLE_CREATOR)
         .withVerificationStatus(STATUS_VERIFIED)
         .withAffiliations(List.of(affiliations));
@@ -54,7 +56,7 @@ public final class ContributorFixtures {
   public static ContributorDto verifiedCreatorFrom(Organization... affiliations) {
     return ContributorDto.builder()
         .withId(randomUriWithSuffix("creatorId"))
-        .withName(randomString())
+        .withName(randomName())
         .withVerificationStatus(STATUS_VERIFIED)
         .withRole(ROLE_CREATOR)
         .withAffiliations(List.of(affiliations))
@@ -63,7 +65,7 @@ public final class ContributorFixtures {
 
   public static ContributorDto unverifiedCreatorFrom(Organization... affiliations) {
     return ContributorDto.builder()
-        .withName(randomString())
+        .withName(randomName())
         .withVerificationStatus(STATUS_UNVERIFIED)
         .withRole(ROLE_CREATOR)
         .withAffiliations(List.of(affiliations))

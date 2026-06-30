@@ -7,6 +7,7 @@ dependencies {
     testImplementation(nvaCatalog.aws.lambda.core)
     testImplementation(nvaCatalog.aws.lambda.events)
     testImplementation(nvaCatalog.aws.sdk2.dynamo)
+    testImplementation(nvaCatalog.aws.sdk2.s3)
     testImplementation(nvaCatalog.aws.sdk2.sns)
     testImplementation(nvaCatalog.aws.sdk2.sqs)
     testImplementation(nvaCatalog.cucumber.java)
@@ -17,13 +18,20 @@ dependencies {
     testImplementation(nvaCatalog.mockito.core)
     testImplementation(nvaCatalog.slf4j.api)
     testImplementation(nvaLibs.apigateway)
+    testImplementation(nvaLibs.auth)
     testImplementation(nvaLibs.clients)
+    testImplementation(nvaLibs.core)
+    testImplementation(nvaLibs.json)
+    testImplementation(nvaLibs.s3)
     testImplementation(nvaLibs.testutils)
     testImplementation(project(":event-handlers"))
+    testImplementation(project(":index-handlers"))
     testImplementation(project(":nvi-commons"))
     testImplementation(project(":nvi-test"))
     testImplementation(testFixtures(project(":event-handlers")))
     testImplementation(testFixtures(project(":nvi-commons")))
+    testRuntimeOnly(nvaCatalog.cucumber.junit.platform.engine)
+    testRuntimeOnly(nvaCatalog.cucumber.picocontainer)
 }
 
 test {

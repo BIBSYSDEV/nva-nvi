@@ -62,6 +62,10 @@ public final class TestUtils {
     return String.valueOf(randomIntBetween(START_DATE.getYear(), CURRENT_YEAR));
   }
 
+  public static String randomName() {
+    return FAKER.name().name();
+  }
+
   public static String randomTitle() {
     return String.format("%s %d", FAKER.book().title(), randomInteger(CURRENT_YEAR));
   }
