@@ -3,16 +3,11 @@ package cucumber.contexts;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.EXPANDED_RESOURCES_BUCKET;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getIndexDocumentHandlerEnvironment;
 import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createEvent;
-import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
-import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static nva.commons.core.attempt.Try.attempt;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
-import java.net.URI;
-import java.util.List;
-import java.util.Map;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
@@ -36,8 +31,6 @@ public class IndexingContext {
 
   private static final Context HANDLER_CONTEXT = new FakeContext();
   private static final String MEDIA_TYPE = "application/json; version=2023-05-26";
-  private static final String ORGANIZATION_CONTEXT =
-      "https://bibsysdev.github.io/src/organization-context.json";
   private static final String NVI_CANDIDATES_FOLDER = "nvi-candidates";
   private static final String GZIP_ENDING = ".gz";
 
@@ -59,21 +52,14 @@ public class IndexingContext {
   }
 
   /**
-   * Registers the organization-hierarchy response the index document generator fetches when it
-   * expands an affiliation. The {@code partOf} chain lets the generator roll the affiliation up to
-   * its top-level institution.
+   * Registers the organization-registry response the index document generator fetches when it
+   * expands an affiliation. The organization must carry its full nested {@code partOf} chain (see
+   * {@code OrganizationFixtures.createOrganizationWithNestedPartOf}), because the generator walks
+   * partOf within this single document.
    */
-  public void registerOrganizationPartOf(URI organizationId, URI parentId) {
-    var organization =
-        Organization.builder()
-            .withId(organizationId)
-            .withCountryCode(COUNTRY_CODE_NORWAY)
-            .withLabels(Map.of("nb", randomString(), "en", randomString()))
-            .withPartOf(List.of(Organization.builder().withId(parentId).build()))
-            .withContext(ORGANIZATION_CONTEXT)
-            .build();
+  public void registerOrganization(Organization organization) {
     uriRetriever.registerResponse(
-        organizationId, HttpURLConnection.HTTP_OK, MEDIA_TYPE, organization.toJsonString());
+        organization.id(), HttpURLConnection.HTTP_OK, MEDIA_TYPE, organization.toJsonString());
   }
 
   /**

@@ -2,10 +2,12 @@ package cucumber.steps;
 
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
+import static no.sikt.nva.nvi.common.dto.CustomerDtoFixtures.createCustomer;
 import static no.sikt.nva.nvi.common.model.ContributorFixtures.verifiedCreatorFrom;
-import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.createOrganizationWithNestedPartOf;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.organizationNode;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
 import static no.sikt.nva.nvi.test.TestConstants.THIS_YEAR;
-import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -41,11 +43,13 @@ public class IndexingSteps {
   private final EvaluationContext evaluationContext;
   private final IndexingContext indexingContext;
 
-  private SampleExpandedPublicationFactory publicationFactory;
   private Organization institution;
-  private Organization firstDepartment;
-  private Organization secondDepartment;
+  private Organization secondInstitution;
+  private Organization sectionA1;
+  private Organization sectionA2;
   private ContributorDto creator;
+  private ContributorDto coAuthor;
+  private SampleExpandedPublicationFactory publicationFactory;
   private Candidate candidate;
   private NviCandidateIndexDocument initialDocument;
   private NviCandidateIndexDocument updatedDocument;
@@ -56,28 +60,60 @@ public class IndexingSteps {
     this.indexingContext = new IndexingContext(scenario);
   }
 
-  @Given("an NVI institution with two departments")
-  public void anNviInstitutionWithTwoDepartments() {
-    publicationFactory = new SampleExpandedPublicationFactory();
-    institution = publicationFactory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
-    firstDepartment = institution.hasPart().get(0);
-    secondDepartment = institution.hasPart().get(1);
-    indexingContext.registerOrganizationPartOf(firstDepartment.id(), institution.id());
-    indexingContext.registerOrganizationPartOf(secondDepartment.id(), institution.id());
+  @Given("an institution with departments A and B, and sections A1 and A2 under department A")
+  public void anInstitutionWithDepartmentsAndSections() {
+    var institutionId = randomOrganizationId();
+    var departmentAId = randomOrganizationId();
+    var departmentBId = randomOrganizationId();
+    var sectionA1Id = randomOrganizationId();
+    var sectionA2Id = randomOrganizationId();
+
+    sectionA1 = organizationNode(sectionA1Id, departmentAId);
+    sectionA2 = organizationNode(sectionA2Id, departmentAId);
+    var departmentA = organizationNode(departmentAId, institutionId, sectionA1, sectionA2);
+    var departmentB = organizationNode(departmentBId, institutionId);
+    institution = organizationNode(institutionId, null, departmentA, departmentB);
+
+    indexingContext.registerOrganization(
+        createOrganizationWithNestedPartOf(sectionA1Id, departmentAId, institutionId));
+    indexingContext.registerOrganization(
+        createOrganizationWithNestedPartOf(sectionA2Id, departmentAId, institutionId));
   }
 
-  @Given("a reported Candidate whose creator is affiliated with the first department")
-  public void aReportedCandidateWhoseCreatorIsAffiliatedWithTheFirstDepartment() {
-    creator = verifiedCreatorFrom(firstDepartment);
-    publicationFactory.withContributor(creator);
-    evaluationContext.mockGetAllCustomersResponse(publicationFactory.getCustomerOrganizations());
+  @Given("a second institution")
+  public void aSecondInstitution() {
+    var secondInstitutionId = randomOrganizationId();
+    secondInstitution = organizationNode(secondInstitutionId, null);
+    indexingContext.registerOrganization(createOrganizationWithNestedPartOf(secondInstitutionId));
+  }
 
+  @Given(
+      "a Publication co-authored by a creator in section A1 and a creator in the second institution")
+  public void aPublicationCoAuthoredBetweenTheTwoInstitutions() {
+    creator = verifiedCreatorFrom(sectionA1);
+    coAuthor = verifiedCreatorFrom(secondInstitution);
+    publicationFactory =
+        new SampleExpandedPublicationFactory(
+            List.of(
+                createCustomer(institution.id(), true),
+                createCustomer(secondInstitution.id(), true)));
+    publicationFactory
+        .withTopLevelOrganizations(List.of(institution, secondInstitution))
+        .withContributor(creator)
+        .withContributor(coAuthor);
+  }
+
+  @Given("a reported Candidate for the Publication")
+  public void aReportedCandidateForThePublication() {
+    evaluationContext.mockGetAllCustomersResponse(publicationFactory.getCustomerOrganizations());
     setupOpenPeriod(scenario, THIS_YEAR);
-    evaluationContext.evaluatePublicationAndPersistResult(publicationFactory.getExpandedPublication());
+    evaluationContext.evaluatePublicationAndPersistResult(
+        publicationFactory.getExpandedPublication());
 
     candidate = scenario.getCandidateByPublicationId(publicationFactory.getPublicationId());
-    for (var institutionId : candidate.approvals().keySet()) {
-      scenario.updateApprovalStatus(candidate.identifier(), ApprovalStatus.APPROVED, institutionId);
+    for (var approvalInstitutionId : candidate.approvals().keySet()) {
+      scenario.updateApprovalStatus(
+          candidate.identifier(), ApprovalStatus.APPROVED, approvalInstitutionId);
     }
     setupClosedPeriod(scenario, THIS_YEAR);
     scenario.getCandidateService().reportCandidate(candidate.identifier(), Instant.now());
@@ -98,11 +134,10 @@ public class IndexingSteps {
     updatedDocument = indexingContext.readIndexDocument(candidate).indexDocument();
   }
 
-  @When("the creator is moved to the second department in the source publication")
-  public void theCreatorIsMovedToTheSecondDepartmentInTheSourcePublication() {
-    indexingContext.overwriteSource(candidate, publicationWithCreatorAffiliatedTo(secondDepartment));
+  @When("the creator in section A1 is moved to section A2 in the Publication")
+  public void theCreatorInSectionA1IsMovedToSectionA2() {
+    indexingContext.overwriteSource(candidate, publicationWithCreatorMovedTo(sectionA2));
   }
-
 
   @Then("the indexed NVI affiliations match the Candidate")
   public void theIndexedNviAffiliationsMatchTheCandidate() {
@@ -119,6 +154,8 @@ public class IndexingSteps {
   public void theIndexedNviPointsMatchTheCandidate() {
     assertThat(indexedInstitutionPoints(updatedDocument)).isEqualTo(candidateInstitutionPoints());
     assertThat(updatedDocument.points()).isEqualByComparingTo(candidate.getTotalPoints());
+    assertThat(updatedDocument.internationalCollaborationFactor()).isEqualTo(candidate.getCollaborationFactor());
+    assertThat(updatedDocument.creatorShareCount()).isEqualTo(candidate.getCreatorShareCount());
   }
 
   @Then("the indexed NVI points are unchanged")
@@ -138,20 +175,25 @@ public class IndexingSteps {
     assertThat(indexedCreators(updatedDocument)).isEqualTo(indexedCreators(initialDocument));
   }
 
-  private SampleExpandedPublication publicationWithCreatorAffiliatedTo(Organization affiliation) {
-    var movedCreator =
-        SampleExpandedContributor.builder()
-            .withId(creator.id())
-            .withNames(List.of(creator.name()))
-            .withRole("Creator")
-            .withVerificationStatus("Verified")
-            .withOrcId(randomUri())
-            .withAffiliations(
-                List.of(SampleExpandedPublicationFactory.mapOrganizationToAffiliation(affiliation)))
-            .build();
+  private SampleExpandedPublication publicationWithCreatorMovedTo(Organization affiliation) {
+    var movedCreator = expandedContributor(creator, affiliation);
+    var unchangedCoAuthor = expandedContributor(coAuthor, secondInstitution);
     return publicationFactory
         .getExpandedPublicationBuilder()
-        .withContributors(List.of(movedCreator))
+        .withContributors(List.of(movedCreator, unchangedCoAuthor))
+        .build();
+  }
+
+  private static SampleExpandedContributor expandedContributor(
+      ContributorDto contributor, Organization affiliation) {
+    return SampleExpandedContributor.builder()
+        .withId(contributor.id())
+        .withNames(List.of(contributor.name()))
+        .withRole("Creator")
+        .withVerificationStatus("Verified")
+        .withOrcId(randomUri())
+        .withAffiliations(
+            List.of(SampleExpandedPublicationFactory.mapOrganizationToAffiliation(affiliation)))
         .build();
   }
 
@@ -169,9 +211,9 @@ public class IndexingSteps {
     var publicationDetails = candidate.publicationDetails();
     return Stream.concat(
             publicationDetails.verifiedCreators().stream()
-                .flatMap(creator -> creator.affiliations().stream()),
+                .flatMap(verifiedCreator -> verifiedCreator.affiliations().stream()),
             publicationDetails.unverifiedCreators().stream()
-                .flatMap(creator -> creator.affiliations().stream()))
+                .flatMap(unverifiedCreator -> unverifiedCreator.affiliations().stream()))
         .collect(Collectors.toSet());
   }
 
@@ -185,10 +227,10 @@ public class IndexingSteps {
     return candidate.approvals().keySet().stream()
         .collect(
             Collectors.toMap(
-                institutionId -> institutionId,
-                institutionId ->
+                approvalInstitutionId -> approvalInstitutionId,
+                approvalInstitutionId ->
                     InstitutionPointsView.from(
-                        candidate.getInstitutionPoints(institutionId).orElseThrow())));
+                        candidate.getInstitutionPoints(approvalInstitutionId).orElseThrow())));
   }
 
   private static Set<String> indexedCreators(NviCandidateIndexDocument document) {
@@ -201,9 +243,9 @@ public class IndexingSteps {
     var publicationDetails = candidate.publicationDetails();
     return Stream.concat(
             publicationDetails.verifiedCreators().stream()
-                .map(creator -> creator.id() + "|" + creator.name()),
+                .map(verifiedCreator -> verifiedCreator.id() + "|" + verifiedCreator.name()),
             publicationDetails.unverifiedCreators().stream()
-                .map(creator -> null + "|" + creator.name()))
+                .map(unverifiedCreator -> null + "|" + unverifiedCreator.name()))
         .collect(Collectors.toSet());
   }
 }

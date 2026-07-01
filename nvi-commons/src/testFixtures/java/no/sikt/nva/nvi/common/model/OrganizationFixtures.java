@@ -22,7 +22,44 @@ import nva.commons.core.paths.UriWrapper;
 
 public final class OrganizationFixtures {
 
+  public static final String ORGANIZATION_CONTEXT =
+      "https://bibsysdev.github.io/src/organization-context.json";
+
   private OrganizationFixtures() {}
+
+  /**
+   * Builds a single organization node with an immediate parent and optional children (a "downward"
+   * tree via hasPart, with a flat immediate partOf). Suitable for the publication's
+   * topLevelOrganizations, where the evaluator resolves the top-level via the merged RDF graph.
+   */
+  public static Organization organizationNode(URI id, URI parentId, Organization... children) {
+    return createOrganization(id, parentId, List.of(children));
+  }
+
+  /**
+   * Builds an ancestor chain as nested partOf, from the given node up to the root, with no hasPart
+   * and a JSON-LD context on the outermost node. Suitable as an organization-registry response for
+   * the indexing path, which walks partOf within a single fetched document. The first id is the
+   * node itself, the last is the top-level institution.
+   */
+  public static Organization createOrganizationWithNestedPartOf(URI... idsFromNodeToRoot) {
+    Organization ancestor = null;
+    for (var index = idsFromNodeToRoot.length - 1; index >= 0; index--) {
+      var builder =
+          Organization.builder()
+              .withId(idsFromNodeToRoot[index])
+              .withCountryCode(COUNTRY_CODE_NORWAY)
+              .withLabels(Map.of("nb", randomString(), "en", randomString()));
+      if (nonNull(ancestor)) {
+        builder.withPartOf(List.of(ancestor));
+      }
+      if (index == 0) {
+        builder.withContext(ORGANIZATION_CONTEXT);
+      }
+      ancestor = builder.build();
+    }
+    return ancestor;
+  }
 
   public static String randomOrganizationIdentifier() {
     return FAKER.numerify("###.###.###.###");
