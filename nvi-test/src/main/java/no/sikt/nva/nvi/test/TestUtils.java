@@ -5,6 +5,7 @@ import static no.sikt.nva.nvi.test.TestConstants.ONE;
 import static no.sikt.nva.nvi.test.TestConstants.TYPE_FIELD;
 import static no.unit.nva.testutils.RandomDataGenerator.FAKER;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
+import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static nva.commons.core.StringUtils.isNotBlank;
@@ -68,6 +69,21 @@ public final class TestUtils {
 
   public static String randomTitle() {
     return String.format("%s %d", FAKER.book().title(), randomInteger(CURRENT_YEAR));
+  }
+
+  public static String randomUnitName() {
+    return String.format("%s %s", FAKER.word().adjective(), FAKER.word().noun());
+  }
+
+  public static String randomEnglishUnitLabel(String unitName) {
+    var prefixOptions = List.of("University of", "Department of", "Institute of", "Section for");
+    return String.format("%s %s", randomElement(prefixOptions), unitName);
+  }
+
+  public static String randomNorwegianUnitLabel(String unitName) {
+    var prefixOptions = List.of("Universitetet i", "Avdeling for", "Institutt for", "Seksjon for");
+
+    return String.format("%s %s", randomElement(prefixOptions), unitName);
   }
 
   public static String randomInstitutionName() {

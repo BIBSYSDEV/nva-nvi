@@ -4,8 +4,10 @@ plugins {
 
 dependencies {
     api(nvaCatalog.jackson.databind)
+    api(nvaLibs.auth)
     api(nvaLibs.identifiers)
     implementation(nvaCatalog.datafaker)
+    implementation(nvaCatalog.slf4j.api)
     implementation(nvaLibs.core)
     implementation(nvaLibs.testutils)
 }
