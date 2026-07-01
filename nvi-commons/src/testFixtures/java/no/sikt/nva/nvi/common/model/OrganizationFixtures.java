@@ -24,6 +24,15 @@ public final class OrganizationFixtures {
 
   private OrganizationFixtures() {}
 
+  /**
+   * Builds a single organization node with an immediate parent and optional children (a "downward"
+   * tree via hasPart, with a flat immediate partOf). Suitable for the publication's
+   * topLevelOrganizations, where the evaluator resolves the top-level via the merged RDF graph.
+   */
+  public static Organization organizationNode(URI id, URI parentId, Organization... children) {
+    return createOrganization(id, parentId, List.of(children));
+  }
+
   public static String randomOrganizationIdentifier() {
     return FAKER.numerify("###.###.###.###");
   }
