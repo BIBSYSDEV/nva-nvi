@@ -1,14 +1,13 @@
 package no.sikt.nva.nvi.common.model;
 
+import static no.sikt.nva.nvi.test.TestUtils.randomName;
 import static no.sikt.nva.nvi.test.TestUtils.randomUriWithSuffix;
-import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 
 import java.net.URI;
 import java.util.List;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.dto.ContributorDto;
-import no.sikt.nva.nvi.common.dto.ContributorDto.Builder;
 import no.sikt.nva.nvi.common.dto.ContributorRole;
 import no.sikt.nva.nvi.common.dto.VerificationStatus;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
@@ -21,23 +20,10 @@ public final class ContributorFixtures {
 
   private ContributorFixtures() {}
 
-  public static Builder randomCreator(Organization... affiliations) {
-    return randomCreator(List.of(affiliations));
-  }
-
-  public static Builder randomCreator(List<Organization> affiliations) {
-    return ContributorDto.builder()
-        .withId(randomUri())
-        .withName(randomString())
-        .withRole(ROLE_CREATOR)
-        .withVerificationStatus(STATUS_VERIFIED)
-        .withAffiliations(affiliations);
-  }
-
   public static VerifiedNviCreatorDto randomVerifiedNviCreatorDto(URI... affiliations) {
     return VerifiedNviCreatorDto.builder()
         .withId(randomUri())
-        .withName(randomString())
+        .withName(randomName())
         .withAffiliations(List.of(affiliations))
         .build();
   }
@@ -45,7 +31,7 @@ public final class ContributorFixtures {
   public static ContributorDto.Builder randomContributorDtoBuilder(Organization... affiliations) {
     return ContributorDto.builder()
         .withId(randomUri())
-        .withName(randomString())
+        .withName(randomName())
         .withRole(ROLE_CREATOR)
         .withVerificationStatus(STATUS_VERIFIED)
         .withAffiliations(List.of(affiliations));
@@ -54,7 +40,7 @@ public final class ContributorFixtures {
   public static ContributorDto verifiedCreatorFrom(Organization... affiliations) {
     return ContributorDto.builder()
         .withId(randomUriWithSuffix("creatorId"))
-        .withName(randomString())
+        .withName(randomName())
         .withVerificationStatus(STATUS_VERIFIED)
         .withRole(ROLE_CREATOR)
         .withAffiliations(List.of(affiliations))
@@ -63,7 +49,7 @@ public final class ContributorFixtures {
 
   public static ContributorDto unverifiedCreatorFrom(Organization... affiliations) {
     return ContributorDto.builder()
-        .withName(randomString())
+        .withName(randomName())
         .withVerificationStatus(STATUS_UNVERIFIED)
         .withRole(ROLE_CREATOR)
         .withAffiliations(List.of(affiliations))
