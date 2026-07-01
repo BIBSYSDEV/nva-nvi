@@ -19,7 +19,6 @@ Feature: Indexing of reported NVI Candidates
 
   Rule: NVI data in the index document matches the persisted Candidate
 
-    # TODO: Should we do explicit steps like this just for this one scenario, and combine them into "Then all NVI data matches the Candidate" or something for the other scenarios?
     Scenario: NVI data in the index document reflects the Candidate when the Publication is unchanged
       When the Candidate is indexed
       Then the indexed NVI points match the Candidate
@@ -28,13 +27,19 @@ Feature: Indexing of reported NVI Candidates
       And the indexed reporting status matches the Candidate
       And the indexed approval statuses match the Candidate
 
-    Scenario: NVI data in the index document reflects the Candidate
-
     @Disabled # FIXME: NP-51414 - Verified NVI creator names are not persisted
     Scenario: Creator name differs between Candidate and Publication, index uses the Candidate
 
+    @Disabled # FIXME: NP-51406 - Reported NVI numbers can silently change when a candidate is reindexed
     Scenario: Creator removed from the Publication is still indexed as an NVI creator
+      Given the creator in section A1 is removed from the Publication
+      When the Candidate is indexed
+      Then the indexed NVI creators match the Candidate
+
     Scenario: Creator added to the Publication is not indexed as an NVI creator
+      Given a creator is added to the Publication
+      When the Candidate is indexed
+      Then the added creator is not indexed as an NVI creator
 
     @Disabled # FIXME: NP-51406 - Reported NVI numbers can silently change when a candidate is reindexed
     Scenario: Creator affiliation differs between Candidate and Publication, index uses the Candidate
@@ -50,24 +55,39 @@ Feature: Indexing of reported NVI Candidates
     Scenario: Channel ISSN differs between Candidate and Publication, index uses the Candidate
 
     Scenario: Channel level differs between Candidate and Publication, index uses the Candidate
+      Given the channel level changes in the Publication
+      When the Candidate is indexed
+      Then the indexed channel level matches the Candidate
 
   Rule: Index documents can be enriched with updated data if absent from the Candidate
+
     Scenario: All contributors are indexed as searchable, not only NVI creators
+      Given a creator is added to the Publication
+      When the Candidate is indexed
+      Then all contributors are indexed as searchable, including non-NVI ones
+
     Scenario: Creator added to Publication is included as searchable field
+      Given a creator is added to the Publication
+      When the Candidate is indexed
+      Then the added creator is indexed as a searchable contributor
 
-    # FIXME: NP-51402 - Temporary fallback for missing data
-    Scenario: Channel name missing from the Candidate is taken from the Publication
+    # FIXME NP-51402: channel name isn't persisted on the Candidate, so the index falls back to the Publication
+    Scenario: Channel name is indexed for search
+      When the Candidate is indexed
+      Then the indexed channel has a name
 
-    # FIXME: NP-51414 - Temporary fallback for missing data
-    Scenario: Creator name missing from the Candidate is taken from the Publication
+    # FIXME NP-51414: verified creator names aren't persisted, so the index falls back to the Publication
+    Scenario: Creator names are indexed for search
+      When the Candidate is indexed
+      Then the indexed creators have names
 
   Rule: Candidates can be indexed when the Publication is degraded or absent
 
-    @Disabled # FIXME: See NP-50405
+    @Disabled # FIXME: NP-51432 - Indexing fails when the live Publication or org data is degraded or absent
     Scenario: Publication has no valid publication channel
-    @Disabled # FIXME: See NP-50405
+    @Disabled # FIXME: NP-51432 - Indexing fails when the live Publication or org data is degraded or absent
     Scenario: Publication has no valid NVI organizations
-    @Disabled # FIXME: See NP-50405
+    @Disabled # FIXME: NP-51432 - Indexing fails when the live Publication or org data is degraded or absent
     Scenario: Publication cannot be fetched from S3
-    @Disabled # FIXME: See NP-50405
+    @Disabled # FIXME: NP-51432 - Indexing fails when the live Publication or org data is degraded or absent
     Scenario: Publication has been deleted

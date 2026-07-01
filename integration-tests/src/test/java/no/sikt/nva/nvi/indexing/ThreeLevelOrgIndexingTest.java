@@ -20,7 +20,8 @@ import org.junit.jupiter.api.Test;
  * Verifies that a single org hierarchy definition feeds both paths: the publication (so evaluation
  * rolls a section-level affiliation up to the institution) and the org registry (so the index
  * document's affiliation carries the full nested partOf chain). The registry response is built with
- * {@code createOrganizationWithNestedPartOf} because the generator walks partOf within one document.
+ * {@code createOrganizationWithNestedPartOf} because the generator walks partOf within one
+ * document.
  */
 class ThreeLevelOrgIndexingTest {
 
@@ -39,7 +40,8 @@ class ThreeLevelOrgIndexingTest {
     indexingContext.registerOrganization(
         createOrganizationWithNestedPartOf(sectionId, departmentId, institutionId));
 
-    var factory = new SampleExpandedPublicationFactory(List.of(createCustomer(institutionId, true)));
+    var factory =
+        new SampleExpandedPublicationFactory(List.of(createCustomer(institutionId, true)));
     factory.withTopLevelOrganizations(List.of(institution)).withCreatorAffiliatedWith(section);
     evaluationContext.mockGetAllCustomersResponse(factory.getCustomerOrganizations());
     setupOpenPeriod(scenario, THIS_YEAR);

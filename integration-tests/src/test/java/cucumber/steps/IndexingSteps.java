@@ -1,5 +1,6 @@
 package cucumber.steps;
 
+import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.dto.CustomerDtoFixtures.createCustomer;
@@ -7,6 +8,8 @@ import static no.sikt.nva.nvi.common.model.ContributorFixtures.verifiedCreatorFr
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.createOrganizationWithNestedPartOf;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.organizationNode;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
+import static no.sikt.nva.nvi.test.TestConstants.JOURNAL_TYPE;
+import static no.sikt.nva.nvi.test.TestConstants.LEVEL_TWO;
 import static no.sikt.nva.nvi.test.TestConstants.THIS_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -20,6 +23,7 @@ import java.net.URI;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -27,13 +31,18 @@ import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.dto.ContributorDto;
+import no.sikt.nva.nvi.common.model.ScientificValue;
+import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
+import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.model.document.ApprovalView;
+import no.sikt.nva.nvi.index.model.document.ContributorType;
 import no.sikt.nva.nvi.index.model.document.InstitutionPointsView;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.document.NviContributor;
 import no.sikt.nva.nvi.index.model.document.NviOrganization;
+import no.sikt.nva.nvi.index.model.document.ReportingPeriod;
 import no.sikt.nva.nvi.test.SampleExpandedContributor;
 import no.sikt.nva.nvi.test.SampleExpandedPublication;
 
@@ -49,9 +58,9 @@ public class IndexingSteps {
   private Organization sectionA2;
   private ContributorDto creator;
   private ContributorDto coAuthor;
+  private ContributorDto addedCreator;
   private SampleExpandedPublicationFactory publicationFactory;
   private Candidate candidate;
-  private NviCandidateIndexDocument initialDocument;
   private NviCandidateIndexDocument updatedDocument;
 
   public IndexingSteps(TestScenario scenario) {
@@ -88,7 +97,8 @@ public class IndexingSteps {
   }
 
   @Given(
-      "a Publication co-authored by a creator in section A1 and a creator in the second institution")
+      "a Publication co-authored by a creator in section A1 and a creator in the second"
+          + " institution")
   public void aPublicationCoAuthoredBetweenTheTwoInstitutions() {
     creator = verifiedCreatorFrom(sectionA1);
     coAuthor = verifiedCreatorFrom(secondInstitution);
@@ -122,21 +132,46 @@ public class IndexingSteps {
     assertThat(candidate.isReported()).isTrue();
   }
 
-  @Given("the Candidate has been indexed")
-  public void theCandidateHasBeenIndexed() {
-    indexingContext.index(candidate);
-    initialDocument = indexingContext.readIndexDocument(candidate).indexDocument();
-  }
-
   @When("the Candidate is indexed")
   public void theCandidateIsIndexed() {
     indexingContext.index(candidate);
     updatedDocument = indexingContext.readIndexDocument(candidate).indexDocument();
   }
 
-  @When("the creator in section A1 is moved to section A2 in the Publication")
+  @Given("the creator in section A1 is moved to section A2 in the Publication")
   public void theCreatorInSectionA1IsMovedToSectionA2() {
     indexingContext.overwriteSource(candidate, publicationWithCreatorMovedTo(sectionA2));
+  }
+
+  @Given("a creator is added to the Publication")
+  public void aCreatorIsAddedToThePublication() {
+    addedCreator = verifiedCreatorFrom(sectionA2);
+    var publication =
+        publicationFactory
+            .getExpandedPublicationBuilder()
+            .withContributors(
+                List.of(
+                    expandedContributor(creator, sectionA1),
+                    expandedContributor(coAuthor, secondInstitution),
+                    expandedContributor(addedCreator, sectionA2)))
+            .build();
+    indexingContext.overwriteSource(candidate, publication);
+  }
+
+  @Given("the creator in section A1 is removed from the Publication")
+  public void theCreatorInSectionA1IsRemovedFromThePublication() {
+    var publication =
+        publicationFactory
+            .getExpandedPublicationBuilder()
+            .withContributors(List.of(expandedContributor(coAuthor, secondInstitution)))
+            .build();
+    indexingContext.overwriteSource(candidate, publication);
+  }
+
+  @Given("the channel level changes in the Publication")
+  public void theChannelLevelChangesInThePublication() {
+    publicationFactory.withPublicationChannel(JOURNAL_TYPE, LEVEL_TWO);
+    indexingContext.overwriteSource(candidate, publicationFactory.getExpandedPublication());
   }
 
   @Then("the indexed NVI affiliations match the Candidate")
@@ -144,25 +179,13 @@ public class IndexingSteps {
     assertThat(indexedNviAffiliations(updatedDocument)).isEqualTo(candidateAffiliations());
   }
 
-  @Then("the indexed NVI affiliations are unchanged")
-  public void theIndexedNviAffiliationsAreUnchanged() {
-    assertThat(indexedNviAffiliations(updatedDocument))
-        .isEqualTo(indexedNviAffiliations(initialDocument));
-  }
-
   @Then("the indexed NVI points match the Candidate")
   public void theIndexedNviPointsMatchTheCandidate() {
     assertThat(indexedInstitutionPoints(updatedDocument)).isEqualTo(candidateInstitutionPoints());
     assertThat(updatedDocument.points()).isEqualByComparingTo(candidate.getTotalPoints());
-    assertThat(updatedDocument.internationalCollaborationFactor()).isEqualTo(candidate.getCollaborationFactor());
+    assertThat(updatedDocument.internationalCollaborationFactor())
+        .isEqualTo(candidate.getCollaborationFactor());
     assertThat(updatedDocument.creatorShareCount()).isEqualTo(candidate.getCreatorShareCount());
-  }
-
-  @Then("the indexed NVI points are unchanged")
-  public void theIndexedNviPointsAreUnchanged() {
-    assertThat(indexedInstitutionPoints(updatedDocument))
-        .isEqualTo(indexedInstitutionPoints(initialDocument));
-    assertThat(updatedDocument.points()).isEqualByComparingTo(initialDocument.points());
   }
 
   @Then("the indexed NVI creators match the Candidate")
@@ -170,9 +193,70 @@ public class IndexingSteps {
     assertThat(indexedCreators(updatedDocument)).isEqualTo(candidateCreators());
   }
 
-  @Then("the indexed NVI creators are unchanged")
-  public void theIndexedNviCreatorsAreUnchanged() {
-    assertThat(indexedCreators(updatedDocument)).isEqualTo(indexedCreators(initialDocument));
+  @Then("the indexed reporting status matches the Candidate")
+  public void theIndexedReportingStatusMatchesTheCandidate() {
+    assertThat(updatedDocument.reported()).isEqualTo(candidate.isReported());
+    assertThat(updatedDocument.reportingPeriod())
+        .isEqualTo(ReportingPeriod.fromCandidate(candidate));
+    var expectedReportedDate =
+        Optional.ofNullable(candidate.reportedDate()).map(Instant::toString).orElse(null);
+    assertThat(updatedDocument.reportedDate()).isEqualTo(expectedReportedDate);
+  }
+
+  @Then("the indexed approval statuses match the Candidate")
+  public void theIndexedApprovalStatusesMatchTheCandidate() {
+    assertThat(indexedApprovalStatuses(updatedDocument)).isEqualTo(candidateApprovalStatuses());
+    assertThat(updatedDocument.globalApprovalStatus())
+        .isEqualTo(candidate.getGlobalApprovalStatus());
+  }
+
+  @Then("the added creator is not indexed as an NVI creator")
+  public void theAddedCreatorIsNotIndexedAsAnNviCreator() {
+    assertThat(indexedNviCreatorIds()).doesNotContain(addedCreator.id().toString());
+  }
+
+  @Then("the added creator is indexed as a searchable contributor")
+  public void theAddedCreatorIsIndexedAsASearchableContributor() {
+    assertThat(searchableContributorIds()).contains(addedCreator.id().toString());
+  }
+
+  @Then("all contributors are indexed as searchable, including non-NVI ones")
+  public void allContributorsAreIndexedAsSearchableIncludingNonNviOnes() {
+    assertThat(searchableContributorIds())
+        .contains(creator.id().toString(), coAuthor.id().toString(), addedCreator.id().toString());
+    assertThat(indexedNviCreatorIds()).doesNotContain(addedCreator.id().toString());
+  }
+
+  @Then("the indexed creators have names")
+  public void theIndexedCreatorsHaveNames() {
+    assertThat(updatedDocument.publicationDetails().nviContributors())
+        .isNotEmpty()
+        .allSatisfy(contributor -> assertThat(contributor.name()).isNotBlank());
+  }
+
+  @Then("the indexed channel level matches the Candidate")
+  public void theIndexedChannelLevelMatchesTheCandidate() {
+    var candidateLevel =
+        ScientificValue.parse(candidate.getPublicationChannel().scientificValue().getValue());
+    assertThat(updatedDocument.publicationDetails().publicationChannel().scientificValue())
+        .isEqualTo(candidateLevel);
+  }
+
+  @Then("the indexed channel has a name")
+  public void theIndexedChannelHasAName() {
+    assertThat(updatedDocument.publicationDetails().publicationChannel().name()).isNotBlank();
+  }
+
+  private Set<String> indexedNviCreatorIds() {
+    return updatedDocument.publicationDetails().nviContributors().stream()
+        .map(NviContributor::id)
+        .collect(Collectors.toSet());
+  }
+
+  private Set<String> searchableContributorIds() {
+    return updatedDocument.publicationDetails().contributors().stream()
+        .map(ContributorType::id)
+        .collect(Collectors.toSet());
   }
 
   private SampleExpandedPublication publicationWithCreatorMovedTo(Organization affiliation) {
@@ -233,19 +317,43 @@ public class IndexingSteps {
                         candidate.getInstitutionPoints(approvalInstitutionId).orElseThrow())));
   }
 
+  /**
+   * Identity of an NVI creator: verified creators are identified by id, unverified creators by
+   * name. The verified creator name is deliberately excluded, since it is enrichment from the
+   * Publication until it is persisted on the Candidate (NP-51414); its freezing is covered by a
+   * separate scenario.
+   */
   private static Set<String> indexedCreators(NviCandidateIndexDocument document) {
     return document.publicationDetails().nviContributors().stream()
-        .map(contributor -> contributor.id() + "|" + contributor.name())
+        .map(IndexingSteps::creatorIdentity)
         .collect(Collectors.toSet());
+  }
+
+  private static String creatorIdentity(NviContributor contributor) {
+    return nonNull(contributor.id()) ? contributor.id() : contributor.name();
   }
 
   private Set<String> candidateCreators() {
     var publicationDetails = candidate.publicationDetails();
     return Stream.concat(
             publicationDetails.verifiedCreators().stream()
-                .map(verifiedCreator -> verifiedCreator.id() + "|" + verifiedCreator.name()),
-            publicationDetails.unverifiedCreators().stream()
-                .map(unverifiedCreator -> null + "|" + unverifiedCreator.name()))
+                .map(verifiedCreator -> verifiedCreator.id().toString()),
+            publicationDetails.unverifiedCreators().stream().map(UnverifiedNviCreatorDto::name))
         .collect(Collectors.toSet());
+  }
+
+  // Compares by value string, which holds for decided approvals; a reported Candidate's approvals
+  // are all decided, so the index applies no NEW (pending-and-unassigned) transform here.
+  private static Map<URI, String> indexedApprovalStatuses(NviCandidateIndexDocument document) {
+    return document.approvals().stream()
+        .collect(
+            Collectors.toMap(
+                ApprovalView::institutionId, approval -> approval.approvalStatus().getValue()));
+  }
+
+  private Map<URI, String> candidateApprovalStatuses() {
+    return candidate.approvals().values().stream()
+        .collect(
+            Collectors.toMap(Approval::institutionId, approval -> approval.status().getValue()));
   }
 }

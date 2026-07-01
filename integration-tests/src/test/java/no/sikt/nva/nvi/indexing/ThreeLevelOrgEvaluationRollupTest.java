@@ -33,7 +33,8 @@ class ThreeLevelOrgEvaluationRollupTest {
     var institution = createOrganizationHierarchy(institutionId, departmentId, sectionId);
     var section = institution.hasPart().get(0).hasPart().get(0);
 
-    var factory = new SampleExpandedPublicationFactory(List.of(createCustomer(institutionId, true)));
+    var factory =
+        new SampleExpandedPublicationFactory(List.of(createCustomer(institutionId, true)));
     factory.withTopLevelOrganizations(List.of(institution)).withCreatorAffiliatedWith(section);
 
     evaluationContext.mockGetAllCustomersResponse(factory.getCustomerOrganizations());
