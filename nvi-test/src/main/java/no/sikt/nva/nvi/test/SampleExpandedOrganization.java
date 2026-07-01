@@ -55,10 +55,6 @@ public record SampleExpandedOrganization(
       return this;
     }
 
-    public Builder withParentOrganizations(URI... parentIds) {
-      return withParentOrganizations(List.of(parentIds));
-    }
-
     public Builder withParentOrganizations(Collection<URI> parentIds) {
       this.parentOrganizations =
           parentIds.stream().map(parentId -> builder().withId(parentId).build()).toList();
