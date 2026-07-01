@@ -1,7 +1,6 @@
 package cucumber.steps;
 
 import static java.util.Objects.nonNull;
-import static no.sikt.nva.nvi.common.cristin.CristinOrganizationFixtures.organizationWithNestedPartOf;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.dto.CustomerDtoFixtures.createCustomer;
@@ -82,18 +81,12 @@ public class IndexingSteps {
     var departmentA = organizationNode(departmentAId, institutionId, sectionA1, sectionA2);
     var departmentB = organizationNode(departmentBId, institutionId);
     institution = organizationNode(institutionId, null, departmentA, departmentB);
-
-    indexingContext.registerOrganization(
-        organizationWithNestedPartOf(sectionA1Id, departmentAId, institutionId));
-    indexingContext.registerOrganization(
-        organizationWithNestedPartOf(sectionA2Id, departmentAId, institutionId));
   }
 
   @Given("a second institution")
   public void aSecondInstitution() {
     var secondInstitutionId = randomOrganizationId();
     secondInstitution = organizationNode(secondInstitutionId, null);
-    indexingContext.registerOrganization(organizationWithNestedPartOf(secondInstitutionId));
   }
 
   @Given(

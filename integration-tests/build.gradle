@@ -28,6 +28,7 @@ dependencies {
     testImplementation(project(":index-handlers"))
     testImplementation(project(":nvi-commons"))
     testImplementation(project(":nvi-test"))
+    testImplementation(project(":publication-service"))
     testImplementation(testFixtures(project(":event-handlers")))
     testImplementation(testFixtures(project(":nvi-commons")))
     testRuntimeOnly(nvaCatalog.cucumber.junit.platform.engine)

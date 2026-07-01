@@ -11,9 +11,10 @@ import no.sikt.nva.nvi.index.model.document.ReportingPeriod;
 import nva.commons.core.Environment;
 
 /**
- * SPARQL/DTO-based index-document generator. Replaces the JsonNode-based {@link
- * NviCandidateIndexDocumentGenerator} once the cutover lands. Delegates to three focused
- * sub-mappers (contributors, approvals, publication details) and stitches the result together.
+ * SPARQL/DTO-based index-document generator. Builds the index document purely from the persisted
+ * {@link Candidate} and a {@link PublicationDto}, without any live organization lookups. Delegates
+ * to three focused sub-mappers (contributors, approvals, publication details) and stitches the
+ * result together.
  */
 public final class CandidateToIndexDocumentMapper implements IndexDocumentGenerator {
 

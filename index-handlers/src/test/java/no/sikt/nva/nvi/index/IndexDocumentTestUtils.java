@@ -9,7 +9,7 @@ import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.getRandomDate
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLICATION_CONTEXT;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.extractJsonNodeTextValue;
 import static no.sikt.nva.nvi.index.ExpandedResourceGenerator.extractAffiliations;
-import static no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator.getAnyNviCreatorIfPresent;
+import static no.sikt.nva.nvi.index.NviCreatorMatcher.getAnyNviCreatorIfPresent;
 import static no.sikt.nva.nvi.test.TestConstants.EN_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_ENGLISH_LABEL;
 import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_NORWEGIAN_LABEL;

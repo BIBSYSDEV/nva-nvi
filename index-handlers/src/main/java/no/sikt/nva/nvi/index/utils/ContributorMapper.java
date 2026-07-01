@@ -73,7 +73,7 @@ final class ContributorMapper {
         nviCreator instanceof VerifiedNviCreatorDto verified ? verified.id().toString() : null;
     return NviContributor.builder()
         .withId(creatorId)
-        .withName(nviCreator.name())
+        .withName(nviCreatorName(nviCreator, contributorDto))
         .withOrcid(extractOrcid(contributorDto))
         .withRole(extractRole(contributorDto))
         .withAffiliations(buildNviAffiliations(contributorDto, nviCreator))
@@ -90,6 +90,13 @@ final class ContributorMapper {
         .withRole(extractRole(contributorDto))
         .withAffiliations(buildSimpleAffiliations(contributorDto))
         .build();
+  }
+
+  // Verified NVI creator names are not yet persisted on the Candidate (NP-51414), so fall back to
+  // the name from the Publication when the Candidate has none. Once names are persisted, the frozen
+  // Candidate name takes precedence.
+  private static String nviCreatorName(NviCreatorDto nviCreator, ContributorDto contributorDto) {
+    return nonNull(nviCreator.name()) ? nviCreator.name() : contributorDto.name();
   }
 
   private static String extractOrcid(ContributorDto contributorDto) {
