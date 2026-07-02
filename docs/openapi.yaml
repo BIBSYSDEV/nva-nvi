@@ -1395,6 +1395,7 @@ components:
             contributors:
               type: array
               items:
+                type: object
                 properties:
                   id:
                     type: string
@@ -1407,13 +1408,17 @@ components:
         approvals:
           type: array
           items:
+            type: object
             properties:
               id:
                 type: string
               labels:
                 type: object
+                additionalProperties:
+                  type: string
               approvalStatus:
                 type: string
+                enum: [New, Pending, Approved, Rejected]
 
     NviCandidateResponse:
       type: object
