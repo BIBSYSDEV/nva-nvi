@@ -1647,11 +1647,11 @@ components:
           format: date-time
     Context:
       type: string
-      pattern: 'https:\/\/.*$'
+      pattern: "^https://.*$"
       description: The JSON-LD context object for the data, which describes the object in the data and allows machine processing of the data at a semantic level
     Id:
       type: string
-      pattern: 'https:\/\/.*$'
+      pattern: "^https://.*$"
       description: The URI of the object ID
     CandidateProblem:
       type: object
