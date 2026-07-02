@@ -482,6 +482,20 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     }
 
     @Test
+    void shouldPersistNameOfVerifiedNviCreator() {
+      setupOpenPeriod(scenario, publicationDate.year());
+      var verifiedContributor = verifiedCreatorFrom(nviOrganization);
+      var publication = factory.withContributor(verifiedContributor);
+
+      handleEvaluation(publication);
+
+      var candidate = candidateService.getCandidateByPublicationId(publication.getPublicationId());
+      assertThat(candidate.publicationDetails().verifiedCreators())
+          .extracting(VerifiedNviCreatorDto::name)
+          .containsExactly(verifiedContributor.name());
+    }
+
+    @Test
     void shouldIdentifyCandidateWithOnlyUnverifiedNviCreators() {
       setupOpenPeriod(scenario, publicationDate.year());
       var publication = factory.withContributor(unverifiedCreatorFrom(nviOrganization));
