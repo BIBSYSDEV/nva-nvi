@@ -27,10 +27,8 @@ import org.slf4j.LoggerFactory;
 /**
  * Service intended for updating persisted candidates with data from external sources, such as
  * expanded publications stored in S3. This can be used in batch migrations to add missing fields to
- * reported candidates.
+ * reported candidates. Currently, backfills missing verified creator names (NP-51445).
  */
-// TODO: Remove service
-@Deprecated(forRemoval = true)
 public final class CandidateMigrationService implements MigrationService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CandidateMigrationService.class);

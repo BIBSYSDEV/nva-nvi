@@ -15,6 +15,7 @@ import no.sikt.nva.nvi.common.service.CandidateService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+@Deprecated(forRemoval = true, since = "2026-05-01")
 class ReportedDateMigrationServiceTest {
 
   private CandidateService candidateService;
