@@ -1335,6 +1335,9 @@ components:
                 - PENDING_REVIEW
                 - UNDER_REVIEW
                 - NOT_REPORTED
+                - APPROVED
+                - REJECTED
+                - UNKNOWN
             description:
               type: string
               description: The description of the report status
@@ -1837,7 +1840,15 @@ components:
           $ref: "#/components/schemas/NviPeriod"
         sector:
           type: string
-          enum: [UHI, HEALTH, INSTITUTE, OTHER]
+          description: |
+            The sector of the institution:
+            * `UHI` - universities and university colleges
+            * `HEALTH` - health trusts
+            * `INSTITUTE` - research institutes
+            * `ABM` - archives, libraries and museums
+            * `OTHER` - other institutions
+            * `UNKNOWN` - the sector could not be determined
+          enum: [UHI, HEALTH, INSTITUTE, ABM, OTHER, UNKNOWN]
         institution:
           $ref: "#/components/schemas/Organization"
         institutionSummary:
