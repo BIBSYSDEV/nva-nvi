@@ -4,11 +4,18 @@ info:
   version: 1.0.1
   description: Public API for scientific index candidates in NVA.
   contact:
+    name: Nasjonalt vitenarkiv (NVA)
     email: kontakt@sikt.no
     url: https://nva.sikt.no
 servers:
   - url: https://api.nva.unit.no/scientific-index
-    description: Production API
+    description: Production environment
+  - url: https://api.test.nva.aws.unit.no/scientific-index
+    description: Test environment
+  - url: https://api.dev.nva.aws.unit.no/scientific-index
+    description: Development environment
+  - url: https://api.sandbox.nva.aws.unit.no/scientific-index
+    description: Sandbox environment
 x-amazon-apigateway-request-validators:
   validate_body:
     validateRequestBody: true
