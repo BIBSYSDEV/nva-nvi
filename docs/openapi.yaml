@@ -158,7 +158,6 @@ paths:
       summary: List periods
       operationId: listNviPeriods
       security: *authenticated
-      x-amazon-apigateway-request-validator: validate_body
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchNviPeriodsHandler.Arn}:live/invocations
@@ -250,7 +249,6 @@ paths:
           required: true
           schema:
             type: string
-      x-amazon-apigateway-request-validator: validate_body
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchNviPeriodHandler.Arn}:live/invocations
