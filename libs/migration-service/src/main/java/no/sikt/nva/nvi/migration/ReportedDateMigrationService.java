@@ -11,6 +11,10 @@ import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * @deprecated This backfill migration has been run in prod and can be removed.
+ */
+@Deprecated(forRemoval = true, since = "2026-05-01")
 public class ReportedDateMigrationService implements MigrationService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ReportedDateMigrationService.class);

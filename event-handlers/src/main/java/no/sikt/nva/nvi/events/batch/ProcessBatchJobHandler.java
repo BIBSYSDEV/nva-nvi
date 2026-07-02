@@ -14,8 +14,8 @@ import no.sikt.nva.nvi.events.batch.message.MigrateCandidateMessage;
 import no.sikt.nva.nvi.events.batch.message.RefreshCandidateMessage;
 import no.sikt.nva.nvi.events.batch.message.RefreshPeriodMessage;
 import no.sikt.nva.nvi.events.batch.message.ReportCandidateMessage;
+import no.sikt.nva.nvi.migration.CandidateMigrationService;
 import no.sikt.nva.nvi.migration.MigrationService;
-import no.sikt.nva.nvi.migration.ReportedDateMigrationService;
 import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +31,7 @@ public class ProcessBatchJobHandler implements RequestHandler<SQSEvent, SQSBatch
   public ProcessBatchJobHandler() {
     this(
         CandidateService.defaultCandidateService(),
-        ReportedDateMigrationService.defaultService(),
+        CandidateMigrationService.defaultCandidateMigrationService(),
         NviPeriodService.defaultNviPeriodService());
   }
 
