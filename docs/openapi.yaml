@@ -432,15 +432,15 @@ paths:
             type: boolean
         - in: query
           name: orderBy
+          description: Order by field
           schema:
             type: string
-            description: Order by field
             enum: ["createdDate"]
         - in: query
           name: sortOrder
+          description: Order direction
           schema:
             type: string
-            description: Order direction
             enum: ["asc", "desc"]
       security: *authenticated
       x-amazon-apigateway-integration:
@@ -570,7 +570,9 @@ paths:
     put:
       tags:
         - Candidate
-      description: Update Candidate Approval Status
+      description: >
+        Update the approval status of a candidate on behalf of the user's organization.
+        A reason must be provided when the status is set to Rejected.
       summary: Update Candidate Approval Status
       operationId: updateNviCandidateApprovalStatus
       parameters:
@@ -629,7 +631,9 @@ paths:
     put:
       tags:
         - Candidate
-      description: Update Candidate Assignee
+      description: >
+        Set or replace the curator assigned to review the candidate on behalf of the
+        user's organization.
       summary: Update Candidate Assignee
       operationId: updateNviCandidateAssignee
       parameters:
@@ -921,7 +925,9 @@ paths:
     get:
       tags:
         - Report
-      description: Get report status by publication id
+      description: >
+        Get the NVI report status for a publication, indicating whether the publication
+        is reported, under review, or not a candidate.
       summary: Get report status by publication id
       operationId: getReportStatusByPublicationId
       parameters:
@@ -965,6 +971,7 @@ paths:
       tags:
         - Report
       description: Get report for all periods
+      summary: Get all periods report
       operationId: getAllPeriodsReport
       security: *authenticated
       x-amazon-apigateway-integration:
@@ -1004,6 +1011,7 @@ paths:
       tags:
         - Report
       description: Get report for a specific period
+      summary: Get period report
       operationId: getPeriodReport
       parameters:
         - in: path
@@ -1063,6 +1071,7 @@ paths:
       tags:
         - Report
       description: Get all institutions report for a specific period
+      summary: Get all institutions report for a period
       operationId: getAllInstitutionsReport
       parameters:
         - in: path
@@ -1143,6 +1152,7 @@ paths:
       tags:
         - Report (partially implemented)
       description: Get specific institution report for a specific period
+      summary: Get institution report for a period
       operationId: getInstitutionReport
       parameters:
         - in: path
@@ -1311,7 +1321,12 @@ components:
         - status
     PeriodStatus:
       type: string
-      description: Lifecycle state of the reporting period.
+      description: |
+        Lifecycle state of the reporting period:
+        * `UnopenedPeriod` - the period exists but has not opened for reporting yet
+        * `OpenPeriod` - the period is open for reporting
+        * `ClosedPeriod` - the reporting deadline has passed
+        * `NoPeriod` - no reporting period exists for the publication year
       enum:
         - UnopenedPeriod
         - OpenPeriod
@@ -1755,7 +1770,10 @@ components:
           type: string
     NviCandidateContext:
       type: object
-      description: NVI Candidate context
+      description: >
+        JSON-LD context for NVI candidate resources, mapping the terms used in
+        candidate responses to their semantic definitions.
+      additionalProperties: true
 
     AllPeriodsReport:
       type: object
