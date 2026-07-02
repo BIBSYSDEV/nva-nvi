@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.function.Predicate;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 
-public record VerifiedNviCreator(URI id, List<NviOrganization> nviAffiliations)
+public record VerifiedNviCreator(URI id, String name, List<NviOrganization> nviAffiliations)
     implements NviCreator {
 
   public static Builder builder() {
@@ -38,6 +38,7 @@ public record VerifiedNviCreator(URI id, List<NviOrganization> nviAffiliations)
   public VerifiedNviCreatorDto toDto() {
     return VerifiedNviCreatorDto.builder()
         .withId(id)
+        .withName(name)
         .withAffiliations(nviAffiliationsIds())
         .build();
   }
@@ -45,6 +46,8 @@ public record VerifiedNviCreator(URI id, List<NviOrganization> nviAffiliations)
   public static final class Builder {
 
     private URI id;
+
+    private String name;
 
     private List<NviOrganization> nviAffiliations;
 
@@ -55,13 +58,18 @@ public record VerifiedNviCreator(URI id, List<NviOrganization> nviAffiliations)
       return this;
     }
 
+    public Builder withName(String name) {
+      this.name = name;
+      return this;
+    }
+
     public Builder withNviAffiliations(List<NviOrganization> nviAffiliations) {
       this.nviAffiliations = nviAffiliations;
       return this;
     }
 
     public VerifiedNviCreator build() {
-      return new VerifiedNviCreator(id, nviAffiliations);
+      return new VerifiedNviCreator(id, name, nviAffiliations);
     }
   }
 }

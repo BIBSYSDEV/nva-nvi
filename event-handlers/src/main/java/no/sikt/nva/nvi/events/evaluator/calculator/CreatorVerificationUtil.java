@@ -70,6 +70,7 @@ public final class CreatorVerificationUtil {
       ContributorDto contributor, List<NviOrganization> nviAffiliations) {
     return VerifiedNviCreator.builder()
         .withId(contributor.id())
+        .withName(contributor.name())
         .withNviAffiliations(nviAffiliations)
         .build();
   }
