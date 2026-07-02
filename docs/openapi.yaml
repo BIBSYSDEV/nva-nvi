@@ -7,6 +7,9 @@ info:
     name: Nasjonalt vitenarkiv (NVA)
     email: kontakt@sikt.no
     url: https://nva.sikt.no
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
 servers:
   - url: https://api.nva.unit.no/scientific-index
     description: Production environment
