@@ -1626,23 +1626,25 @@ components:
           type: string
           enum: ["Approved", "Pending", "Rejected"]
         finalizedBy:
-          $ref: "#/components/schemas/Username"
+          type: string
+          description: Username of the user who finalized the approval
         finalizedDate:
           type: string
+          format: date-time
     Note:
       type: object
       properties:
+        identifier:
+          type: string
+          format: uuid
         user:
-          $ref: "#/components/schemas/Username"
+          type: string
+          description: Username of the user who created the note
         text:
           type: string
         createdDate:
           type: string
-    Username:
-      type: object
-      properties:
-        value:
-          type: string
+          format: date-time
     Context:
       type: string
       pattern: 'https:\/\/.*$'
