@@ -269,7 +269,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Problem"
         "502":
-          description: "Internal Server Error"
+          description: "Bad Gateway"
           content:
             application/json:
               schema:
