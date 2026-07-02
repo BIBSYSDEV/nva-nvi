@@ -856,6 +856,20 @@ paths:
           required: true
           schema:
             type: string
+            pattern: '^\d{4}$'
+        - in: header
+          name: Accept
+          required: false
+          description: >
+            Specifies the desired spreadsheet format. Supported formats are
+            `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` (XLSX, default)
+            and `application/vnd.ms-excel` (XLS).
+          schema:
+            type: string
+            enum:
+              - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+              - application/vnd.ms-excel
+            default: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
         - in: query
           name: institutionId
           description: Top level Cristin organization identifier (e.g. 185.90.0.0). Only allowed for admins and backend clients.
@@ -875,10 +889,14 @@ paths:
           content:
             application/vnd.ms-excel:
               schema:
+                type: string
                 format: binary
+                description: Base64-encoded Excel (.xls) file
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
               schema:
+                type: string
                 format: binary
+                description: Base64-encoded Excel (.xlsx) file
         "400":
           description: "Bad Request - invalid path parameter 'year'"
           content:
