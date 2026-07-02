@@ -456,6 +456,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CandidateSearchResponse"
+        "400":
+          description: "Bad Request - invalid query parameters"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
         "500":
           description: "Internal Server Error"
           content:
@@ -490,6 +502,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/NviCandidateResponse"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
         "404":
           description: "Candidate not found"
           content:
@@ -530,6 +548,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/NviCandidateResponse"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
         "404":
           description: "Candidate not found"
           content:
@@ -707,6 +731,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
+        "405":
+          description: "Method Not Allowed - the candidate is not applicable for NVI reporting"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
         "409":
           description: "Conflict"
           content:
@@ -849,8 +879,16 @@ paths:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
               schema:
                 format: binary
+        "400":
+          description: "Bad Request - invalid path parameter 'year'"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
         "401":
-          description: "Unauthorized"
+          description: >
+            Unauthorized. Also returned when a user without administrator or backend client
+            privileges specifies the institutionId parameter.
           content:
             application/json:
               schema:
@@ -930,6 +968,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
+        "403":
+          description: "Forbidden - requires an NVI administrator or curator role, or an internal backend client"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
         "500":
           description: "Internal Server Error"
           content:
@@ -973,6 +1017,18 @@ paths:
                 $ref: "#/components/schemas/Problem"
         "401":
           description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "403":
+          description: "Forbidden - requires an NVI administrator or curator role, or an internal backend client"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: "Not Found - no reporting period exists for the given year"
           content:
             application/json:
               schema:
@@ -1041,6 +1097,18 @@ paths:
                 $ref: "#/components/schemas/Problem"
         "401":
           description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "403":
+          description: "Forbidden - requires an NVI administrator or curator role, or an internal backend client"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: "Not Found - no reporting period exists for the given year"
           content:
             application/json:
               schema:
@@ -1176,6 +1244,18 @@ paths:
                 $ref: "#/components/schemas/Problem"
         "401":
           description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "403":
+          description: "Forbidden - requires an NVI administrator or curator role, or an internal backend client"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: "Not Found - no reporting period exists for the given year"
           content:
             application/json:
               schema:
