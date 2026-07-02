@@ -1301,8 +1301,10 @@ components:
           type: string
         reportingDate:
           type: string
+          format: date-time
         startDate:
           type: string
+          format: date-time
         status:
           $ref: "#/components/schemas/PeriodStatus"
       required:
@@ -1355,10 +1357,12 @@ components:
           type: integer
         nextResults:
           type: string
+          format: uri
           nullable: true
           description: The uri to the next page of results, if there is one
         previousResults:
           type: string
+          format: uri
           nullable: true
           description: The uri to the previous page of results, if there is one
         hits:
@@ -1714,6 +1718,7 @@ components:
           $ref: "#/components/schemas/Id"
         points:
           type: number
+          format: double
     ApprovalStatusRequest:
       type: object
       properties:
