@@ -88,17 +88,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/NviCandidateContext"
         "415":
-          description: Unsupported Media Type
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/UnsupportedMediaType"
         "500":
-          description: "Internal Server Error"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/InternalServerError"
   /period:
     post:
       tags:
@@ -128,29 +120,13 @@ paths:
               schema:
                 $ref: "#/components/schemas/NviPeriod"
         "400":
-          description: "Bad request"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/BadRequest"
         "401":
-          description: "Unauthorized"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/Unauthorized"
         "409":
-          description: "Conflict"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/Conflict"
         "500":
-          description: "Internal Server Error"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/InternalServerError"
     get:
       tags:
         - Period
@@ -172,17 +148,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/NviPeriods"
         "401":
-          description: "Unauthorized"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/Unauthorized"
         "500":
-          description: "Internal Server Error"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/InternalServerError"
     put:
       tags:
         - Period
@@ -211,29 +179,13 @@ paths:
               schema:
                 $ref: "#/components/schemas/NviPeriod"
         "401":
-          description: "Unauthorized"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/Unauthorized"
         "404":
-          description: "Not found - period to update does not exist"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/NotFound"
         "409":
-          description: "Conflict"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/Conflict"
         "500":
-          description: "Internal Server Error"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/InternalServerError"
 
   /period/{periodIdentifier}:
     get:
@@ -263,17 +215,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/NviPeriod"
         "404":
-          description: "Period not found"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/NotFound"
         "502":
-          description: "Bad Gateway"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/BadGateway"
 
   /candidate:
     get:
@@ -457,23 +401,11 @@ paths:
               schema:
                 $ref: "#/components/schemas/CandidateSearchResponse"
         "400":
-          description: "Bad Request - invalid query parameters"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/BadRequest"
         "401":
-          description: "Unauthorized"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/Unauthorized"
         "500":
-          description: "Internal Server Error"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/InternalServerError"
   /candidate/{candidateIdentifier}:
     get:
       tags:
@@ -503,23 +435,11 @@ paths:
               schema:
                 $ref: "#/components/schemas/NviCandidateResponse"
         "401":
-          description: "Unauthorized"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/Unauthorized"
         "404":
-          description: "Candidate not found"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/NotFound"
         "500":
-          description: "Internal Server Error"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/InternalServerError"
   /candidate/publication/{candidatePublicationId}:
     get:
       tags:
@@ -549,23 +469,11 @@ paths:
               schema:
                 $ref: "#/components/schemas/NviCandidateResponse"
         "401":
-          description: "Unauthorized"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/Unauthorized"
         "404":
-          description: "Candidate not found"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/NotFound"
         "500":
-          description: "Internal Server Error"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/InternalServerError"
   /candidate/{candidateIdentifier}/status:
     put:
       tags:
@@ -604,29 +512,13 @@ paths:
               schema:
                 $ref: "#/components/schemas/NviCandidateResponse"
         "401":
-          description: "Unauthorized"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/Unauthorized"
         "404":
-          description: "Not found - approval to update does not exist"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/NotFound"
         "409":
-          description: "Conflict"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/Conflict"
         "500":
-          description: "Internal Server Error"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/InternalServerError"
   /candidate/{candidateIdentifier}/assignee:
     put:
       tags:
@@ -665,29 +557,13 @@ paths:
               schema:
                 $ref: "#/components/schemas/NviCandidateResponse"
         "401":
-          description: "Unauthorized"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/Unauthorized"
         "404":
-          description: "Not found - candidate to update does not exist"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/NotFound"
         "409":
-          description: "Conflict"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/Conflict"
         "500":
-          description: "Internal Server Error"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/InternalServerError"
   /candidate/{candidateIdentifier}/note:
     post:
       tags:
@@ -726,35 +602,15 @@ paths:
               schema:
                 $ref: "#/components/schemas/NviCandidateResponse"
         "401":
-          description: "Unauthorized"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/Unauthorized"
         "404":
-          description: "Not found - candidate to update does not exist"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/NotFound"
         "405":
-          description: "Method Not Allowed - the candidate is not applicable for NVI reporting"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/MethodNotAllowed"
         "409":
-          description: "Conflict"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/Conflict"
         "500":
-          description: "Internal Server Error"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/InternalServerError"
   /candidate/{candidateIdentifier}/note/{noteIdentifier}:
     delete:
       tags:
@@ -791,23 +647,11 @@ paths:
               schema:
                 $ref: "#/components/schemas/NviCandidateResponse"
         "401":
-          description: "Unauthorized"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/Unauthorized"
         "404":
-          description: "Not found - candidate to update does not exist"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/NotFound"
         "500":
-          description: "Internal Server Error"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/InternalServerError"
   /institution-report/{year}:
     get:
       tags:
@@ -837,17 +681,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/NviInstitutionReportResponse"
         "401":
-          description: "Unauthorized"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/Unauthorized"
         "500":
-          description: "Internal Server Error"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/InternalServerError"
   /institution-approval-report/{year}:
     get:
       tags:
@@ -907,25 +743,11 @@ paths:
                 format: binary
                 description: Base64-encoded Excel (.xlsx) file
         "400":
-          description: "Bad Request - invalid path parameter 'year'"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/BadRequest"
         "401":
-          description: >
-            Unauthorized. Also returned when a user without administrator or backend client
-            privileges specifies the institutionId parameter.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/Unauthorized"
         "500":
-          description: "Internal Server Error"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/InternalServerError"
   /publication/{publicationId}/report-status:
     get:
       tags:
@@ -966,11 +788,7 @@ paths:
                   "period": "2023",
                 }
         "500":
-          description: "Internal Server Error"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/InternalServerError"
   /reports:
     get:
       tags:
@@ -995,23 +813,11 @@ paths:
               schema:
                 $ref: "#/components/schemas/AllPeriodsReport"
         "401":
-          description: "Unauthorized"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/Unauthorized"
         "403":
-          description: "Forbidden - requires an NVI administrator or curator role, or an internal backend client"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/Forbidden"
         "500":
-          description: "Internal Server Error"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/InternalServerError"
 
   /reports/{period}:
     get:
@@ -1045,35 +851,15 @@ paths:
               schema:
                 $ref: "#/components/schemas/PeriodReport"
         "400":
-          description: "Bad Request - Invalid period format"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/BadRequest"
         "401":
-          description: "Unauthorized"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/Unauthorized"
         "403":
-          description: "Forbidden - requires an NVI administrator or curator role, or an internal backend client"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/Forbidden"
         "404":
-          description: "Not Found - no reporting period exists for the given year"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/NotFound"
         "500":
-          description: "Internal Server Error"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/InternalServerError"
 
   /reports/{period}/institutions:
     get:
@@ -1128,35 +914,15 @@ paths:
               schema:
                 $ref: "#/components/schemas/AllInstitutionsReport"
         "400":
-          description: "Bad Request - Invalid period format"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/BadRequest"
         "401":
-          description: "Unauthorized"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/Unauthorized"
         "403":
-          description: "Forbidden - requires an NVI administrator or curator role, or an internal backend client"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/Forbidden"
         "404":
-          description: "Not Found - no reporting period exists for the given year"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/NotFound"
         "500":
-          description: "Internal Server Error"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/InternalServerError"
 
   /reports/{period}/institutions/{institution}:
     get:
@@ -1278,35 +1044,15 @@ paths:
                 format: binary
                 description: Base64-encoded Excel (.xlsx) file
         "400":
-          description: "Bad Request - Invalid period or institution format"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/BadRequest"
         "401":
-          description: "Unauthorized"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/Unauthorized"
         "403":
-          description: "Forbidden - requires an NVI administrator or curator role, or an internal backend client"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/Forbidden"
         "404":
-          description: "Not Found - no reporting period exists for the given year"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/NotFound"
         "500":
-          description: "Internal Server Error"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
+          $ref: "#/components/responses/InternalServerError"
 
 components:
   schemas:
@@ -2117,6 +1863,62 @@ components:
           description: Nested sub-unit summaries
           items:
             $ref: "#/components/schemas/UnitSummary"
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    Unauthorized:
+      description: Unauthorized - missing or invalid credentials
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    Forbidden:
+      description: Forbidden - authenticated but not permitted
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    MethodNotAllowed:
+      description: Method not allowed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    Conflict:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    UnsupportedMediaType:
+      description: Unsupported media type
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    BadGateway:
+      description: Bad gateway
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Problem"
 
   securitySchemes:
     CognitoUserPool:
