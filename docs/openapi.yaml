@@ -692,7 +692,9 @@ paths:
     post:
       tags:
         - Candidate
-      description: Create note on NVI candidate
+      description: >
+        Create note on NVI candidate.
+        Notes can only be added to candidates that are applicable for NVI reporting.
       summary: Create note on candidate
       operationId: createNviCandidateNotes
       parameters:
@@ -850,7 +852,10 @@ paths:
     get:
       tags:
         - Report
-      description: Get NVI report for a given year. Admins and backend clients can specify an institutionId query parameter to get a report for a specific institution.
+      description: >
+        Get NVI report for a given year. Admins and backend clients can specify an
+        institutionId query parameter to get a report for a specific institution;
+        other users are rejected with 401 Unauthorized if they specify it.
       summary: Get NVI institution report with points per contributor for a given year
       operationId: getNviReportByYear
       parameters:
@@ -970,7 +975,9 @@ paths:
     get:
       tags:
         - Report
-      description: Get report for all periods
+      description: >
+        Get report for all periods.
+        Requires an NVI administrator or curator role, or an internal backend client.
       summary: Get all periods report
       operationId: getAllPeriodsReport
       security: *authenticated
@@ -1010,7 +1017,9 @@ paths:
     get:
       tags:
         - Report
-      description: Get report for a specific period
+      description: >
+        Get report for a specific period.
+        Requires an NVI administrator or curator role, or an internal backend client.
       summary: Get period report
       operationId: getPeriodReport
       parameters:
@@ -1070,7 +1079,9 @@ paths:
     get:
       tags:
         - Report
-      description: Get all institutions report for a specific period
+      description: >
+        Get all institutions report for a specific period.
+        Requires an NVI administrator or curator role, or an internal backend client.
       summary: Get all institutions report for a period
       operationId: getAllInstitutionsReport
       parameters:
@@ -1151,7 +1162,9 @@ paths:
     get:
       tags:
         - Report (partially implemented)
-      description: Get specific institution report for a specific period
+      description: >
+        Get specific institution report for a specific period.
+        Requires an NVI administrator or curator role, or an internal backend client.
       summary: Get institution report for a period
       operationId: getInstitutionReport
       parameters:
