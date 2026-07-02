@@ -18,7 +18,6 @@ dependencies {
     testImplementation(nvaCatalog.mockito.core)
     testImplementation(nvaCatalog.slf4j.api)
     testImplementation(nvaLibs.apigateway)
-    testImplementation(nvaLibs.auth)
     testImplementation(nvaLibs.clients)
     testImplementation(nvaLibs.core)
     testImplementation(nvaLibs.json)
