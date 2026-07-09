@@ -17,21 +17,23 @@ Feature: Indexing of reported NVI Candidates
     And a Publication co-authored by a creator in section A1 and a creator in the second institution
     And a reported Candidate for the Publication
 
-  Rule: NVI data in the index document matches the persisted Candidate
+  Rule: The persisted Candidate is the source of truth for NVI data in the index document
 
-    Scenario: NVI data in the index document reflects the Candidate when the Publication is unchanged
+    Scenario: Indexing produces a document with the same NVI data as the Candidate
       When the Candidate is indexed
-      Then the indexed NVI points match the Candidate
-      And the indexed NVI affiliations match the Candidate
-      And the indexed NVI creators match the Candidate
-      And the indexed reporting status matches the Candidate
-      And the indexed approval statuses match the Candidate
+      Then the index document has the same NVI points as the Candidate
+      And the index document has the same channel level as the Candidate
+      And the index document has the same channel ID as the Candidate
+      And the index document has the same NVI affiliations as the Candidate
+      And the index document has the same NVI creators as the Candidate
+      And the index document has the same approval statuses as the Candidate
+      And the index document has the same reporting status as the Candidate
 
     Scenario: Creator added to the Publication is not indexed as an NVI creator
       Given a creator is added to the Publication
       When the Candidate is indexed
-      Then the added creator is not indexed as an NVI creator
-      And the indexed NVI affiliations match the Candidate
+      Then the index document has the same NVI data as the Candidate
+      And the added creator is not indexed as an NVI creator
 
     @Disabled # FIXME: NP-51414 - Verified NVI creator names are not persisted
     Scenario: Creator name differs between Candidate and Publication, index uses the Candidate
@@ -40,15 +42,15 @@ Feature: Indexing of reported NVI Candidates
     Scenario: Creator removed from the Publication is still indexed as an NVI creator
       Given the creator in section A1 is removed from the Publication
       When the Candidate is indexed
-      Then the indexed NVI points match the Candidate
-      And the indexed NVI creators match the Candidate
+      Then the index document has the same NVI data as the Candidate
+      And the creator in section A1 is still indexed as an NVI creator
 
     @Disabled # FIXME: NP-51406 - Reported NVI numbers can silently change when a candidate is reindexed
     Scenario: Creator affiliation differs between Candidate and Publication, index uses the Candidate
       Given the creator in section A1 is moved to section A2 in the Publication
       When the Candidate is indexed
-      Then the indexed NVI points match the Candidate
-      And the indexed NVI affiliations match the Candidate
+      Then the index document has the same NVI data as the Candidate
+      And the creator is indexed as affiliated with section A1, not section A2
 
     @Disabled # FIXME: NP-51402 - Channel metadata isn't persisted
     Scenario: Channel name differs between Candidate and Publication, index uses the Candidate
@@ -57,9 +59,10 @@ Feature: Indexing of reported NVI Candidates
     Scenario: Channel ISSN differs between Candidate and Publication, index uses the Candidate
 
     Scenario: Channel level differs between Candidate and Publication, index uses the Candidate
-      Given the channel level changes in the Publication
+      Given the channel level in the Publication is changed from level 1 to level 2
       When the Candidate is indexed
-      Then the indexed channel level matches the Candidate
+      Then the index document has the same NVI data as the Candidate
+      And the indexed channel is level 1, not level 2
 
   Rule: Index documents can be enriched with updated data if absent from the Candidate
 
