@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.index;
 
 import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getCandidateContextUri;
+import static no.sikt.nva.nvi.common.model.EnumFixtures.randomValidChannelType;
 import static no.sikt.nva.nvi.common.model.EnumFixtures.randomValidScientificValue;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.getRandomDateInCurrentYearAsDto;
 import static no.sikt.nva.nvi.test.TestConstants.CREATOR;
@@ -160,7 +161,7 @@ public final class IndexDocumentTestUtils {
   public static PublicationChannel.Builder randomPublicationChannelBuilder() {
     return PublicationChannel.builder()
         .withId(randomUri())
-        .withType(randomString())
+        .withType(randomValidChannelType())
         .withScientificValue(randomValidScientificValue())
         .withName(randomString())
         .withPrintIssn(randomIssn());

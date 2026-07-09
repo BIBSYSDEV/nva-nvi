@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.index;
 
 import static java.util.Collections.emptyList;
+import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.createCandidateDao;
 import static no.sikt.nva.nvi.common.db.DbApprovalStatusFixtures.randomApprovalDao;
@@ -182,6 +183,25 @@ class IndexDocumentContentTest extends IndexDocumentHandlerTestBase {
     assertThat(document.publicationDetails().publicationChannel().name())
         .isNotBlank()
         .isEqualTo(channel.name());
+  }
+
+  /**
+   * A channel without ID and type is not a valid state for candidates created in nva-nvi, but it
+   * occurs for candidates imported from Cristin.
+   */
+  @Test
+  void shouldBuildIndexDocumentWhenCandidateChannelHasNoIdOrType() {
+    var candidate = candidateWithChannel(null, null);
+    var unrelatedChannel = publicationChannel(randomString(), ChannelType.JOURNAL);
+    stubPublication(candidate, publicationDtoWithChannel(candidate, unrelatedChannel));
+
+    var document = generateIndexDocument(candidate);
+
+    var indexedChannel = document.publicationDetails().publicationChannel();
+    assertThat(indexedChannel.scientificValue()).isEqualTo(ScientificValue.LEVEL_ONE.getValue());
+    assertThat(indexedChannel.type()).isNull();
+    assertThat(indexedChannel.name()).isNull();
+    assertThat(indexedChannel.printIssn()).isNull();
   }
 
   @Test
@@ -420,9 +440,9 @@ class IndexDocumentContentTest extends IndexDocumentHandlerTestBase {
 
   private Candidate candidateWithChannel(URI channelId, ChannelType channelType) {
     var institutionId = randomOrganizationId();
+    var channelTypeValue = nonNull(channelType) ? channelType.getValue() : null;
     var channel =
-        new DbPublicationChannel(
-            channelId, channelType.getValue(), ScientificValue.LEVEL_ONE.getValue());
+        new DbPublicationChannel(channelId, channelTypeValue, ScientificValue.LEVEL_ONE.getValue());
     var publicationDetails = randomPublicationBuilder(institutionId).build();
     var pointCalculation =
         randomPointCalculationBuilder(randomOrganizationId(), institutionId)

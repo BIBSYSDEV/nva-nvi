@@ -65,7 +65,7 @@ final class PublicationDetailsMapper {
         PublicationChannel.builder()
             .withScientificValue(channel.scientificValue())
             .withId(channel.id())
-            .withType(channel.channelType().getValue());
+            .withType(channel.channelType());
 
     findMatchingPublicationChannelDto(channel)
         .ifPresent(
@@ -83,17 +83,19 @@ final class PublicationDetailsMapper {
    */
   private Optional<PublicationChannelDto> findMatchingPublicationChannelDto(
       no.sikt.nva.nvi.common.model.PublicationChannel channel) {
-    return nonNull(channel.id())
-        ? findChannelDtoById(channel.id()).or(() -> findChannelDtoByType(channel.channelType()))
-        : findChannelDtoByType(channel.channelType());
+    return findChannelDtoById(channel.id()).or(() -> findChannelDtoByType(channel.channelType()));
   }
 
   private Optional<PublicationChannelDto> findChannelDtoById(URI id) {
-    return publicationChannels().stream().filter(dto -> id.equals(dto.id())).findFirst();
+    return nonNull(id)
+        ? publicationChannels().stream().filter(dto -> id.equals(dto.id())).findFirst()
+        : Optional.empty();
   }
 
   private Optional<PublicationChannelDto> findChannelDtoByType(ChannelType type) {
-    return publicationChannels().stream().filter(dto -> type == dto.channelType()).findFirst();
+    return nonNull(type) && type.isValid()
+        ? publicationChannels().stream().filter(dto -> type == dto.channelType()).findFirst()
+        : Optional.empty();
   }
 
   private Collection<PublicationChannelDto> publicationChannels() {

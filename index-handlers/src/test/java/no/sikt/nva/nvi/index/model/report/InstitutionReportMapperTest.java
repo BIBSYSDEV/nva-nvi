@@ -196,7 +196,7 @@ class InstitutionReportMapperTest {
     var document = randomDocument(ORGANIZATION_PRESENT_IN_DBH);
     var row = toRow(document);
     assertThat(cellValue(row, KVALITETSNIVAKODE))
-        .isEqualTo(document.publicationDetails().publicationChannel().scientificValue().getValue());
+        .isEqualTo(document.publicationDetails().publicationChannel().scientificValue());
   }
 
   @Test

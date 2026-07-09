@@ -194,7 +194,11 @@ public record NviCandidateIndexDocument(
     keyValueMap.put(
         PUBLICATION_CHANNEL,
         nonNull(publicationChannel.id()) ? publicationChannel.id().toString() : EMPTY_STRING);
-    keyValueMap.put(PUBLICATION_CHANNEL_LEVEL, publicationChannel.scientificValue().getValue());
+    keyValueMap.put(
+        PUBLICATION_CHANNEL_LEVEL,
+        nonNull(publicationChannel.scientificValue())
+            ? publicationChannel.scientificValue()
+            : EMPTY_STRING);
     keyValueMap.put(
         PUBLICATION_CHANNEL_TYPE,
         nonNull(publicationChannel.type()) ? publicationChannel.type() : EMPTY_STRING);
