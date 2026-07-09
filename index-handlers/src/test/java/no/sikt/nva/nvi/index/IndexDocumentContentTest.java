@@ -204,6 +204,28 @@ class IndexDocumentContentTest extends IndexDocumentHandlerTestBase {
     assertThat(indexedChannel.printIssn()).isNull();
   }
 
+  /**
+   * Pins the contract documented on {@code CandidateToIndexDocumentMapper}: a null {@code
+   * PublicationDto} must yield a lean Candidate-only document instead of failing.
+   */
+  @Test
+  void shouldBuildCandidateOnlyIndexDocumentWhenPublicationDtoIsNull() {
+    var institution = organizationNode(randomOrganizationId(), null);
+    var creator = verifiedNviCreatorDtoFrom(institution.id());
+    var candidate = setupCandidateWithCreator(creator, institution);
+    stubPublication(candidate, null);
+
+    var document = generateIndexDocument(candidate);
+
+    assertThat(document.identifier()).isEqualTo(candidate.identifier());
+    assertThat(document.publicationDetails().title())
+        .isEqualTo(candidate.publicationDetails().title());
+    assertThat(document.publicationDetails().contributors()).isEmpty();
+    assertThat(document.publicationDetails().nviContributors())
+        .extracting(NviContributor::name)
+        .containsExactly(creator.name());
+  }
+
   @Test
   void shouldIndexNviCreatorFromCandidateWhenRemovedFromPublication() {
     var institution = organizationNode(randomOrganizationId(), null);
