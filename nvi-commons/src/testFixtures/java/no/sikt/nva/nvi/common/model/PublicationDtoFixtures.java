@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common.model;
 
 import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.test.TestConstants.PUBLISHED;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 
 import java.time.Instant;
@@ -31,7 +32,7 @@ public final class PublicationDtoFixtures {
         .withId(details.publicationId())
         .withIdentifier(details.publicationIdentifier().toString())
         .withTitle(details.title())
-        .withStatus("PUBLISHED")
+        .withStatus(PUBLISHED)
         .withLanguage(details.language())
         .withPublicationType(candidate.getPublicationType())
         .withIsApplicable(candidate.isApplicable())

@@ -16,6 +16,7 @@ import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.model.document.Contributor;
 import no.sikt.nva.nvi.index.model.document.NviContributor;
 import no.sikt.nva.nvi.index.model.document.NviOrganization;
+import no.sikt.nva.nvi.index.model.document.Organization;
 import no.sikt.nva.nvi.index.model.document.OrganizationType;
 import nva.commons.core.StringUtils;
 import org.slf4j.Logger;
@@ -84,9 +85,8 @@ final class ContributorMapper {
   }
 
   private static Contributor buildContributor(ContributorDto contributorDto) {
-    var contributorId = nonNull(contributorDto.id()) ? contributorDto.id().toString() : null;
     return Contributor.builder()
-        .withId(contributorId)
+        .withId(contributorDto.id())
         .withName(contributorDto.name())
         .withOrcid(extractOrcid(contributorDto))
         .withRole(extractRole(contributorDto))
@@ -177,6 +177,6 @@ final class ContributorMapper {
   }
 
   private static OrganizationType buildOrganization(URI id) {
-    return no.sikt.nva.nvi.index.model.document.Organization.builder().withId(id).build();
+    return Organization.builder().withId(id).build();
   }
 }
