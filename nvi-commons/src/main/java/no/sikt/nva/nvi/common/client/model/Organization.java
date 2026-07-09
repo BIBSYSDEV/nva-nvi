@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.client.model;
 
+import static java.util.Collections.emptyList;
 import static java.util.function.Predicate.not;
 import static no.sikt.nva.nvi.common.utils.Validator.hasElements;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
@@ -10,6 +11,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -60,6 +62,37 @@ public record Organization(
 
   public static Builder builder() {
     return new Builder();
+  }
+
+  /**
+   * Searches this organization tree (following {@code hasPart} downwards) for the given
+   * organization and returns its ancestor ids within the tree, nearest parent first. Returns an
+   * empty {@code Optional} if the organization is not in this tree, and an empty list if it is this
+   * organization itself.
+   */
+  @JsonIgnore
+  public Optional<List<URI>> findAncestorsOf(URI organizationId) {
+    return id().equals(organizationId)
+        ? Optional.of(emptyList())
+        : findAncestorsViaSubOrganizations(organizationId);
+  }
+
+  private Optional<List<URI>> findAncestorsViaSubOrganizations(URI organizationId) {
+    return hasElements(hasPart()) ? getUris(organizationId) : Optional.empty();
+  }
+
+  private Optional<List<URI>> getUris(URI organizationId) {
+    return hasPart().stream()
+        .map(subOrganization -> subOrganization.findAncestorsOf(organizationId))
+        .flatMap(Optional::stream)
+        .findFirst()
+        .map(this::appendSelfAsFurthestAncestor);
+  }
+
+  private List<URI> appendSelfAsFurthestAncestor(List<URI> ancestors) {
+    var result = new ArrayList<>(ancestors);
+    result.add(id());
+    return result;
   }
 
   @JsonIgnore

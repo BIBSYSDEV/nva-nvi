@@ -5,6 +5,9 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.API_HOST;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
+import static no.sikt.nva.nvi.test.TestUtils.randomEnglishUnitLabel;
+import static no.sikt.nva.nvi.test.TestUtils.randomNorwegianUnitLabel;
+import static no.sikt.nva.nvi.test.TestUtils.randomUnitName;
 import static no.sikt.nva.nvi.test.TestUtils.randomUriWithSuffix;
 import static no.unit.nva.testutils.RandomDataGenerator.FAKER;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -70,18 +73,23 @@ public final class OrganizationFixtures {
         .build();
   }
 
+  public static Map<String, String> randomLabels() {
+    var unitName = randomUnitName();
+    return Map.of("nb", randomNorwegianUnitLabel(unitName), "en", randomEnglishUnitLabel(unitName));
+  }
+
   public static Builder randomOrganization() {
     return Organization.builder()
         .withId(randomOrganizationId())
         .withCountryCode(COUNTRY_CODE_NORWAY)
-        .withLabels(Map.of("nb", randomString(), "en", randomString()));
+        .withLabels(randomLabels());
   }
 
   public static Builder randomOrganization(String countryCode) {
     return Organization.builder()
         .withId(randomOrganizationId())
         .withCountryCode(countryCode)
-        .withLabels(Map.of("nb", randomString(), "en", randomString()));
+        .withLabels(randomLabels());
   }
 
   public static Builder randomOrganization(String countryCode, int numberOfSubOrganizations) {

@@ -103,6 +103,12 @@ public record PublicationDto(
     return publicationChannels.stream().filter(PublicationChannelDto::isValid).toList().getFirst();
   }
 
+  public Optional<Organization> getInstitution(URI institutionId) {
+    return topLevelOrganizations().stream()
+        .filter(org -> org.id().equals(institutionId))
+        .findFirst();
+  }
+
   public static Builder builder() {
     return new Builder();
   }

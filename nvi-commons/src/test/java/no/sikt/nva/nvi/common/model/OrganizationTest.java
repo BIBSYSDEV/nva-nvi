@@ -1,13 +1,52 @@
 package no.sikt.nva.nvi.common.model;
 
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.createOrganizationHierarchy;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganization;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationWithPartOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.Collections;
+import java.util.List;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import org.junit.jupiter.api.Test;
 
 class OrganizationTest {
+
+  @Test
+  void shouldFindAncestorsOfNestedOrganizationNearestParentFirst() {
+    var topLevelId = randomOrganizationId();
+    var departmentId = randomOrganizationId();
+    var subDepartmentId = randomOrganizationId();
+    var groupId = randomOrganizationId();
+    var topLevelOrganization =
+        createOrganizationHierarchy(topLevelId, departmentId, subDepartmentId, groupId);
+
+    var ancestors = topLevelOrganization.findAncestorsOf(groupId);
+
+    assertThat(ancestors).contains(List.of(subDepartmentId, departmentId, topLevelId));
+  }
+
+  @Test
+  void shouldFindEmptyAncestorListWhenOrganizationIsTheTopLevelItself() {
+    var organization = randomOrganization().build();
+
+    var ancestors = organization.findAncestorsOf(organization.id());
+
+    assertThat(ancestors).contains(Collections.emptyList());
+  }
+
+  @Test
+  void shouldNotFindAncestorsWhenOrganizationIsNotInTree() {
+    var topLevelOrganization =
+        createOrganizationHierarchy(
+            randomOrganizationId(), randomOrganizationId(), randomOrganizationId());
+
+    var ancestors = topLevelOrganization.findAncestorsOf(randomOrganizationId());
+
+    assertThat(ancestors).isEmpty();
+  }
 
   @Test
   void shouldReturnDeepestPartOfAsTopLevelOrg() {

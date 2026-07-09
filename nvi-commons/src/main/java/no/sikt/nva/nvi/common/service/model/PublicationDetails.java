@@ -27,8 +27,8 @@ import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.unit.nva.identifiers.SortableIdentifier;
 
-// TODO: Refactor so pmd warning can be removed
-@SuppressWarnings("PMD.TooManyFields")
+// Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
+@SuppressWarnings({"PMD.TooManyFields", "PMD.CouplingBetweenObjects"})
 public record PublicationDetails(
     URI publicationId,
     URI publicationBucketUri,
@@ -186,6 +186,12 @@ public record PublicationDetails(
         .filter(UnverifiedNviCreatorDto.class::isInstance)
         .map(UnverifiedNviCreatorDto.class::cast)
         .toList();
+  }
+
+  public Optional<Organization> findInstitution(URI institutionId) {
+    return topLevelOrganizations().stream()
+        .filter(organization -> institutionId.equals(organization.id()))
+        .findFirst();
   }
 
   // TODO: Remove this when data is migrated and we no longer need the null checking

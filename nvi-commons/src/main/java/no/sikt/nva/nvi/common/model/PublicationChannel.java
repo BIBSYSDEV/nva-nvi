@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common.model;
 
 import static java.util.Objects.nonNull;
+import static java.util.Objects.requireNonNullElse;
 
 import java.net.URI;
 import java.util.Optional;
@@ -18,6 +19,11 @@ import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
  *     points. For a valid NVI candidate, this should be LevelOne or LevelTwo.
  */
 public record PublicationChannel(URI id, ChannelType channelType, ScientificValue scientificValue) {
+
+  public PublicationChannel {
+    channelType = requireNonNullElse(channelType, ChannelType.NON_CANDIDATE);
+    scientificValue = requireNonNullElse(scientificValue, ScientificValue.NON_CANDIDATE);
+  }
 
   public static PublicationChannel from(PublicationChannelDto dtoChannel) {
     return new PublicationChannel(

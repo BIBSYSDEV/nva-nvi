@@ -47,7 +47,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
@@ -570,7 +569,7 @@ class InstitutionReportMapperTest {
 
   private static NviContributor randomContributor(URI contributorId, URI affiliationId) {
     return NviContributor.builder()
-        .withId(Optional.ofNullable(contributorId).map(URI::toString).orElse(null))
+        .withId(contributorId)
         .withName(randomString())
         .withAffiliations(
             List.of(
@@ -584,7 +583,7 @@ class InstitutionReportMapperTest {
   private static NviContributor randomContributor(
       URI contributorId, URI affiliationId1, URI affiliationId2) {
     return NviContributor.builder()
-        .withId(contributorId.toString())
+        .withId(contributorId)
         .withName(randomString())
         .withAffiliations(
             List.of(
