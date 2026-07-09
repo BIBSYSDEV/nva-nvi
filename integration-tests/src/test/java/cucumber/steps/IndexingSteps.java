@@ -9,6 +9,7 @@ import static no.sikt.nva.nvi.common.model.ContributorFixtures.verifiedCreatorFr
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.organizationNode;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
 import static no.sikt.nva.nvi.test.TestConstants.JOURNAL_TYPE;
+import static no.sikt.nva.nvi.test.TestConstants.LEVEL_ONE;
 import static no.sikt.nva.nvi.test.TestConstants.LEVEL_TWO;
 import static no.sikt.nva.nvi.test.TestConstants.THIS_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -168,19 +169,30 @@ public class IndexingSteps {
     indexingContext.overwriteSource(candidate, publication);
   }
 
-  @Given("the channel level changes in the Publication")
-  public void theChannelLevelChangesInThePublication() {
+  @Given("the channel level in the Publication is changed from level 1 to level 2")
+  public void theChannelLevelInThePublicationIsChangedFromLevel1ToLevel2() {
     publicationFactory.withPublicationChannel(JOURNAL_TYPE, LEVEL_TWO);
     indexingContext.overwriteSource(candidate, publicationFactory.getExpandedPublication());
   }
 
-  @Then("the indexed NVI affiliations match the Candidate")
-  public void theIndexedNviAffiliationsMatchTheCandidate() {
+  @Then("the index document has the same NVI data as the Candidate")
+  public void theIndexDocumentHasTheSameNviDataAsTheCandidate() {
+    theIndexDocumentHasTheSameNviPointsAsTheCandidate();
+    theIndexDocumentHasTheSameChannelLevelAsTheCandidate();
+    theIndexDocumentHasTheSameChannelIdAsTheCandidate();
+    theIndexDocumentHasTheSameNviAffiliationsAsTheCandidate();
+    theIndexDocumentHasTheSameNviCreatorsAsTheCandidate();
+    theIndexDocumentHasTheSameApprovalStatusesAsTheCandidate();
+    theIndexDocumentHasTheSameReportingStatusAsTheCandidate();
+  }
+
+  @Then("the index document has the same NVI affiliations as the Candidate")
+  public void theIndexDocumentHasTheSameNviAffiliationsAsTheCandidate() {
     assertThat(indexedNviAffiliations(updatedDocument)).isEqualTo(candidateAffiliations());
   }
 
-  @Then("the indexed NVI points match the Candidate")
-  public void theIndexedNviPointsMatchTheCandidate() {
+  @Then("the index document has the same NVI points as the Candidate")
+  public void theIndexDocumentHasTheSameNviPointsAsTheCandidate() {
     assertThat(indexedInstitutionPoints(updatedDocument)).isEqualTo(candidateInstitutionPoints());
     assertThat(updatedDocument.points()).isEqualByComparingTo(candidate.getTotalPoints());
     assertThat(updatedDocument.internationalCollaborationFactor())
@@ -188,13 +200,13 @@ public class IndexingSteps {
     assertThat(updatedDocument.creatorShareCount()).isEqualTo(candidate.getCreatorShareCount());
   }
 
-  @Then("the indexed NVI creators match the Candidate")
-  public void theIndexedNviCreatorsMatchTheCandidate() {
+  @Then("the index document has the same NVI creators as the Candidate")
+  public void theIndexDocumentHasTheSameNviCreatorsAsTheCandidate() {
     assertThat(indexedCreators(updatedDocument)).isEqualTo(candidateCreators());
   }
 
-  @Then("the indexed reporting status matches the Candidate")
-  public void theIndexedReportingStatusMatchesTheCandidate() {
+  @Then("the index document has the same reporting status as the Candidate")
+  public void theIndexDocumentHasTheSameReportingStatusAsTheCandidate() {
     assertThat(updatedDocument.reported()).isEqualTo(candidate.isReported());
     assertThat(updatedDocument.reportingPeriod())
         .isEqualTo(ReportingPeriod.fromCandidate(candidate));
@@ -203,8 +215,8 @@ public class IndexingSteps {
     assertThat(updatedDocument.reportedDate()).isEqualTo(expectedReportedDate);
   }
 
-  @Then("the indexed approval statuses match the Candidate")
-  public void theIndexedApprovalStatusesMatchTheCandidate() {
+  @Then("the index document has the same approval statuses as the Candidate")
+  public void theIndexDocumentHasTheSameApprovalStatusesAsTheCandidate() {
     assertThat(indexedApprovalStatuses(updatedDocument)).isEqualTo(candidateApprovalStatuses());
     assertThat(updatedDocument.globalApprovalStatus())
         .isEqualTo(candidate.getGlobalApprovalStatus());
@@ -213,6 +225,17 @@ public class IndexingSteps {
   @Then("the added creator is not indexed as an NVI creator")
   public void theAddedCreatorIsNotIndexedAsAnNviCreator() {
     assertThat(indexedNviCreatorIds()).doesNotContain(addedCreator.id().toString());
+  }
+
+  @Then("the creator in section A1 is still indexed as an NVI creator")
+  public void theCreatorInSectionA1IsStillIndexedAsAnNviCreator() {
+    assertThat(indexedNviCreatorIds()).contains(creator.id().toString());
+  }
+
+  @Then("the creator is indexed as affiliated with section A1, not section A2")
+  public void theCreatorIsIndexedAsAffiliatedWithSectionA1NotSectionA2() {
+    var indexedAffiliations = indexedNviAffiliations(updatedDocument).get(creator.id().toString());
+    assertThat(indexedAffiliations).contains(sectionA1.id()).doesNotContain(sectionA2.id());
   }
 
   @Then("the added creator is indexed as a searchable contributor")
@@ -234,17 +257,31 @@ public class IndexingSteps {
         .allSatisfy(contributor -> assertThat(contributor.name()).isNotBlank());
   }
 
-  @Then("the indexed channel level matches the Candidate")
-  public void theIndexedChannelLevelMatchesTheCandidate() {
+  @Then("the index document has the same channel level as the Candidate")
+  public void theIndexDocumentHasTheSameChannelLevelAsTheCandidate() {
     var candidateLevel =
         ScientificValue.parse(candidate.getPublicationChannel().scientificValue().getValue());
     assertThat(updatedDocument.publicationDetails().publicationChannel().scientificValue())
         .isEqualTo(candidateLevel);
   }
 
+  @Then("the index document has the same channel ID as the Candidate")
+  public void theIndexDocumentHasTheSameChannelIdAsTheCandidate() {
+    assertThat(updatedDocument.publicationDetails().publicationChannel().id())
+        .isEqualTo(candidate.getPublicationChannel().id());
+  }
+
   @Then("the indexed channel has a name")
   public void theIndexedChannelHasAName() {
     assertThat(updatedDocument.publicationDetails().publicationChannel().name()).isNotBlank();
+  }
+
+  @Then("the indexed channel is level 1, not level 2")
+  public void theIndexedChannelIsLevel1NotLevel2() {
+    var indexedLevel = updatedDocument.publicationDetails().publicationChannel().scientificValue();
+    assertThat(indexedLevel)
+        .isEqualTo(ScientificValue.parse(LEVEL_ONE))
+        .isNotEqualTo(ScientificValue.parse(LEVEL_TWO));
   }
 
   private Set<String> indexedNviCreatorIds() {
@@ -281,24 +318,38 @@ public class IndexingSteps {
         .build();
   }
 
-  private static Set<URI> indexedNviAffiliations(NviCandidateIndexDocument document) {
+  /**
+   * Grouped per creator so a cross-wired creator/affiliation pairing is caught, not just a change
+   * in the flattened union.
+   */
+  private static Map<String, Set<URI>> indexedNviAffiliations(NviCandidateIndexDocument document) {
     return document.publicationDetails().nviContributors().stream()
-        .map(NviContributor::affiliations)
-        .flatMap(List::stream)
-        .filter(NviOrganization.class::isInstance)
-        .map(NviOrganization.class::cast)
+        .collect(
+            Collectors.toMap(IndexingSteps::creatorIdentity, IndexingSteps::nviAffiliationIds));
+  }
+
+  private static Set<URI> nviAffiliationIds(NviContributor contributor) {
+    return contributor.nviAffiliations().stream()
         .map(NviOrganization::id)
         .collect(Collectors.toSet());
   }
 
-  private Set<URI> candidateAffiliations() {
+  private Map<String, Set<URI>> candidateAffiliations() {
     var publicationDetails = candidate.publicationDetails();
     return Stream.concat(
             publicationDetails.verifiedCreators().stream()
-                .flatMap(verifiedCreator -> verifiedCreator.affiliations().stream()),
+                .map(
+                    verifiedCreator ->
+                        Map.entry(
+                            verifiedCreator.id().toString(),
+                            Set.copyOf(verifiedCreator.affiliations()))),
             publicationDetails.unverifiedCreators().stream()
-                .flatMap(unverifiedCreator -> unverifiedCreator.affiliations().stream()))
-        .collect(Collectors.toSet());
+                .map(
+                    unverifiedCreator ->
+                        Map.entry(
+                            unverifiedCreator.name(),
+                            Set.copyOf(unverifiedCreator.affiliations()))))
+        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
   private static Map<URI, InstitutionPointsView> indexedInstitutionPoints(
@@ -318,7 +369,7 @@ public class IndexingSteps {
   }
 
   /**
-   * Identity of an NVI creator: verified creators are identified by id, unverified creators by
+   * Identity of an NVI creator: verified creators are identified by ID, unverified creators by
    * name. The verified creator name is deliberately excluded, since it is enrichment from the
    * Publication until it is persisted on the Candidate (NP-51414); its freezing is covered by a
    * separate scenario.
@@ -342,8 +393,11 @@ public class IndexingSteps {
         .collect(Collectors.toSet());
   }
 
-  // Compares by value string, which holds for decided approvals; a reported Candidate's approvals
-  // are all decided, so the index applies no NEW (pending-and-unassigned) transform here.
+  /**
+   * Approval status keyed by institution, compared by its value string. This is valid because a
+   * reported Candidate's approvals are all decided, so the index never applies the NEW
+   * (pending-and-unassigned) transform.
+   */
   private static Map<URI, String> indexedApprovalStatuses(NviCandidateIndexDocument document) {
     return document.approvals().stream()
         .collect(
