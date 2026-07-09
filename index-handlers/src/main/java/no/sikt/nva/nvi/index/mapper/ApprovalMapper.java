@@ -75,7 +75,7 @@ final class ApprovalMapper {
 
   private Optional<Map<String, String>> labelsFromPublication(URI institutionId) {
     return Optional.ofNullable(publicationDto)
-        .flatMap(publication -> publication.getInstitution(institutionId))
+        .flatMap(publication -> publication.findInstitution(institutionId))
         .map(Organization::labels)
         .filter(not(Map::isEmpty));
   }

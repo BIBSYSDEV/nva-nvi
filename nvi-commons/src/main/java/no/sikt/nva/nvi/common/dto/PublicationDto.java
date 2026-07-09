@@ -103,9 +103,9 @@ public record PublicationDto(
     return publicationChannels.stream().filter(PublicationChannelDto::isValid).toList().getFirst();
   }
 
-  public Optional<Organization> getInstitution(URI institutionId) {
+  public Optional<Organization> findInstitution(URI institutionId) {
     return topLevelOrganizations().stream()
-        .filter(org -> org.id().equals(institutionId))
+        .filter(organization -> institutionId.equals(organization.id()))
         .findFirst();
   }
 
