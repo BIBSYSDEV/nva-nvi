@@ -205,15 +205,15 @@ class IndexDocumentContentTest extends IndexDocumentHandlerTestBase {
   }
 
   /**
-   * Pins the contract documented on {@code CandidateToIndexDocumentMapper}: a null {@code
-   * PublicationDto} must yield a lean Candidate-only document instead of failing.
+   * Pins the contract documented on {@code CandidateToIndexDocumentMapper}: an expanded publication
+   * that cannot be parsed must yield a lean Candidate-only document instead of failing.
    */
   @Test
-  void shouldBuildCandidateOnlyIndexDocumentWhenPublicationDtoIsNull() {
+  void shouldBuildCandidateOnlyIndexDocumentWhenPublicationCannotBeParsed() {
     var institution = organizationNode(randomOrganizationId(), null);
     var creator = verifiedNviCreatorDtoFrom(institution.id());
     var candidate = setupCandidateWithCreator(creator, institution);
-    stubPublication(candidate, null);
+    stubPublicationParseFailure(candidate);
 
     var document = generateIndexDocument(candidate);
 
@@ -224,6 +224,27 @@ class IndexDocumentContentTest extends IndexDocumentHandlerTestBase {
     assertThat(document.publicationDetails().nviContributors())
         .extracting(NviContributor::name)
         .containsExactly(creator.name());
+  }
+
+  @Test
+  void shouldTolerateContributorWithoutRolesInPublication() {
+    var institution = organizationNode(randomOrganizationId(), null);
+    var creator = verifiedNviCreatorDtoFrom(institution.id());
+    var candidate = setupCandidateWithCreator(creator, institution);
+    var contributorWithoutRoles =
+        ContributorDto.builder()
+            .withId(randomUri())
+            .withName(randomString())
+            .withAffiliations(List.of(institution))
+            .build();
+    stubPublication(
+        candidate, publicationDtoWithContributors(candidate, List.of(contributorWithoutRoles)));
+
+    var document = generateIndexDocument(candidate);
+
+    var indexedContributor = document.publicationDetails().contributors().getFirst();
+    assertThat(indexedContributor.name()).isEqualTo(contributorWithoutRoles.name());
+    assertThat(indexedContributor.role()).isNull();
   }
 
   @Test

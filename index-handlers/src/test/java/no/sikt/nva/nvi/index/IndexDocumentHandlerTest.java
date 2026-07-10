@@ -178,10 +178,10 @@ class IndexDocumentHandlerTest extends IndexDocumentHandlerTestBase {
   }
 
   @Test
-  void shouldNotFailForWholeBatchWhenFailingToLoadPublicationForOneCandidate() {
+  void shouldNotFailForWholeBatchWhenFailingToReadPublicationForOneCandidate() {
     var candidateToFail = setupRandomApplicableCandidate(scenario);
     var candidateToSucceed = setupRandomApplicableCandidate(scenario);
-    stubPublicationFailure(candidateToFail);
+    stubPublicationReadFailure(candidateToFail);
     var expectedDocument = stubbedDocument(candidateToSucceed);
     var event = createEvent(candidateToFail.identifier(), candidateToSucceed.identifier());
 
@@ -190,6 +190,16 @@ class IndexDocumentHandlerTest extends IndexDocumentHandlerTestBase {
     var actualDocument =
         parseJson(s3Writer.getFile(createPath(candidateToSucceed))).indexDocument();
     assertDocumentContentEquals(actualDocument, expectedDocument);
+  }
+
+  @Test
+  void shouldSendMessageToDlqWhenPublicationCannotBeRead() {
+    var candidate = setupRandomApplicableCandidate(scenario);
+    stubPublicationReadFailure(candidate);
+
+    handler.handleRequest(createEvent(candidate.identifier()), CONTEXT);
+
+    assertThat(sqsClient.getAllSentSqsEvents(INDEX_DLQ_URL)).hasSize(1);
   }
 
   @Test
@@ -231,10 +241,10 @@ class IndexDocumentHandlerTest extends IndexDocumentHandlerTestBase {
     assertDocumentContentEquals(actualDocument, expectedDocument);
   }
 
-  private void stubPublicationFailure(Candidate candidate) {
-    when(publicationLoaderService.extractAndTransform(
+  private void stubPublicationReadFailure(Candidate candidate) {
+    when(publicationLoaderService.tryExtractAndTransform(
             candidate.publicationDetails().publicationBucketUri()))
-        .thenThrow(new RuntimeException("Failed to load publication"));
+        .thenThrow(new RuntimeException("Failed to read publication from storage"));
   }
 
   private NviCandidateIndexDocument stubbedDocument(Candidate candidate) {

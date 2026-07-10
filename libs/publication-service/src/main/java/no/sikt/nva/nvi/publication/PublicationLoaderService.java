@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
 import no.sikt.nva.nvi.common.exceptions.ParsingException;
@@ -51,8 +52,36 @@ public class PublicationLoaderService {
   }
 
   public PublicationDto extractAndTransform(URI publicationBucketUri) {
+    var rawContent = readFromStorage(publicationBucketUri);
+    return parse(rawContent, publicationBucketUri);
+  }
+
+  /**
+   * Lenient variant of {@link #extractAndTransform} for consumers that treat the publication as
+   * supplemental data, such as indexing. Failures to read from storage still throw, so transient
+   * errors can be retried, while a persisted document that cannot be parsed is logged and returned
+   * as an empty {@code Optional}.
+   */
+  public Optional<PublicationDto> tryExtractAndTransform(URI publicationBucketUri) {
+    var rawContent = readFromStorage(publicationBucketUri);
+    try {
+      return Optional.of(parse(rawContent, publicationBucketUri));
+    } catch (ParsingException exception) {
+      logger.error(
+          "Failed to parse expanded publication ({}), continuing without publication data",
+          publicationBucketUri,
+          exception);
+      return Optional.empty();
+    }
+  }
+
+  private String readFromStorage(URI publicationBucketUri) {
     logger.info("Extracting publication from S3 ({})", publicationBucketUri);
-    var content = extractContentFromStorage(publicationBucketUri);
+    return storageReader.read(publicationBucketUri);
+  }
+
+  private PublicationDto parse(String rawContent, URI publicationBucketUri) {
+    var content = extractBodyNode(rawContent);
     var resultJson = projectToNviJson(content, publicationBucketUri);
     return toPublicationDto(resultJson, publicationBucketUri);
   }
@@ -94,15 +123,14 @@ public class PublicationLoaderService {
   }
 
   /**
-   * Extracts the body node from a JSON-LD document stored in S3. Note that this replaces the
-   * context node in the JSON-LD document with a static copy to avoid network calls. This static
-   * context should be kept in sync with the <a
+   * Extracts the body node from a persisted JSON-LD document. Note that this replaces the context
+   * node in the JSON-LD document with a static copy to avoid network calls. This static context
+   * should be kept in sync with the <a
    * href="https://api.nva.unit.no/publication/context">source</a>.
    */
-  private JsonNode extractContentFromStorage(URI publicationBucketUri) {
+  private JsonNode extractBodyNode(String rawContent) {
     try {
-      var jsonString = storageReader.read(publicationBucketUri);
-      var jsonDocument = dtoObjectMapper.readTree(jsonString);
+      var jsonDocument = dtoObjectMapper.readTree(rawContent);
       var body = (ObjectNode) jsonDocument.at(JSON_PTR_BODY);
       body.set(CONTEXT_NODE, INPUT_CONTEXT);
       return body;

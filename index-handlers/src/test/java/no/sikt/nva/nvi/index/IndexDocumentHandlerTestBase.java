@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.URI;
+import java.util.Optional;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
@@ -87,10 +88,15 @@ class IndexDocumentHandlerTestBase {
   }
 
   protected PublicationDto stubPublication(Candidate candidate, PublicationDto publicationDto) {
-    when(publicationLoaderService.extractAndTransform(
+    when(publicationLoaderService.tryExtractAndTransform(
             candidate.publicationDetails().publicationBucketUri()))
-        .thenReturn(publicationDto);
+        .thenReturn(Optional.ofNullable(publicationDto));
     return publicationDto;
+  }
+
+  /** Makes the generator receive no publication data, as when the persisted document is broken. */
+  protected void stubPublicationParseFailure(Candidate candidate) {
+    stubPublication(candidate, null);
   }
 
   protected NviCandidateIndexDocument generateIndexDocument(Candidate candidate) {

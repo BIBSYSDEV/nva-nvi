@@ -7,7 +7,8 @@ import nva.commons.core.Environment;
 
 /**
  * Generates index documents from a persisted {@link Candidate}, enriched with the expanded
- * publication loaded from S3. There are no live lookups.
+ * publication loaded from S3. There are no live lookups. An expanded publication that cannot be
+ * parsed is logged and tolerated, producing a document from candidate data alone.
  */
 public final class IndexDocumentGenerator {
 
@@ -21,9 +22,9 @@ public final class IndexDocumentGenerator {
   }
 
   public NviCandidateIndexDocument generate(Candidate candidate) {
+    var publicationBucketUri = candidate.publicationDetails().publicationBucketUri();
     var publicationDto =
-        publicationLoaderService.extractAndTransform(
-            candidate.publicationDetails().publicationBucketUri());
+        publicationLoaderService.tryExtractAndTransform(publicationBucketUri).orElse(null);
     return new CandidateToIndexDocumentMapper(candidate, publicationDto, environment).generate();
   }
 }
