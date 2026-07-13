@@ -20,7 +20,7 @@ public record PeriodReportRequest(URI queryId, String period, ReportFormat repor
 
   @Override
   public boolean hasSupportedReportType() {
-    return MediaType.JSON_UTF_8.equals(reportType.getMediaType());
+    return MediaType.JSON_UTF_8.equals(reportType.mediaType());
   }
 
   private static URI getQueryId(Environment environment, String period) {

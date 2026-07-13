@@ -31,7 +31,7 @@ public record InstitutionReportRequest(
   @Override
   public boolean hasSupportedReportType() {
     return List.of(MediaType.JSON_UTF_8, MediaType.OOXML_SHEET, MediaType.CSV_UTF_8)
-        .contains(reportType.getMediaType());
+        .contains(reportType.mediaType());
   }
 
   private static URI getQueryId(

@@ -18,7 +18,7 @@ public record AllPeriodsReportRequest(URI queryId, ReportFormat reportType)
 
   @Override
   public boolean hasSupportedReportType() {
-    return MediaType.JSON_UTF_8.equals(reportType.getMediaType());
+    return MediaType.JSON_UTF_8.equals(reportType.mediaType());
   }
 
   private static URI getQueryId(Environment environment) {
