@@ -241,7 +241,7 @@ class SearchNviCandidatesHandlerTest extends SearchNviCandidatesHandlerTestBase 
     var usersViewingScope = List.of(randomSiktSubUnit());
     var viewingScopeIncludedUnits = generateRandomUrisWithLastPathElements(usersViewingScope);
 
-    when(identityServiceClient.getUser(currentUsername))
+    when(MOCK_IDENTITY_SERVICE_CLIENT.getUser(currentUsername))
         .thenReturn(buildGetUserResponse(viewingScopeIncludedUnits));
     mockOpenSearchClientWithParameterMatchingViewingScope(usersViewingScope);
     var paginatedResult = handleRequest(emptyMap());
@@ -360,7 +360,7 @@ class SearchNviCandidatesHandlerTest extends SearchNviCandidatesHandlerTestBase 
 
   private void mockIdentityService(String userName) {
     try {
-      when(identityServiceClient.getUser(userName))
+      when(MOCK_IDENTITY_SERVICE_CLIENT.getUser(userName))
           .thenReturn(buildGetUserResponse(List.of(TOP_LEVEL_CRISTIN_ORG)));
     } catch (NotFoundException e) {
       throw new RuntimeException(e);

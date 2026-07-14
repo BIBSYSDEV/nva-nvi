@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 
 public class FakeEnvironment extends Environment {
 
-  private static final Logger logger = LoggerFactory.getLogger(FakeEnvironment.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(FakeEnvironment.class);
   private final Map<String, String> environmentVariables;
 
   public FakeEnvironment(Map<String, String> environmentVariables) {
@@ -38,7 +38,7 @@ public class FakeEnvironment extends Environment {
 
   private IllegalStateException variableNotSetException(String variableName) {
     String message = ENVIRONMENT_VARIABLE_NOT_SET + variableName;
-    logger.error(message);
+    LOGGER.error(message);
     return new IllegalStateException(message);
   }
 

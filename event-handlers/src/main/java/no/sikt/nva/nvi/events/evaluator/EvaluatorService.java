@@ -40,6 +40,7 @@ import org.slf4j.LoggerFactory;
 
 public class EvaluatorService {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(EvaluatorService.class);
   private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
   private static final String NVI_CANDIDATE_MESSAGE =
       "Evaluated publication with id {} as NviCandidate.";
@@ -53,7 +54,6 @@ public class EvaluatorService {
       "Publication is already reported and cannot be updated.";
   private static final String CLOSED_PERIOD_CANDIDATE_MESSAGE =
       "Candidate is in a closed period and cannot be updated.";
-  private final Logger logger = LoggerFactory.getLogger(EvaluatorService.class);
   private final CandidateService candidateService;
   private final IdentityServiceClient identityServiceClient;
   private final PublicationLoaderService publicationLoader;
@@ -82,19 +82,19 @@ public class EvaluatorService {
           .map(Customer::fromCustomerDto)
           .collect(Collectors.toMap(Customer::cristinId, Function.identity()));
     } catch (ApiGatewayException exception) {
-      logger.error("Failed to fetch customer list", exception);
+      LOGGER.error("Failed to fetch customer list", exception);
       throw new RuntimeException(exception);
     }
   }
 
   public Optional<CandidateEvaluatedMessage> evaluateCandidacy(URI publicationBucketUri) {
     var publication = publicationLoader.extractAndTransform(publicationBucketUri);
-    logger.info("Evaluating publication with ID: {}", publication.id());
+    LOGGER.info("Evaluating publication with ID: {}", publication.id());
 
     var candidateAndPeriods =
         candidateService.findCandidateAndPeriodsByPublicationId(publication.id());
     if (shouldSkipEvaluation(candidateAndPeriods, publication)) {
-      logger.info(SKIPPED_EVALUATION_MESSAGE, publication.id());
+      LOGGER.info(SKIPPED_EVALUATION_MESSAGE, publication.id());
       return Optional.empty();
     }
 
@@ -107,13 +107,13 @@ public class EvaluatorService {
     var customers = getAllCustomers();
     var creators = getNviCreatorsWithNviInstitutions(customers, publication);
     if (creators.isEmpty()) {
-      logger.info("Publication has no NVI creators");
+      LOGGER.info("Publication has no NVI creators");
       return createNonNviCandidateMessage(publication.id());
     }
 
     // Check that the publication can be a candidate in the target period
     if (!canEvaluateInPeriod(candidateAndPeriods, publication.publicationDate())) {
-      logger.info("Publication is not applicable in the target period");
+      LOGGER.info("Publication is not applicable in the target period");
       return createNonNviCandidateMessage(publication.id());
     }
 
@@ -125,19 +125,19 @@ public class EvaluatorService {
   private boolean shouldSkipEvaluation(
       CandidateAndPeriods candidateAndPeriods, PublicationDto publication) {
     if (hasInvalidPublicationYear(publication)) {
-      logger.warn(MALFORMED_DATE_MESSAGE, publication.publicationDate());
+      LOGGER.warn(MALFORMED_DATE_MESSAGE, publication.publicationDate());
       return true;
     }
 
     if (isReportedCandidate(candidateAndPeriods)) {
-      logger.warn(REPORTED_CANDIDATE_MESSAGE);
+      LOGGER.warn(REPORTED_CANDIDATE_MESSAGE);
       return true;
     }
 
     // Freeze any existing candidate in a closed period: closed-period numbers must never change,
     // so it is neither stripped in place nor moved out by a publication edit.
     if (isExistingCandidateInClosedPeriod(candidateAndPeriods)) {
-      logger.info(CLOSED_PERIOD_CANDIDATE_MESSAGE);
+      LOGGER.info(CLOSED_PERIOD_CANDIDATE_MESSAGE);
       return true;
     }
     return false;
@@ -147,17 +147,17 @@ public class EvaluatorService {
     try {
       publication.validate();
     } catch (ValidationException e) {
-      logger.info("Publication failed validation due to missing required data: {}", e.getMessage());
+      LOGGER.info("Publication failed validation due to missing required data: {}", e.getMessage());
       return true;
     }
 
     if (!isPublished(publication)) {
-      logger.info("Publication status is not 'published': {}", publication.status());
+      LOGGER.info("Publication status is not 'published': {}", publication.status());
       return true;
     }
 
     if (!publication.isApplicable()) {
-      logger.info("Publication is not applicable");
+      LOGGER.info("Publication is not applicable");
       return true;
     }
 
@@ -228,14 +228,14 @@ public class EvaluatorService {
   }
 
   private Optional<CandidateEvaluatedMessage> createNonNviCandidateMessage(URI publicationId) {
-    logger.info(NON_NVI_CANDIDATE_MESSAGE, publicationId);
+    LOGGER.info(NON_NVI_CANDIDATE_MESSAGE, publicationId);
     var nonCandidate = new UpsertNonNviCandidateRequest(publicationId);
     return Optional.of(CandidateEvaluatedMessage.builder().withCandidateType(nonCandidate).build());
   }
 
   private Optional<CandidateEvaluatedMessage> createNviCandidateMessage(
       UpsertNviCandidateRequest nviCandidate) {
-    logger.info(NVI_CANDIDATE_MESSAGE, nviCandidate.publicationId());
+    LOGGER.info(NVI_CANDIDATE_MESSAGE, nviCandidate.publicationId());
     return Optional.of(CandidateEvaluatedMessage.builder().withCandidateType(nviCandidate).build());
   }
 }

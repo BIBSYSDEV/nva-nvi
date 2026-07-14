@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
 
 public class InstitutionReportGenerator {
 
-  private static final Logger logger = LoggerFactory.getLogger(InstitutionReportGenerator.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(InstitutionReportGenerator.class);
   private static final String EXCLUDE_CONTRIBUTORS_FIELD = "publicationDetails.contributors";
   private static final int HTTP_REQUEST_ENTITY_TOO_LARGE = 413;
   private static final int MIN_PAGE_SIZE = 1;
@@ -174,7 +174,7 @@ public class InstitutionReportGenerator {
   }
 
   private void logNumberOfCandidatesFound(List<NviCandidateIndexDocument> candidates) {
-    logger.info(
+    LOGGER.info(
         "Found {} candidates for institution {} for year {}",
         candidates.size(),
         topLevelOrganization,
@@ -183,9 +183,9 @@ public class InstitutionReportGenerator {
 
   private HitsMetadata<NviCandidateIndexDocument> search(int offset, int pageSize)
       throws IOException {
-    logger.info("Searching for candidates with page size {} and with offset {}", pageSize, offset);
+    LOGGER.info("Searching for candidates with page size {} and with offset {}", pageSize, offset);
     var searchResponse = searchClient.search(buildSearchRequest(offset, pageSize).build()).hits();
-    logger.info("Response received with page size {} and with offset {}", pageSize, offset);
+    LOGGER.info("Response received with page size {} and with offset {}", pageSize, offset);
     return searchResponse;
   }
 

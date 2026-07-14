@@ -46,7 +46,7 @@ class CristinMapperTest {
   private static final int CALCULATION_PRECISION = 10;
   private static final int SCALE = 4;
   private static final String CRISTIN_PERSON_IDENTIFIER = randomString();
-  private static final CristinMapper cristinMapper =
+  private static final CristinMapper CRISTIN_MAPPER =
       CristinMapper.withDepartmentTransfers(
           readCristinDepartments(), getCristinNviReportEventConsumerEnvironment());
   private static final String VALID_QUALITY_CODE = "1";
@@ -59,7 +59,7 @@ class CristinMapperTest {
   void shouldThrowNullPointerExceptionWhenQualityCodeIsMissing() {
     var empty = emptyScientificResource();
     var report = CristinNviReport.builder().withScientificResources(List.of(empty)).build();
-    assertThrows(NullPointerException.class, () -> cristinMapper.toDbCandidate(report));
+    assertThrows(NullPointerException.class, () -> CRISTIN_MAPPER.toDbCandidate(report));
   }
 
   @Test
@@ -73,7 +73,7 @@ class CristinMapperTest {
     var report =
         cristinReportFromCristinLocalesAndScientificResource(cristinLocale, scientificResource)
             .build();
-    assertThrows(IllegalArgumentException.class, () -> cristinMapper.toDbCandidate(report));
+    assertThrows(IllegalArgumentException.class, () -> CRISTIN_MAPPER.toDbCandidate(report));
   }
 
   @Test
@@ -87,7 +87,7 @@ class CristinMapperTest {
     var cristinLocale = cristinLocaleWithInstitutionIdentifier(institutionIdentifier);
     var report =
         cristinReportFromCristinLocalesAndScientificResource(cristinLocale, scientificResource);
-    var dbCandidate = cristinMapper.toDbCandidate(report.build());
+    var dbCandidate = CRISTIN_MAPPER.toDbCandidate(report.build());
 
     var dbPoints = dbCandidate.pointCalculation().institutionPoints();
     var institutionId = dbPoints.getFirst().institutionId();
@@ -114,7 +114,7 @@ class CristinMapperTest {
     var cristinLocale = cristinLocaleWithInstitutionIdentifier(INSTITUTION_IDENTIFIER);
     var report =
         cristinReportFromCristinLocalesAndScientificResource(cristinLocale, scientificResource);
-    var dbCandidate = cristinMapper.toDbCandidate(report.build());
+    var dbCandidate = CRISTIN_MAPPER.toDbCandidate(report.build());
 
     var dbPoints = dbCandidate.pointCalculation();
     var expectedBasePoints =
@@ -134,7 +134,7 @@ class CristinMapperTest {
     var cristinLocale = cristinLocaleWithInstitutionIdentifier(INSTITUTION_IDENTIFIER);
     var report =
         cristinReportFromCristinLocalesAndScientificResource(cristinLocale, scientificResource);
-    var dbCandidate = cristinMapper.toDbCandidate(report.build());
+    var dbCandidate = CRISTIN_MAPPER.toDbCandidate(report.build());
 
     var expectedCollaborationFactor =
         new BigDecimal(INTERNATIONAL_COLLABORATION_FACTOR_CRISTIN_ENTRY)
@@ -158,7 +158,7 @@ class CristinMapperTest {
     var cristinLocale = cristinLocaleWithInstitutionIdentifier(INSTITUTION_IDENTIFIER);
     var report =
         cristinReportFromCristinLocalesAndScientificResource(cristinLocale, scientificResource);
-    var dbCandidate = cristinMapper.toDbCandidate(report.build());
+    var dbCandidate = CRISTIN_MAPPER.toDbCandidate(report.build());
 
     var expectedCollaborationFactor =
         new BigDecimal(NO_INTERNATIONAL_COLLABORATION_FACTOR_CRISTIN_ENTRY)
@@ -185,7 +185,7 @@ class CristinMapperTest {
     var report =
         cristinReportFromCristinLocalesAndScientificResource(
             List.of(firstLocale, secondLocale), scientificResource);
-    var dbCandidate = cristinMapper.toDbCandidate(report);
+    var dbCandidate = CRISTIN_MAPPER.toDbCandidate(report);
 
     var expectedTotalPoints =
         POINTS_PER_CONTRIBUTOR
@@ -214,7 +214,7 @@ class CristinMapperTest {
 
     var nviReport =
         nviReportWithInstanceTypeAndReference("AcademicArticle", academicArticleReference);
-    var dbCandidate = cristinMapper.toDbCandidate(nviReport);
+    var dbCandidate = CRISTIN_MAPPER.toDbCandidate(nviReport);
 
     var expectedChannelId =
         URI.create(
@@ -242,7 +242,7 @@ class CristinMapperTest {
 
     var nviReport =
         nviReportWithInstanceTypeAndReference("AcademicLiteratureReview", academicArticleReference);
-    var dbCandidate = cristinMapper.toDbCandidate(nviReport);
+    var dbCandidate = CRISTIN_MAPPER.toDbCandidate(nviReport);
 
     var expectedChannelId =
         URI.create(
@@ -279,7 +279,7 @@ class CristinMapperTest {
 
     var nviReport =
         nviReportWithInstanceTypeAndReference("AcademicMonograph", academicArticleReference);
-    var dbCandidate = cristinMapper.toDbCandidate(nviReport);
+    var dbCandidate = CRISTIN_MAPPER.toDbCandidate(nviReport);
 
     var expectedChannelId =
         URI.create(
@@ -310,7 +310,7 @@ class CristinMapperTest {
 """;
     var nviReport =
         nviReportWithInstanceTypeAndReference("AcademicMonograph", academicArticleReference);
-    var dbCandidate = cristinMapper.toDbCandidate(nviReport);
+    var dbCandidate = CRISTIN_MAPPER.toDbCandidate(nviReport);
 
     assertThatChannelHasExpectedIdAndType(
         dbCandidate, WORLD_SCIENTIFIC_JOURNAL, ChannelType.PUBLISHER);
@@ -356,7 +356,7 @@ class CristinMapperTest {
 
     var nviReport =
         nviReportWithInstanceTypeAndReference("AcademicChapter", academicArticleReference);
-    var dbCandidate = cristinMapper.toDbCandidate(nviReport);
+    var dbCandidate = CRISTIN_MAPPER.toDbCandidate(nviReport);
 
     var expectedChannelId =
         URI.create(
@@ -401,7 +401,7 @@ class CristinMapperTest {
 
     var nviReport =
         nviReportWithInstanceTypeAndReference("AcademicChapter", academicArticleReference);
-    var dbCandidate = cristinMapper.toDbCandidate(nviReport);
+    var dbCandidate = CRISTIN_MAPPER.toDbCandidate(nviReport);
 
     assertThatChannelHasExpectedIdAndType(
         dbCandidate, WORLD_SCIENTIFIC_JOURNAL, ChannelType.PUBLISHER);
@@ -426,7 +426,7 @@ class CristinMapperTest {
 
     var nviReport =
         nviReportWithInstanceTypeAndReference("AcademicChapter", academicArticleReference);
-    var dbCandidate = cristinMapper.toDbCandidate(nviReport);
+    var dbCandidate = CRISTIN_MAPPER.toDbCandidate(nviReport);
 
     var dbChannel = dbCandidate.pointCalculation().publicationChannel();
     assertNull(dbChannel.id());
@@ -451,7 +451,7 @@ class CristinMapperTest {
 
     var nviReport =
         nviReportWithInstanceTypeAndReference("UnsupportedType", academicArticleReference);
-    var dbCandidate = cristinMapper.toDbCandidate(nviReport);
+    var dbCandidate = CRISTIN_MAPPER.toDbCandidate(nviReport);
 
     var dbChannel = dbCandidate.pointCalculation().publicationChannel();
     assertNull(dbChannel.id());
@@ -466,7 +466,7 @@ class CristinMapperTest {
     var cristinLocale = cristinLocaleWithInstitutionIdentifier(INSTITUTION_IDENTIFIER);
     var report =
         cristinReportFromCristinLocalesAndScientificResource(cristinLocale, scientificResource);
-    var dbCandidate = cristinMapper.toDbCandidate(report.build());
+    var dbCandidate = CRISTIN_MAPPER.toDbCandidate(report.build());
 
     var dbPoints = dbCandidate.pointCalculation().institutionPoints();
     var pointsPerAffiliation = dbPoints.getFirst().creatorAffiliationPoints().getFirst();
@@ -485,7 +485,7 @@ class CristinMapperTest {
     var cristinLocale = cristinLocaleWithInstitutionIdentifier(INSTITUTION_IDENTIFIER);
     var report =
         cristinReportFromCristinLocalesAndScientificResource(cristinLocale, scientificResource);
-    var dbCandidate = cristinMapper.toDbCandidate(report.build());
+    var dbCandidate = CRISTIN_MAPPER.toDbCandidate(report.build());
 
     var institutionPoints = dbCandidate.pointCalculation().institutionPoints().getFirst();
     var expectedSingleCreatorPoints = POINTS_PER_CONTRIBUTOR.setScale(SCALE, RoundingMode.HALF_UP);
@@ -503,7 +503,7 @@ class CristinMapperTest {
     var cristinLocale = cristinLocaleWithInstitutionIdentifier("2057");
     var report =
         cristinReportFromCristinLocalesAndScientificResource(cristinLocale, scientificResource);
-    var dbCandidate = cristinMapper.toDbCandidate(report.build());
+    var dbCandidate = CRISTIN_MAPPER.toDbCandidate(report.build());
 
     var dbPoints = dbCandidate.pointCalculation().institutionPoints();
     var institutionPointsId = dbPoints.getFirst().institutionId().toString();
@@ -521,7 +521,7 @@ class CristinMapperTest {
     var report =
         cristinReportFromCristinLocalesAndScientificResource(
             (CristinLocale) null, scientificResource);
-    var dbCandidate = cristinMapper.toDbCandidate(report.build());
+    var dbCandidate = CRISTIN_MAPPER.toDbCandidate(report.build());
 
     var dbPoints = dbCandidate.pointCalculation().institutionPoints();
     assertThat(dbPoints).isEmpty();
@@ -535,9 +535,9 @@ class CristinMapperTest {
     var cristinLocale = cristinLocaleWithInstitutionIdentifier(null);
     var report =
         cristinReportFromCristinLocalesAndScientificResource(cristinLocale, scientificResource);
-    var approvals = cristinMapper.toApprovals(report.build());
+    var approvals = CRISTIN_MAPPER.toApprovals(report.build());
 
-    assertThrows(RuntimeException.class, () -> cristinMapper.toDbCandidate(report.build()));
+    assertThrows(RuntimeException.class, () -> CRISTIN_MAPPER.toDbCandidate(report.build()));
     assertThat(approvals).isEmpty();
   }
 
@@ -548,8 +548,8 @@ class CristinMapperTest {
     var cristinLocale = cristinLocaleWithInstitutionIdentifierAndOwnerCode(null, "KREFTREG");
     var report =
         cristinReportFromCristinLocalesAndScientificResource(cristinLocale, scientificResource);
-    var approvals = cristinMapper.toApprovals(report.build());
-    assertDoesNotThrow(() -> cristinMapper.toDbCandidate(report.build()));
+    var approvals = CRISTIN_MAPPER.toApprovals(report.build());
+    assertDoesNotThrow(() -> CRISTIN_MAPPER.toDbCandidate(report.build()));
 
     assertThat(approvals.getFirst().institutionId().toString()).contains(FHI_CRISTIN_IDENTIFIER);
   }
@@ -562,9 +562,9 @@ class CristinMapperTest {
     var cristinLocale = cristinLocaleWithInstitutionIdentifierAndOwnerCode(null, randomString());
     var report =
         cristinReportFromCristinLocalesAndScientificResource(cristinLocale, scientificResource);
-    var approvals = cristinMapper.toApprovals(report.build());
+    var approvals = CRISTIN_MAPPER.toApprovals(report.build());
 
-    assertThrows(RuntimeException.class, () -> cristinMapper.toDbCandidate(report.build()));
+    assertThrows(RuntimeException.class, () -> CRISTIN_MAPPER.toDbCandidate(report.build()));
     assertThat(approvals).isEmpty();
   }
 
@@ -575,7 +575,7 @@ class CristinMapperTest {
             .withScientificResources(List.of(scientificResourceWithQualityCode("2A")))
             .withPublicationDate(new PublicationDate("2020", null, null))
             .build();
-    var nviCandidate = cristinMapper.toDbCandidate(report);
+    var nviCandidate = CRISTIN_MAPPER.toDbCandidate(report);
 
     var dbChannel = nviCandidate.pointCalculation().publicationChannel();
     assertThat(dbChannel.scientificValue()).isEqualTo(DbLevel.LEVEL_TWO.getValue());
@@ -591,7 +591,7 @@ class CristinMapperTest {
         CristinNviReport.builder()
             .withCristinLocales(List.of(cristinLocale, cristinLocale))
             .build();
-    var approvals = cristinMapper.toApprovals(report);
+    var approvals = CRISTIN_MAPPER.toApprovals(report);
 
     assertThat(approvals).hasSize(1);
   }

@@ -48,8 +48,8 @@ class ReEvaluateNviCandidatesHandlerTest {
 
   private static final int MAX_PAGE_SIZE = 1000;
   private static final int DEFAULT_PAGE_SIZE = 500;
-  private static final Environment environment = new Environment();
-  private static final String OUTPUT_TOPIC = environment.readEnv("TOPIC_REEVALUATE_CANDIDATES");
+  private static final Environment ENVIRONMENT = new Environment();
+  private static final String OUTPUT_TOPIC = ENVIRONMENT.readEnv("TOPIC_REEVALUATE_CANDIDATES");
   private static final int BATCH_SIZE = 10;
   private final Context context = mock(Context.class);
   private TestScenario scenario;
@@ -66,7 +66,7 @@ class ReEvaluateNviCandidatesHandlerTest {
     this.eventBridgeClient = new FakeEventBridgeClient();
     handler =
         new ReEvaluateNviCandidatesHandler(
-            scenario.getCandidateRepository(), sqsClient, environment, eventBridgeClient);
+            scenario.getCandidateRepository(), sqsClient, ENVIRONMENT, eventBridgeClient);
   }
 
   @Test
@@ -85,7 +85,7 @@ class ReEvaluateNviCandidatesHandlerTest {
         .thenReturn(new ListingResult<>(false, null, 0, List.of()));
     var handler =
         new ReEvaluateNviCandidatesHandler(
-            mockedNviService, sqsClient, environment, eventBridgeClient);
+            mockedNviService, sqsClient, ENVIRONMENT, eventBridgeClient);
     handler.handleRequest(
         eventStream(createRequest(year, pageSizeBiggerThanMaxPageSize)), outputStream, context);
     verify(mockedNviService, times(1)).fetchCandidatesByYear(year, false, DEFAULT_PAGE_SIZE, null);

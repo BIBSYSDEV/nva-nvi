@@ -38,6 +38,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, Void> {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(CristinNviReportEventConsumer.class);
   public static final String NVI_ERRORS = "NVI_ERRORS";
   public static final String MISSING_REPORTED_YEAR_MESSAGE = "Reported year is missing!";
   public static final String CRISTIN_DEPARTMENT_TRANSFERS = "cristin_transfer_departments.csv";
@@ -48,7 +49,6 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
   private final S3Client s3Client;
   private final CristinMapper cristinMapper;
   private final PublicationLoaderService publicationLoader;
-  private final Logger logger = LoggerFactory.getLogger(CristinNviReportEventConsumer.class);
 
   @JacocoGenerated
   public CristinNviReportEventConsumer() {
@@ -71,9 +71,9 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
 
   @Override
   public Void handleRequest(SQSEvent sqsEvent, Context context) {
-    logger.info("Received {} messages from SQS", sqsEvent.getRecords().size());
+    LOGGER.info("Received {} messages from SQS", sqsEvent.getRecords().size());
     sqsEvent.getRecords().stream().map(SQSMessage::getBody).forEach(this::processMessageBody);
-    logger.info("Finished processing messages from SQS");
+    LOGGER.info("Finished processing messages from SQS");
     return null;
   }
 
@@ -120,7 +120,7 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
 
   private List<DbOrganization> createEmptyListForImportedResultsThatLackData(
       PublicationDto publication) {
-    logger.error(
+    LOGGER.error(
         "Missing top level organizations for publication with identifier {}",
         publication.identifier());
     return emptyList();
@@ -145,7 +145,7 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
     try {
       processBody(value);
     } catch (Exception e) {
-      logger.error("Failed to process message: {}", value, e);
+      LOGGER.error("Failed to process message: {}", value, e);
     }
   }
 
@@ -158,7 +158,7 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
           .findByPublicationId(publicationId)
           .ifPresentOrElse(
               existingCandidate ->
-                  logger.info("Candidate already exists for publicationId={}", publicationId),
+                  LOGGER.info("Candidate already exists for publicationId={}", publicationId),
               () -> createAndPersist(cristinNviReport));
     } catch (Exception e) {
       ErrorReport.withMessage(e.getMessage())
@@ -185,7 +185,7 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
   }
 
   private void createAndPersist(CristinNviReport cristinNviReport) {
-    logger.info(
+    LOGGER.info(
         "Processing CristinNviReport with publication identifier: {}",
         cristinNviReport.publicationIdentifier());
     var approvals = createApprovals(cristinNviReport);
@@ -194,7 +194,7 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
     if (yearReported.isEmpty()) {
       throw new IllegalArgumentException(MISSING_REPORTED_YEAR_MESSAGE);
     } else {
-      logger.info(
+      LOGGER.info(
           "Persisting imported NVI result with identifier: {}",
           cristinNviReport.publicationIdentifier());
       repository.create(candidate, approvals, yearReported.get());

@@ -55,7 +55,7 @@ import org.zalando.problem.Problem;
 /** Base test class for handlers that return a CandidateDto. */
 @SuppressWarnings("PMD.CouplingBetweenObjects")
 public abstract class BaseCandidateRestHandlerTest {
-  protected static final ViewingScopeValidator mockViewingScopeValidator =
+  protected static final ViewingScopeValidator FAKE_VIEWING_SCOPE_VALIDATOR =
       new FakeViewingScopeValidator(true);
   protected static final Context CONTEXT = new FakeContext();
   protected Environment environment;

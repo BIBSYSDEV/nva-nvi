@@ -22,8 +22,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 class QueuePersistedResourceHandlerTest {
 
-  private static final Environment environment = new Environment();
-  private static final String queueUrl = environment.readEnv("PERSISTED_RESOURCE_QUEUE_URL");
+  private static final Environment ENVIRONMENT = new Environment();
+  private static final String QUEUE_URL = ENVIRONMENT.readEnv("PERSISTED_RESOURCE_QUEUE_URL");
   private final Context context = new FakeContext();
   private QueuePersistedResourceHandler handler;
   private ByteArrayOutputStream output;
@@ -32,7 +32,7 @@ class QueuePersistedResourceHandlerTest {
   @BeforeEach
   void setUp() {
     sqsClient = new FakeSqsClient();
-    handler = new QueuePersistedResourceHandler(sqsClient, environment);
+    handler = new QueuePersistedResourceHandler(sqsClient, ENVIRONMENT);
     output = new ByteArrayOutputStream();
   }
 
@@ -69,7 +69,7 @@ class QueuePersistedResourceHandlerTest {
     assertEquals(1, sentMessages.size());
     var sentMessage = sentMessages.get(0);
     var body = objectMapper.readValue(sentMessage.messageBody(), PersistedResourceMessage.class);
-    assertEquals(queueUrl, sentMessage.queueUrl());
+    assertEquals(QUEUE_URL, sentMessage.queueUrl());
     assertEquals(fileUri, body.resourceFileUri());
   }
 }
