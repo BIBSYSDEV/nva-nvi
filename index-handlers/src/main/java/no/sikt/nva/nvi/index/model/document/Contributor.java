@@ -5,7 +5,9 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import java.net.URI;
 import java.util.List;
+import java.util.Optional;
 
 @JsonAutoDetect(fieldVisibility = Visibility.ANY)
 @JsonSerialize
@@ -34,6 +36,11 @@ public record Contributor(
 
     public Builder withId(String id) {
       this.id = id;
+      return this;
+    }
+
+    public Builder withId(URI id) {
+      this.id = Optional.ofNullable(id).map(Object::toString).orElse(null);
       return this;
     }
 

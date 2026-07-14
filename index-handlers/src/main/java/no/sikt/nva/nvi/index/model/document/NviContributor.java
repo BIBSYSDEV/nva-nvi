@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 @JsonSerialize
@@ -67,8 +68,8 @@ public record NviContributor(
 
     private Builder() {}
 
-    public Builder withId(String id) {
-      this.id = id;
+    public Builder withId(URI id) {
+      this.id = Optional.ofNullable(id).map(Object::toString).orElse(null);
       return this;
     }
 

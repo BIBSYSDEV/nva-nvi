@@ -7,7 +7,8 @@ import no.sikt.nva.nvi.common.exceptions.ValidationException;
 
 public record ContributorRole(String value) {
 
-  private static final String CREATOR = "Creator";
+  public static final ContributorRole CREATOR = new ContributorRole("Creator");
+  public static final ContributorRole EDITOR = new ContributorRole("Editor");
 
   public ContributorRole {
     if (isBlank(value)) {
@@ -16,7 +17,7 @@ public record ContributorRole(String value) {
   }
 
   public boolean isCreator() {
-    return CREATOR.equalsIgnoreCase(value);
+    return CREATOR.value().equalsIgnoreCase(value);
   }
 
   @JsonValue

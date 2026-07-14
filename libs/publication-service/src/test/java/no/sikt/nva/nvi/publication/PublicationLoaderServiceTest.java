@@ -40,6 +40,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 
 class PublicationLoaderServiceTest {
 
@@ -75,6 +76,35 @@ class PublicationLoaderServiceTest {
   void shouldGetExpectedDataFromExampleDocuments(String filename, PublicationDto expected) {
     var actual = parseExampleDocument(filename);
     assertThat(actual).usingRecursiveComparison().ignoringCollectionOrder().isEqualTo(expected);
+  }
+
+  @Test
+  void shouldReturnPublicationWhenLenientParsingSucceeds() {
+    var document = stringFromResources(Path.of(EXAMPLE_PUBLICATION_1_PATH));
+    var publicationBucketUri = addToS3(EXAMPLE_PUBLICATION_1_PATH, document);
+
+    var publication = dataLoader.tryExtractAndTransform(publicationBucketUri);
+
+    assertThat(publication).isPresent();
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {EMPTY_BODY, EXAMPLE_WITH_TWO_TITLES})
+  void shouldReturnEmptyWhenLenientParsingFails(String filename) {
+    var document = stringFromResources(Path.of(filename));
+    var publicationBucketUri = addToS3(filename, document);
+
+    var publication = dataLoader.tryExtractAndTransform(publicationBucketUri);
+
+    assertThat(publication).isEmpty();
+    assertThat(logRecorder.asString()).contains("Failed to parse expanded publication");
+  }
+
+  @Test
+  void shouldThrowWhenStorageReadFailsEvenWithLenientParsing() {
+    var missingPublicationUri = URI.create("s3://" + BUCKET_NAME + "/missing-publication.json");
+    assertThrows(
+        NoSuchKeyException.class, () -> dataLoader.tryExtractAndTransform(missingPublicationUri));
   }
 
   @Test
