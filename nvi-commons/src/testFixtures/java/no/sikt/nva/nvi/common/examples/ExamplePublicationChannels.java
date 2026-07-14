@@ -26,18 +26,6 @@ public class ExamplePublicationChannels {
           .withPrintIssn("2159-4848")
           .build();
 
-  public static final PublicationChannelDto PUBLISHER_OF_TESTING =
-      PublicationChannelDto.builder()
-          .withId(
-              URI.create(
-                  "https://api.sandbox.nva.aws.unit.no/publication-channels-v2/publisher/DF3FB68B-F613-4D6F-90D5-38FEC2A61A41/2025"))
-          .withIdentifier("DF3FB68B-F613-4D6F-90D5-38FEC2A61A41")
-          .withChannelType(ChannelType.PUBLISHER)
-          .withName("American Society for Testing & Materials (ASTM) International")
-          .withYear("2025")
-          .withScientificValue(ScientificValue.LEVEL_ONE)
-          .build();
-
   public static final PublicationChannelDto SERIES_OF_TESTING =
       PublicationChannelDto.builder()
           .withId(

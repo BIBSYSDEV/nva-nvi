@@ -29,10 +29,6 @@ public class DynamoDbToEventQueueHandlerContext {
     return handler;
   }
 
-  public FakeSqsClient getQueueClient() {
-    return queueClient;
-  }
-
   public void handleEvent(DynamodbEvent event) {
     handler.handleRequest(event, CONTEXT);
   }

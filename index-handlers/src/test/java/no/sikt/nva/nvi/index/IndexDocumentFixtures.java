@@ -75,10 +75,6 @@ public final class IndexDocumentFixtures {
         .build();
   }
 
-  public static Builder createRandomIndexDocumentBuilder(URI userTopLevelOrganization, int year) {
-    return createRandomIndexDocumentBuilder(userTopLevelOrganization, String.valueOf(year));
-  }
-
   public static Builder createRandomIndexDocumentBuilder(
       URI userTopLevelOrganization, String year) {
     var nviContributors =
