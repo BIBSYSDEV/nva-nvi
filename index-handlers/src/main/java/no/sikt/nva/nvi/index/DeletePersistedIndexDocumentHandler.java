@@ -7,7 +7,6 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
-import java.io.IOException;
 import java.util.Objects;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.StorageWriter;
@@ -76,7 +75,7 @@ public class DeletePersistedIndexDocumentHandler implements RequestHandler<SQSEv
     try {
       storageWriter.delete(identifier);
       LOGGER.info(SUCCESS_INFO_MESSAGE, identifier);
-    } catch (S3Exception | IOException exception) {
+    } catch (S3Exception exception) {
       handleFailure(new Failure<>(exception), identifier.toString(), identifier);
     }
   }
