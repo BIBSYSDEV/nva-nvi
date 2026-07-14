@@ -7,9 +7,13 @@ import static no.sikt.nva.nvi.common.EnvironmentFixtures.getHandlerEnvironment;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupFuturePeriod;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.organizationIdFromIdentifier;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationIdentifier;
+import static no.sikt.nva.nvi.index.IndexDocumentFixtures.createRandomIndexDocument;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.documentForYear;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomApproval;
 import static no.sikt.nva.nvi.index.report.ReportConstants.INSTITUTIONS_PATH_SEGMENT;
+import static no.sikt.nva.nvi.index.report.ReportConstants.INSTITUTION_PATH_PARAM;
 import static no.sikt.nva.nvi.index.report.ReportConstants.PERIOD_PATH_PARAM;
 import static no.sikt.nva.nvi.index.report.ReportConstants.REPORTS_PATH_SEGMENT;
 import static no.sikt.nva.nvi.test.TestConstants.LAST_YEAR;
@@ -36,10 +40,12 @@ import no.sikt.nva.nvi.index.OpenSearchContainerContext;
 import no.sikt.nva.nvi.index.report.response.AllInstitutionsReport;
 import no.sikt.nva.nvi.index.report.response.AllPeriodsReport;
 import no.sikt.nva.nvi.index.report.response.FakeReportPresigner;
+import no.sikt.nva.nvi.index.report.response.InstitutionReport;
 import no.sikt.nva.nvi.index.report.response.ReportResponse;
 import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
+import nva.commons.logutils.LogRecorder;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -118,6 +124,16 @@ class FetchReportHandlerTest {
     return createRequest(pathParams, path);
   }
 
+  private static InputStream createInstitutionRequest(String period, String institutionIdentifier) {
+    var pathParams =
+        Map.of(PERIOD_PATH_PARAM, period, INSTITUTION_PATH_PARAM, institutionIdentifier);
+    var path =
+        "%s/%s/%s/%s"
+            .formatted(
+                REPORTS_PATH_SEGMENT, period, INSTITUTIONS_PATH_SEGMENT, institutionIdentifier);
+    return createRequest(pathParams, path);
+  }
+
   private AllPeriodsReport getAllPeriodsReport() {
     var request = createAllPeriodsRequest();
     return (AllPeriodsReport) handleRequest(request);
@@ -126,6 +142,11 @@ class FetchReportHandlerTest {
   private AllInstitutionsReport getAllInstitutionsReport(String period) {
     var request = createAllInstitutionsRequest(period);
     return (AllInstitutionsReport) handleRequest(request);
+  }
+
+  private InstitutionReport getInstitutionReport(String period, String institutionIdentifier) {
+    var request = createInstitutionRequest(period, institutionIdentifier);
+    return (InstitutionReport) handleRequest(request);
   }
 
   @Nested
@@ -169,6 +190,24 @@ class FetchReportHandlerTest {
       var report = getAllInstitutionsReport(THIS_YEAR);
 
       assertThat(report.institutions()).hasSize(numberOfInstitutions);
+    }
+  }
+
+  @Nested
+  class InstitutionsReportTests {
+
+    @Test
+    void shouldLogReportFormat() {
+      var institutionIdentifier = randomOrganizationIdentifier();
+      var indexDoc =
+          createRandomIndexDocument(organizationIdFromIdentifier(institutionIdentifier), THIS_YEAR);
+      CONTAINER.addDocumentsToIndex(indexDoc);
+
+      var logRecorder = LogRecorder.forClass(ReportAggregationClient.class);
+      getInstitutionReport(THIS_YEAR, institutionIdentifier);
+
+      assertThat(logRecorder.messages())
+          .anyMatch(message -> message.contains("application/json; charset=utf-8"));
     }
   }
 }

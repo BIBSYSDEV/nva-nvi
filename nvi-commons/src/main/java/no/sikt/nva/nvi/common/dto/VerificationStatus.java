@@ -7,7 +7,8 @@ import no.sikt.nva.nvi.common.exceptions.ValidationException;
 
 public record VerificationStatus(String value) {
 
-  private static final String VERIFIED = "Verified";
+  public static final VerificationStatus NOT_VERIFIED = new VerificationStatus("NotVerified");
+  public static final VerificationStatus VERIFIED = new VerificationStatus("Verified");
 
   public VerificationStatus {
     if (isBlank(value)) {
@@ -16,7 +17,7 @@ public record VerificationStatus(String value) {
   }
 
   public boolean isVerified() {
-    return VERIFIED.equalsIgnoreCase(value);
+    return VERIFIED.value().equalsIgnoreCase(value);
   }
 
   @JsonValue

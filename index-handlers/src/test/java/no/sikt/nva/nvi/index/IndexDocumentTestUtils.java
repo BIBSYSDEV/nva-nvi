@@ -1,15 +1,11 @@
 package no.sikt.nva.nvi.index;
 
 import static java.util.Collections.emptyList;
-import static java.util.Objects.isNull;
-import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getCandidateContextUri;
+import static no.sikt.nva.nvi.common.model.EnumFixtures.randomValidChannelType;
 import static no.sikt.nva.nvi.common.model.EnumFixtures.randomValidScientificValue;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.getRandomDateInCurrentYearAsDto;
-import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLICATION_CONTEXT;
-import static no.sikt.nva.nvi.common.utils.JsonUtils.extractJsonNodeTextValue;
-import static no.sikt.nva.nvi.index.ExpandedResourceGenerator.extractAffiliations;
-import static no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator.getAnyNviCreatorIfPresent;
+import static no.sikt.nva.nvi.test.TestConstants.CREATOR;
 import static no.sikt.nva.nvi.test.TestConstants.EN_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_ENGLISH_LABEL;
 import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_NORWEGIAN_LABEL;
@@ -21,30 +17,20 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomIssn;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import java.net.URI;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import no.sikt.nva.nvi.common.model.ChannelType;
-import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
-import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
-import no.sikt.nva.nvi.common.utils.JsonUtils;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.ApprovalView;
 import no.sikt.nva.nvi.index.model.document.Contributor;
-import no.sikt.nva.nvi.index.model.document.ContributorType;
 import no.sikt.nva.nvi.index.model.document.InstitutionPointsView;
 import no.sikt.nva.nvi.index.model.document.InstitutionPointsView.CreatorAffiliationPointsView;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
@@ -52,7 +38,6 @@ import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument.Builder;
 import no.sikt.nva.nvi.index.model.document.NviContributor;
 import no.sikt.nva.nvi.index.model.document.NviOrganization;
 import no.sikt.nva.nvi.index.model.document.Organization;
-import no.sikt.nva.nvi.index.model.document.OrganizationType;
 import no.sikt.nva.nvi.index.model.document.Pages;
 import no.sikt.nva.nvi.index.model.document.PublicationChannel;
 import no.sikt.nva.nvi.index.model.document.PublicationDetails;
@@ -61,57 +46,18 @@ import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
 
 // Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
-@SuppressWarnings({"PMD.GodClass", "PMD.CouplingBetweenObjects"})
+@SuppressWarnings("PMD.CouplingBetweenObjects")
 public final class IndexDocumentTestUtils {
 
-  public static final URI HARD_CODED_INTERMEDIATE_ORGANIZATION =
-      URI.create("https://example.org/organization/hardCodedIntermediateOrg");
-  public static final URI HARD_CODED_TOP_LEVEL_ORG =
-      URI.create("https://example.org/organization/hardCodedPartOf");
-  public static final URI NVI_CONTEXT =
-      URI.create("https://bibsysdev.github.io/src/nvi-context.json");
   public static final String NVI_CANDIDATES_FOLDER = "nvi-candidates";
   public static final String GZIP_ENDING = ".gz";
-  public static final String DELIMITER = "\\.";
+  private static final String DELIMITER = "\\.";
 
   private IndexDocumentTestUtils() {}
 
   public static UnixPath createPath(Candidate candidate) {
     return UnixPath.of(NVI_CANDIDATES_FOLDER)
         .addChild(candidate.identifier().toString() + GZIP_ENDING);
-  }
-
-  public static List<ApprovalView> expandApprovals(
-      Candidate candidate, List<ContributorType> contributors) {
-    return candidate.approvals().values().stream()
-        .map(approval -> toApproval(approval, candidate, contributors))
-        .toList();
-  }
-
-  public static List<ApprovalView> expandApprovals(
-      Candidate candidate, List<ContributorType> contributors, JsonNode expandedResource) {
-    return candidate.approvals().values().stream()
-        .map(approval -> toApproval(approval, candidate, contributors, expandedResource))
-        .toList();
-  }
-
-  public static PublicationDetails expandPublicationDetails(
-      Candidate candidate, JsonNode expandedResource) {
-    return PublicationDetails.builder()
-        .withType(ExpandedResourceGenerator.extractType(expandedResource))
-        .withId(candidate.publicationDetails().publicationId().toString())
-        .withTitle(ExpandedResourceGenerator.extractTitle(expandedResource))
-        .withAbstract(ExpandedResourceGenerator.extractOptionalAbstract(expandedResource))
-        .withPublicationDate(
-            candidate.publicationDetails().publicationDate().toDtoPublicationDate())
-        .withContributors(
-            mapToContributors(
-                ExpandedResourceGenerator.extractContributors(expandedResource), candidate))
-        .withPublicationChannel(getPublicationChannel(expandedResource, candidate))
-        .withPages(getPages(expandedResource))
-        .withLanguage(extractOptionalLanguage(expandedResource))
-        .withHandles(Collections.emptySet())
-        .build();
   }
 
   public static URI randomCristinOrgUri() {
@@ -189,10 +135,12 @@ public final class IndexDocumentTestUtils {
 
   public static NviCandidateIndexDocument indexDocumentMissingVerifiedCreators(
       int year, URI institutionId) {
-    var unverifiedCreator = randomNviContributorBuilder(institutionId).withId(null).build();
+    var unverifiedCreators =
+        List.of(randomNviContributorBuilder(institutionId).withId(null).build());
     var publicationDetails =
         publicationDetailsWithNviContributorsAffiliatedWith(institutionId)
-            .withContributors(List.of(unverifiedCreator))
+            .withNviContributors(unverifiedCreators)
+            .withContributors(asContributors(unverifiedCreators))
             .build();
     var approvalsWithoutCreatorAffiliationPoints = createApprovals(institutionId, emptyList());
     return getBuilder(year, approvalsWithoutCreatorAffiliationPoints, publicationDetails).build();
@@ -213,7 +161,7 @@ public final class IndexDocumentTestUtils {
   public static PublicationChannel.Builder randomPublicationChannelBuilder() {
     return PublicationChannel.builder()
         .withId(randomUri())
-        .withType(randomString())
+        .withType(randomValidChannelType())
         .withScientificValue(randomValidScientificValue())
         .withName(randomString())
         .withPrintIssn(randomIssn());
@@ -229,10 +177,10 @@ public final class IndexDocumentTestUtils {
 
   public static NviContributor.Builder randomNviContributorBuilder(URI institutionId) {
     return NviContributor.builder()
-        .withId(randomUri().toString())
+        .withId(randomUri())
         .withName(randomString())
         .withOrcid(randomString())
-        .withRole(randomString())
+        .withRole(CREATOR)
         .withAffiliations(
             List.of(
                 randomSubUnitNviAffiliation(institutionId),
@@ -245,78 +193,18 @@ public final class IndexDocumentTestUtils {
     return randomNviContributorBuilder(institutionId).build();
   }
 
-  private static String extractOptionalLanguage(JsonNode expandedResource) {
-    return extractJsonNodeTextValue(expandedResource, "/entityDescription/language");
+  public static List<Contributor> asContributors(List<NviContributor> nviContributors) {
+    return nviContributors.stream().map(IndexDocumentTestUtils::asContributor).toList();
   }
 
-  private static Pages getPages(JsonNode expandedResource) {
-    var pagesNode = expandedResource.at("/entityDescription/reference/publicationInstance/pages");
-    return Pages.builder()
-        .withBegin(extractJsonNodeTextValue(pagesNode, "/begin"))
-        .withEnd(extractJsonNodeTextValue(pagesNode, "/end"))
-        .withNumberOfPages(extractJsonNodeTextValue(pagesNode, "/pages"))
+  private static Contributor asContributor(NviContributor nviContributor) {
+    return Contributor.builder()
+        .withId(nviContributor.id())
+        .withName(nviContributor.name())
+        .withOrcid(nviContributor.orcid())
+        .withRole(nviContributor.role())
+        .withAffiliations(nviContributor.affiliations())
         .build();
-  }
-
-  private static PublicationChannel getPublicationChannel(
-      JsonNode expandedResource, Candidate candidate) {
-    var channel = candidate.getPublicationChannel();
-    var channelType = channel.channelType();
-    var publicationChannelBuilder =
-        PublicationChannel.builder()
-            .withScientificValue(channel.scientificValue())
-            .withName(extractChannelName(expandedResource, channelType));
-    if (nonNull(candidate.getPublicationChannel().id())) {
-      publicationChannelBuilder.withId(channel.id());
-    }
-    if (nonNull(channelType)) {
-      publicationChannelBuilder.withType(channelType.getValue());
-      publicationChannelBuilder.withPrintIssn(extractPrintIssn(expandedResource, channelType));
-    }
-    return publicationChannelBuilder.build();
-  }
-
-  private static String extractPrintIssn(JsonNode expandedResource, ChannelType channelType) {
-    return switch (channelType) {
-      case JOURNAL -> extractJournalIssn(expandedResource);
-      case SERIES -> extractSeriesIssn(expandedResource);
-      case PUBLISHER, NON_CANDIDATE -> null;
-    };
-  }
-
-  private static String extractSeriesIssn(JsonNode expandedResource) {
-    return extractJsonNodeTextValue(
-        expandedResource, JSON_PTR_PUBLICATION_CONTEXT + "/series/printIssn");
-  }
-
-  private static String extractJournalIssn(JsonNode expandedResource) {
-    return extractJsonNodeTextValue(expandedResource, JSON_PTR_PUBLICATION_CONTEXT + "/printIssn");
-  }
-
-  private static String extractChannelName(JsonNode expandedResource, ChannelType channelType) {
-    if (isNull(channelType)) {
-      return null;
-    }
-    return switch (channelType) {
-      case JOURNAL -> extractJournalName(expandedResource);
-      case PUBLISHER -> extractPublisherName(expandedResource);
-      case SERIES -> extractSeriesName(expandedResource);
-      default -> null;
-    };
-  }
-
-  private static String extractSeriesName(JsonNode expandedResource) {
-    return extractJsonNodeTextValue(
-        expandedResource, JSON_PTR_PUBLICATION_CONTEXT + "/series/name");
-  }
-
-  private static String extractPublisherName(JsonNode expandedResource) {
-    return extractJsonNodeTextValue(
-        expandedResource, JSON_PTR_PUBLICATION_CONTEXT + "/publisher/name");
-  }
-
-  private static String extractJournalName(JsonNode expandedResource) {
-    return extractJsonNodeTextValue(expandedResource, JSON_PTR_PUBLICATION_CONTEXT + "/name");
   }
 
   private static Builder getBuilder(
@@ -340,172 +228,17 @@ public final class IndexDocumentTestUtils {
         .withReportingPeriod(new ReportingPeriod(String.valueOf(year)));
   }
 
-  private static ApprovalView toApproval(
-      Approval approval, Candidate candidate, List<ContributorType> contributors) {
-    return ApprovalView.builder()
-        .withInstitutionId(approval.institutionId())
-        .withApprovalStatus(getApprovalStatus(approval))
-        .withAssignee(approval.getAssigneeUsername())
-        .withPoints(getInstitutionPoints(approval, candidate))
-        .withInvolvedOrganizations(extractInvolvedOrganizations(approval, contributors))
-        .withLabels(Map.of(EN_FIELD, HARDCODED_ENGLISH_LABEL, NB_FIELD, HARDCODED_NORWEGIAN_LABEL))
-        .withGlobalApprovalStatus(candidate.getGlobalApprovalStatus())
-        .build();
-  }
-
-  private static ApprovalView toApproval(
-      Approval approval,
-      Candidate candidate,
-      List<ContributorType> contributors,
-      JsonNode expandedResource) {
-    return ApprovalView.builder()
-        .withInstitutionId(approval.institutionId())
-        .withApprovalStatus(getApprovalStatus(approval))
-        .withAssignee(approval.getAssigneeUsername())
-        .withPoints(getInstitutionPoints(approval, candidate))
-        .withInvolvedOrganizations(extractInvolvedOrganizations(approval, contributors))
-        .withLabels(extractLabels(approval, expandedResource))
-        .withGlobalApprovalStatus(candidate.getGlobalApprovalStatus())
-        .build();
-  }
-
-  private static Map<String, String> extractLabels(Approval approval, JsonNode expandedResource) {
-    var topLevelOrganizations = expandedResource.at("/topLevelOrganizations");
-    if (topLevelOrganizations.isMissingNode() || !topLevelOrganizations.isArray()) {
-      return Map.of();
-    }
-    return JsonUtils.streamNode(topLevelOrganizations)
-        .filter(org -> org.at("/id").asText().equals(approval.institutionId().toString()))
-        .findFirst()
-        .map(org -> org.at("/labels"))
-        .filter(labels -> !labels.isMissingNode())
-        .flatMap(IndexDocumentTestUtils::readLabelsAsMap)
-        .orElse(Collections.emptyMap());
-  }
-
-  private static Optional<Map<String, String>> readLabelsAsMap(JsonNode labelsNode) {
-    var labels = new java.util.HashMap<String, String>();
-    labelsNode
-        .fields()
-        .forEachRemaining(entry -> labels.put(entry.getKey(), entry.getValue().asText()));
-    return labels.isEmpty() ? Optional.empty() : Optional.of(labels);
-  }
-
-  private static InstitutionPointsView getInstitutionPoints(
-      Approval approval, Candidate candidate) {
-    return candidate
-        .getInstitutionPoints(approval.institutionId())
-        .map(InstitutionPointsView::from)
-        .orElse(null);
-  }
-
-  private static Set<URI> extractInvolvedOrganizations(
-      Approval approval, List<ContributorType> expandedContributors) {
-    return expandedContributors.stream()
-        .filter(NviContributor.class::isInstance)
-        .map(NviContributor.class::cast)
-        .flatMap(
-            contributor -> contributor.getOrganizationsPartOf(approval.institutionId()).stream())
-        .collect(Collectors.toSet());
-  }
-
-  private static ApprovalStatus getApprovalStatus(Approval approval) {
-    return isApprovalPendingAndUnassigned(approval)
-        ? ApprovalStatus.NEW
-        : ApprovalStatus.parse(approval.status().getValue());
-  }
-
-  private static boolean isApprovalPendingAndUnassigned(Approval approval) {
-    return approval.status() == no.sikt.nva.nvi.common.service.model.ApprovalStatus.PENDING
-        && isNull(approval.getAssigneeUsername());
-  }
-
-  private static List<ContributorType> mapToContributors(
-      ArrayNode contributorNodes, Candidate candidate) {
-    return JsonUtils.streamNode(contributorNodes)
-        .map(contributorNode -> toContributorWithExpandedAffiliation(contributorNode, candidate))
-        .toList();
-  }
-
-  private static ContributorType toContributorWithExpandedAffiliation(
-      JsonNode contributorNode, Candidate candidate) {
-    var affiliations = extractAffiliations(contributorNode);
-    var creator = getAnyNviCreatorIfPresent(contributorNode, candidate);
-    return creator
-        .map(value -> generateNviContributor(contributorNode, value, affiliations))
-        .orElseGet(() -> generateContributor(contributorNode, affiliations));
-  }
-
-  private static Contributor generateContributor(JsonNode contributorNode, List<URI> affiliations) {
-    return Contributor.builder()
-        .withId(ExpandedResourceGenerator.extractId(contributorNode))
-        .withName(ExpandedResourceGenerator.extractName(contributorNode))
-        .withOrcid(ExpandedResourceGenerator.extractOrcid(contributorNode))
-        .withRole(ExpandedResourceGenerator.extractRole(contributorNode))
-        .withAffiliations(expandAffiliations(affiliations))
-        .build();
-  }
-
-  private static ContributorType generateNviContributor(
-      JsonNode contributorNode, NviCreatorDto value, List<URI> affiliations) {
-    return NviContributor.builder()
-        .withId(ExpandedResourceGenerator.extractId(contributorNode))
-        .withName(ExpandedResourceGenerator.extractName(contributorNode))
-        .withOrcid(ExpandedResourceGenerator.extractOrcid(contributorNode))
-        .withRole(ExpandedResourceGenerator.extractRole(contributorNode))
-        .withAffiliations(expandAffiliationsWithPartOf(value, affiliations))
-        .build();
-  }
-
-  private static List<OrganizationType> expandAffiliations(List<URI> uris) {
-    return uris.stream().map(IndexDocumentTestUtils::generateOrganization).toList();
-  }
-
-  private static List<OrganizationType> expandAffiliationsWithPartOf(
-      NviCreatorDto creator, List<URI> uris) {
-    return uris.stream()
-        .map(uri -> toAffiliationWithPartOf(uri, isNviAffiliation(creator, uri)))
-        .toList();
-  }
-
-  private static boolean isNviAffiliation(NviCreatorDto creator, URI uri) {
-    return creator.affiliations().stream().anyMatch(affiliation -> affiliation.equals(uri));
-  }
-
-  private static OrganizationType toAffiliationWithPartOf(URI id, boolean isNviAffiliation) {
-    return isNviAffiliation ? generateNviOrganization(id) : generateOrganization(id);
-  }
-
-  private static OrganizationType generateOrganization(URI id) {
-    return Organization.builder().withId(id).withPartOf(List.of(HARD_CODED_TOP_LEVEL_ORG)).build();
-  }
-
-  private static OrganizationType generateNviOrganization(URI id) {
-    return id.equals(HARD_CODED_TOP_LEVEL_ORG)
-        ? generateTopLevelNviOrg(id)
-        : generateIntermediateLevelNviOrg(id);
-  }
-
-  private static NviOrganization generateIntermediateLevelNviOrg(URI id) {
-    return NviOrganization.builder()
-        .withId(id)
-        .withPartOf(List.of(HARD_CODED_INTERMEDIATE_ORGANIZATION, HARD_CODED_TOP_LEVEL_ORG))
-        .build();
-  }
-
-  private static NviOrganization generateTopLevelNviOrg(URI id) {
-    return NviOrganization.builder().withId(id).withPartOf(emptyList()).build();
-  }
-
   private static PublicationDetails.Builder publicationDetailsWithNviContributorsAffiliatedWith(
       URI institutionId) {
+    var nviContributors =
+        List.of(randomNviContributor(institutionId), randomNviContributor(institutionId));
     return PublicationDetails.builder()
         .withType(randomString())
         .withId(randomUri().toString())
         .withTitle(randomString())
         .withPublicationDate(getRandomDateInCurrentYearAsDto())
-        .withContributors(
-            List.of(randomNviContributor(institutionId), randomNviContributor(institutionId)))
+        .withNviContributors(nviContributors)
+        .withContributors(asContributors(nviContributors))
         .withPublicationChannel(randomPublicationChannel())
         .withPages(randomPages());
   }

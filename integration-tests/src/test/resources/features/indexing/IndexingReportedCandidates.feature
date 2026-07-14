@@ -38,14 +38,12 @@ Feature: Indexing of reported NVI Candidates
     @Disabled # FIXME: NP-51414 - Verified NVI creator names are not persisted
     Scenario: Creator name differs between Candidate and Publication, index uses the Candidate
 
-    @Disabled # FIXME: NP-51406 - Reported NVI numbers can silently change when a candidate is reindexed
     Scenario: Creator removed from the Publication is still indexed as an NVI creator
       Given the creator in section A1 is removed from the Publication
       When the Candidate is indexed
       Then the index document has the same NVI data as the Candidate
       And the creator in section A1 is still indexed as an NVI creator
 
-    @Disabled # FIXME: NP-51406 - Reported NVI numbers can silently change when a candidate is reindexed
     Scenario: Creator affiliation differs between Candidate and Publication, index uses the Candidate
       Given the creator in section A1 is moved to section A2 in the Publication
       When the Candidate is indexed

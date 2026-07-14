@@ -21,7 +21,7 @@ public record PublicationDetails(
     @JsonProperty("abstract") String abstractText,
     PublicationDateDto publicationDate,
     List<NviContributor> nviContributors,
-    List<ContributorType> contributors,
+    List<Contributor> contributors,
     int contributorsCount,
     PublicationChannel publicationChannel,
     Pages pages,
@@ -45,7 +45,7 @@ public record PublicationDetails(
     private String abstractText;
     private PublicationDateDto publicationDate;
     private List<NviContributor> nviContributors;
-    private List<ContributorType> contributors;
+    private List<Contributor> contributors;
     private int contributorsCount;
     private PublicationChannel publicationChannel;
     private Pages pages;
@@ -80,14 +80,14 @@ public record PublicationDetails(
       return this;
     }
 
-    public Builder withContributors(List<ContributorType> contributors) {
+    public Builder withContributors(List<Contributor> contributors) {
       this.contributors = contributors;
       this.contributorsCount = contributors.size();
-      this.nviContributors =
-          contributors.stream()
-              .filter(NviContributor.class::isInstance)
-              .map(NviContributor.class::cast)
-              .toList();
+      return this;
+    }
+
+    public Builder withNviContributors(List<NviContributor> nviContributors) {
+      this.nviContributors = nviContributors;
       return this;
     }
 

@@ -69,6 +69,7 @@ public final class TestConstants {
   public static final String SERIES_TYPE = "Series";
   public static final String LEVEL_ONE = "LevelOne";
   public static final String LEVEL_TWO = "LevelTwo";
+  public static final String PUBLISHED = "PUBLISHED";
 
   private TestConstants() {}
 }

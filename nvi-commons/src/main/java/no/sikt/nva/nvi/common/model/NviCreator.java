@@ -9,6 +9,8 @@ import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.Predicate;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
@@ -114,6 +116,18 @@ public record NviCreator(
 
   public List<URI> getAffiliationIds() {
     return List.copyOf(nviAffiliations);
+  }
+
+  /**
+   * The set of ancestor organizations for one of this creator's affiliations, resolved from the
+   * persisted NVI organization hierarchy. An empty {@link Optional} means the affiliation is not
+   * found in the tree; an empty set means the affiliation is itself a top-level organization.
+   */
+  public Optional<Set<URI>> findAncestorsOf(URI affiliationId) {
+    return topLevelNviOrganizations.stream()
+        .map(organization -> organization.findAncestorsOf(affiliationId))
+        .flatMap(Optional::stream)
+        .findFirst();
   }
 
   public static Predicate<NviCreator> isAffiliatedWithTopLevelOrganization(

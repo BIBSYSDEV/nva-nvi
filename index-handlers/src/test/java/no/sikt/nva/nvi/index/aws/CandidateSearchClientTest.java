@@ -6,6 +6,7 @@ import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomApproval;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomApprovalList;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomIndexDocumentBuilder;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomPublicationDetailsBuilder;
+import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.asContributors;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomNviContributor;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomNviContributorBuilder;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomPages;
@@ -772,10 +773,12 @@ class CandidateSearchClientTest {
   }
 
   private static NviCandidateIndexDocument documentWithContributors() {
+    var nviContributors = List.of(randomNviContributor(randomUri()));
     return randomIndexDocumentBuilder()
         .withPublicationDetails(
             randomPublicationDetailsBuilder()
-                .withContributors(List.of(randomNviContributor(randomUri())))
+                .withNviContributors(nviContributors)
+                .withContributors(asContributors(nviContributors))
                 .build())
         .build();
   }
@@ -838,15 +841,13 @@ class CandidateSearchClientTest {
         year != null
             ? new PublicationDateDto(year, null, null)
             : new PublicationDateDto(YEAR, null, null);
-    var contributor =
-        randomNviContributorBuilder(affiliation)
-            .withRole("Creator")
-            .withName(contributorName)
-            .build();
+    var nviContributors =
+        List.of(randomNviContributorBuilder(affiliation).withName(contributorName).build());
     return PublicationDetails.builder()
         .withTitle(title)
         .withPublicationDate(publicationDate)
-        .withContributors(List.of(contributor))
+        .withNviContributors(nviContributors)
+        .withContributors(asContributors(nviContributors))
         .withPublicationChannel(randomPublicationChannel())
         .withPages(randomPages())
         .build();

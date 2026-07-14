@@ -740,7 +740,10 @@ class FetchInstitutionReportHandlerTest {
     expectedRow.add(nonNull(publicationChannel.type()) ? publicationChannel.type() : EMPTY_STRING);
     expectedRow.add(
         nonNull(publicationChannel.printIssn()) ? publicationChannel.printIssn() : EMPTY_STRING);
-    expectedRow.add(publicationChannel.scientificValue().getValue());
+    expectedRow.add(
+        nonNull(publicationChannel.scientificValue())
+            ? publicationChannel.scientificValue()
+            : EMPTY_STRING);
     expectedRow.add(nonNull(nviContributor.id()) ? nviContributor.id() : EMPTY_STRING);
     expectedRow.add(affiliation.getInstitutionIdentifier());
     expectedRow.add(affiliation.getFacultyIdentifier());
