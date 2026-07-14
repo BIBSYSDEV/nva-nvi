@@ -79,9 +79,7 @@ final class ContributorMapper {
   }
 
   private static boolean matches(NviCreator creator, ContributorDto contributorDto) {
-    return creator.isVerified()
-        ? creator.id().equals(contributorDto.id())
-        : nonNull(contributorDto.name()) && contributorDto.name().equals(creator.name());
+    return creator.isVerified() && creator.id().equals(contributorDto.id());
   }
 
   private static Contributor buildContributor(ContributorDto contributorDto) {
