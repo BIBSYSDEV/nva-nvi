@@ -156,6 +156,7 @@ final class ContributorMapper {
   private List<URI> findPartOfChain(NviCreator creator, URI affiliationId) {
     return creator
         .findAncestorsOf(affiliationId)
+        .map(List::copyOf)
         .orElseGet(missingOrganizationHierarchy(affiliationId));
   }
 

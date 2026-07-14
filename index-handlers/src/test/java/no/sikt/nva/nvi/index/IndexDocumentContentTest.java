@@ -273,7 +273,7 @@ class IndexDocumentContentTest extends IndexDocumentHandlerTestBase {
         .extracting(NviOrganization::id)
         .containsExactly(sectionId);
     assertThat(nviContributor.nviAffiliations().getFirst().partOf())
-        .containsExactly(departmentId, topLevelId);
+        .containsExactlyInAnyOrder(departmentId, topLevelId);
   }
 
   @Test
