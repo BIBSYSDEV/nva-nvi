@@ -2,11 +2,33 @@ package no.sikt.nva.nvi.index.model.document;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
+import java.util.Optional;
+import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
+import no.sikt.nva.nvi.common.model.ChannelType;
 import no.sikt.nva.nvi.common.model.ScientificValue;
 
 @JsonSerialize
 public record PublicationChannel(
-    URI id, String type, ScientificValue scientificValue, String name, String printIssn) {
+    URI id, String type, String scientificValue, String name, String printIssn) {
+
+  public static PublicationChannel from(no.sikt.nva.nvi.common.model.PublicationChannel persisted) {
+    return builder()
+        .withScientificValue(persisted.scientificValue())
+        .withId(persisted.id())
+        .withType(persisted.channelType())
+        .build();
+  }
+
+  public static PublicationChannel from(
+      no.sikt.nva.nvi.common.model.PublicationChannel persisted, PublicationChannelDto current) {
+    return builder()
+        .withScientificValue(persisted.scientificValue())
+        .withId(persisted.id())
+        .withType(persisted.channelType())
+        .withName(current.name())
+        .withPrintIssn(current.printIssn())
+        .build();
+  }
 
   public static Builder builder() {
     return new Builder();
@@ -16,7 +38,7 @@ public record PublicationChannel(
 
     private URI id;
     private String type;
-    private ScientificValue scientificValue;
+    private String scientificValue;
     private String name;
     private String printIssn;
 
@@ -27,13 +49,14 @@ public record PublicationChannel(
       return this;
     }
 
-    public Builder withType(String type) {
-      this.type = type;
+    public Builder withType(ChannelType type) {
+      this.type = Optional.ofNullable(type).map(ChannelType::getValue).orElse(null);
       return this;
     }
 
     public Builder withScientificValue(ScientificValue scientificValue) {
-      this.scientificValue = scientificValue;
+      this.scientificValue =
+          Optional.ofNullable(scientificValue).map(ScientificValue::getValue).orElse(null);
       return this;
     }
 

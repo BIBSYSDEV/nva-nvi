@@ -113,7 +113,7 @@ public final class InstitutionReportMapper {
         .withPublicationChannelType(orEmpty(channel.type()))
         .withPrintIssn(orEmpty(channel.printIssn()))
         .withPublicationChannelName(orEmpty(channel.name()))
-        .withScientificValue(channel.scientificValue().getValue())
+        .withScientificValue(orEmpty(channel.scientificValue()))
         .withContributorId(contributor.id())
         .withAffiliationIdentifier(affiliation.identifier())
         .withAffiliationId(affiliation.id().toString())

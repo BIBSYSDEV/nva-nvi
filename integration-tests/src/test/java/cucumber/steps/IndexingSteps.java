@@ -1,7 +1,6 @@
 package cucumber.steps;
 
 import static java.util.Objects.nonNull;
-import static no.sikt.nva.nvi.common.cristin.CristinOrganizationFixtures.organizationWithNestedPartOf;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.dto.CustomerDtoFixtures.createCustomer;
@@ -32,7 +31,6 @@ import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.dto.ContributorDto;
-import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
@@ -83,18 +81,12 @@ public class IndexingSteps {
     var departmentA = organizationNode(departmentAId, institutionId, sectionA1, sectionA2);
     var departmentB = organizationNode(departmentBId, institutionId);
     institution = organizationNode(institutionId, null, departmentA, departmentB);
-
-    indexingContext.registerOrganization(
-        organizationWithNestedPartOf(sectionA1Id, departmentAId, institutionId));
-    indexingContext.registerOrganization(
-        organizationWithNestedPartOf(sectionA2Id, departmentAId, institutionId));
   }
 
   @Given("a second institution")
   public void aSecondInstitution() {
     var secondInstitutionId = randomOrganizationId();
     secondInstitution = organizationNode(secondInstitutionId, null);
-    indexingContext.registerOrganization(organizationWithNestedPartOf(secondInstitutionId));
   }
 
   @Given(
@@ -259,8 +251,7 @@ public class IndexingSteps {
 
   @Then("the index document has the same channel level as the Candidate")
   public void theIndexDocumentHasTheSameChannelLevelAsTheCandidate() {
-    var candidateLevel =
-        ScientificValue.parse(candidate.getPublicationChannel().scientificValue().getValue());
+    var candidateLevel = candidate.getPublicationChannel().scientificValue().getValue();
     assertThat(updatedDocument.publicationDetails().publicationChannel().scientificValue())
         .isEqualTo(candidateLevel);
   }
@@ -279,9 +270,7 @@ public class IndexingSteps {
   @Then("the indexed channel is level 1, not level 2")
   public void theIndexedChannelIsLevel1NotLevel2() {
     var indexedLevel = updatedDocument.publicationDetails().publicationChannel().scientificValue();
-    assertThat(indexedLevel)
-        .isEqualTo(ScientificValue.parse(LEVEL_ONE))
-        .isNotEqualTo(ScientificValue.parse(LEVEL_TWO));
+    assertThat(indexedLevel).isEqualTo(LEVEL_ONE).isNotEqualTo(LEVEL_TWO);
   }
 
   private Set<String> indexedNviCreatorIds() {

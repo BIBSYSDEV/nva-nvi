@@ -3,12 +3,9 @@ package no.sikt.nva.nvi.index;
 import static no.sikt.nva.nvi.common.QueueServiceTestUtils.invalidSqsMessage;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.model.CandidateFixtures.setupRandomApplicableCandidate;
-import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.NVI_CONTEXT;
+import static no.sikt.nva.nvi.common.model.PublicationDtoFixtures.publicationDtoMirroring;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.createPath;
-import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.expandApprovals;
-import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.expandPublicationDetails;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
-import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.unit.nva.s3.S3Driver.S3_SCHEME;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -33,8 +30,8 @@ import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.common.utils.EnvironmentUriFactory;
 import no.sikt.nva.nvi.index.aws.CandidateSearchClient;
+import no.sikt.nva.nvi.index.mapper.CandidateToIndexDocumentMapper;
 import no.sikt.nva.nvi.index.model.PersistedIndexDocumentMessage;
 import no.sikt.nva.nvi.index.model.document.IndexDocumentWithConsumptionAttributes;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
@@ -199,22 +196,10 @@ class UpdateIndexHandlerTest {
 
   private IndexDocumentWithConsumptionAttributes setupExistingIndexDocumentInBucket(
       Candidate candidate) {
-    var expandedResource =
-        ExpandedResourceGenerator.builder()
-            .withCandidate(candidate)
-            .build()
-            .createExpandedResource();
-    var expandedPublicationDetails = expandPublicationDetails(candidate, expandedResource);
     var indexDocument =
-        NviCandidateIndexDocument.builder()
-            .withId(EnvironmentUriFactory.candidateId(ENVIRONMENT, candidate.identifier()))
-            .withContext(NVI_CONTEXT)
-            .withApprovals(expandApprovals(candidate, expandedPublicationDetails.contributors()))
-            .withIdentifier(candidate.identifier())
-            .withPublicationDetails(expandedPublicationDetails)
-            .withPoints(randomBigDecimal())
-            .build();
-
+        new CandidateToIndexDocumentMapper(
+                candidate, publicationDtoMirroring(candidate), ENVIRONMENT)
+            .generate();
     var indexDocumentWithConsumptionAttributes =
         IndexDocumentWithConsumptionAttributes.from(indexDocument);
     attempt(

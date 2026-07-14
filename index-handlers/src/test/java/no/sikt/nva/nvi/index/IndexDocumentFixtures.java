@@ -4,6 +4,7 @@ import static java.util.Collections.emptyMap;
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDateDtoInYear;
+import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.asContributors;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomNviContributor;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomNviContributorBuilder;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomPages;
@@ -32,7 +33,6 @@ import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.model.ApprovalFactory;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.ApprovalView;
-import no.sikt.nva.nvi.index.model.document.ContributorType;
 import no.sikt.nva.nvi.index.model.document.InstitutionPointsView;
 import no.sikt.nva.nvi.index.model.document.InstitutionPointsView.CreatorAffiliationPointsView;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
@@ -81,13 +81,15 @@ public final class IndexDocumentFixtures {
 
   public static Builder createRandomIndexDocumentBuilder(
       URI userTopLevelOrganization, String year) {
+    var nviContributors =
+        List.of(
+            randomNviContributorBuilder(userTopLevelOrganization).build(),
+            randomNviContributorBuilder(userTopLevelOrganization).withId(null).build());
     var details =
         randomPublicationDetailsBuilder()
             .withPublicationDate(randomPublicationDateDtoInYear(year))
-            .withContributors(
-                List.of(
-                    randomNviContributorBuilder(userTopLevelOrganization).build(),
-                    randomNviContributorBuilder(userTopLevelOrganization).withId(null).build()))
+            .withNviContributors(nviContributors)
+            .withContributors(asContributors(nviContributors))
             .build();
     var approvals = new ArrayList<>(randomApprovalList());
     approvals.add(randomApproval(randomString(), userTopLevelOrganization));
@@ -129,16 +131,19 @@ public final class IndexDocumentFixtures {
 
   public static PublicationDetails.Builder randomPublicationDetailsBuilder(
       Collection<URI> topLevelOrganizations) {
-    var contributors =
-        topLevelOrganizations.stream()
-            .map(id -> randomNviContributorBuilder(id).build())
-            .map(ContributorType.class::cast)
-            .toList();
-    return randomPublicationDetailsBuilder().withContributors(contributors);
+    var nviContributors =
+        topLevelOrganizations.stream().map(id -> randomNviContributorBuilder(id).build()).toList();
+    return randomPublicationDetailsBuilder()
+        .withNviContributors(nviContributors)
+        .withContributors(asContributors(nviContributors));
   }
 
   public static PublicationDetails.Builder randomPublicationDetailsBuilder() {
     var publicationId = randomUriWithSuffix(randomUUID().toString());
+    var nviContributors =
+        List.of(
+            randomNviContributor(randomOrganizationId()),
+            randomNviContributorBuilder(randomOrganizationId()).withId(null).build());
     return PublicationDetails.builder()
         .withId(publicationId.toString())
         .withTitle(randomTitle())
@@ -146,10 +151,8 @@ public final class IndexDocumentFixtures {
         .withPublicationDate(randomPublicationDateDtoInYear(DEFAULT_YEAR))
         .withPublicationChannel(randomPublicationChannel())
         .withPages(randomPages())
-        .withContributors(
-            List.of(
-                randomNviContributor(randomOrganizationId()),
-                randomNviContributorBuilder(randomOrganizationId()).withId(null).build()));
+        .withNviContributors(nviContributors)
+        .withContributors(asContributors(nviContributors));
   }
 
   public static List<ApprovalView> randomApprovalList() {
