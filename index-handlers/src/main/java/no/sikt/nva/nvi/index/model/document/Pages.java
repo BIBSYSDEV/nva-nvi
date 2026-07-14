@@ -1,6 +1,21 @@
 package no.sikt.nva.nvi.index.model.document;
 
+import static java.util.Objects.isNull;
+
+import no.sikt.nva.nvi.common.service.model.PageCount;
+
 public record Pages(String begin, String end, String numberOfPages) {
+
+  public static Pages from(PageCount pageCount) {
+    if (isNull(pageCount)) {
+      return null;
+    }
+    return builder()
+        .withBegin(pageCount.first())
+        .withEnd(pageCount.last())
+        .withNumberOfPages(pageCount.total())
+        .build();
+  }
 
   public static Builder builder() {
     return new Builder();

@@ -12,7 +12,6 @@ import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
 import no.sikt.nva.nvi.common.model.ChannelType;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.common.service.model.PageCount;
 import no.sikt.nva.nvi.index.model.document.Contributor;
 import no.sikt.nva.nvi.index.model.document.NviContributor;
 import no.sikt.nva.nvi.index.model.document.Pages;
@@ -41,40 +40,17 @@ final class PublicationDetailsMapper {
         .withContributors(contributors)
         .withNviContributors(nviContributors)
         .withPublicationChannel(buildPublicationChannel())
-        .withPages(buildPages(candidateDetails.pageCount()))
+        .withPages(Pages.from(candidateDetails.pageCount()))
         .withLanguage(candidateDetails.language())
         .withHandles(candidateDetails.handles())
         .build();
   }
 
-  private static Pages buildPages(PageCount pageCount) {
-    if (isNull(pageCount)) {
-      return null;
-    }
-    return Pages.builder()
-        .withBegin(pageCount.first())
-        .withEnd(pageCount.last())
-        .withNumberOfPages(pageCount.total())
-        .build();
-  }
-
   private PublicationChannel buildPublicationChannel() {
-    var channel = candidate.getPublicationChannel();
-
-    var builder =
-        PublicationChannel.builder()
-            .withScientificValue(channel.scientificValue())
-            .withId(channel.id())
-            .withType(channel.channelType());
-
-    findMatchingPublicationChannelDto(channel)
-        .ifPresent(
-            dto -> {
-              builder.withName(dto.name());
-              builder.withPrintIssn(dto.printIssn());
-            });
-
-    return builder.build();
+    var persistedChannel = candidate.getPublicationChannel();
+    return findMatchingPublicationChannelDto(persistedChannel)
+        .map(currentChannel -> PublicationChannel.from(persistedChannel, currentChannel))
+        .orElseGet(() -> PublicationChannel.from(persistedChannel));
   }
 
   /**
