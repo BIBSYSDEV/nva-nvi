@@ -50,6 +50,7 @@ import no.sikt.nva.nvi.index.model.document.NviOrganization;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /**
@@ -72,21 +73,12 @@ class IndexDocumentContentTest extends IndexDocumentHandlerTestBase {
     assertThat(approvalFor(document, institutionId).sector()).isEqualTo(sector.toString());
   }
 
-  @Test
-  void shouldNotPopulateSectorInApprovalViewWhenSectorIsUnknown() {
+  @ParameterizedTest
+  @NullSource
+  @EnumSource(value = Sector.class, names = "UNKNOWN", mode = EnumSource.Mode.INCLUDE)
+  void shouldNotPopulateSectorInApprovalViewWhenSectorIsUnknown(Sector sector) {
     var institutionId = randomOrganizationId();
-    var candidate = setupCandidateWithInstitutionPoints(institutionId, Sector.UNKNOWN, false);
-    stubPublication(candidate);
-
-    var document = generateIndexDocument(candidate);
-
-    assertThat(approvalFor(document, institutionId).sector()).isNull();
-  }
-
-  @Test
-  void shouldNotPopulateSectorInApprovalViewWhenSectorIsNull() {
-    var institutionId = randomOrganizationId();
-    var candidate = setupCandidateWithInstitutionPoints(institutionId, null, false);
+    var candidate = setupCandidateWithInstitutionPoints(institutionId, sector, false);
     stubPublication(candidate);
 
     var document = generateIndexDocument(candidate);
