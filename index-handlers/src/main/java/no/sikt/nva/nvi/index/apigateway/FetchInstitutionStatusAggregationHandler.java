@@ -23,9 +23,7 @@ import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 public class FetchInstitutionStatusAggregationHandler
     extends ApiGatewayHandler<Void, InstitutionStatusAggregationReport> {
 
-  public static final String PATH_PARAM_YEAR = "year";
-  public static final String AGGREGATION =
-      ORGANIZATION_APPROVAL_STATUS_AGGREGATION.getAggregationName();
+  private static final String PATH_PARAM_YEAR = "year";
   private final CandidateSearchClient searchClient;
 
   @JacocoGenerated
@@ -66,11 +64,13 @@ public class FetchInstitutionStatusAggregationHandler
   private Aggregate getAggregate(String year, URI requestedInstitution) {
     var searchParameters =
         CandidateSearchParameters.builder()
-            .withAggregationType(AGGREGATION)
+            .withAggregation(ORGANIZATION_APPROVAL_STATUS_AGGREGATION)
             .withYear(year)
             .withTopLevelCristinOrg(requestedInstitution)
             .build();
     var searchResponse = attempt(() -> searchClient.search(searchParameters)).orElseThrow();
-    return searchResponse.aggregations().get(AGGREGATION);
+    return searchResponse
+        .aggregations()
+        .get(ORGANIZATION_APPROVAL_STATUS_AGGREGATION.getAggregationName());
   }
 }

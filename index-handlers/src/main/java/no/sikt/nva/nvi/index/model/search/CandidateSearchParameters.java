@@ -2,7 +2,6 @@ package no.sikt.nva.nvi.index.model.search;
 
 import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.common.utils.ApplicationConstants.getCurrentYear;
-import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_AGGREGATION_TYPE;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_ASSIGNEE;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_CATEGORY;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_EXCLUDE_SUB_UNITS;
@@ -23,6 +22,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.utils.RequestUtil;
+import no.sikt.nva.nvi.index.query.SearchAggregation;
 import no.unit.nva.commons.json.JsonSerializable;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.BadRequestException;
@@ -41,14 +41,13 @@ public record CandidateSearchParameters(
     String assignee,
     boolean excludeUnassigned,
     URI topLevelCristinOrg,
-    String aggregationType,
+    SearchAggregation aggregation,
     List<String> excludeFields,
     List<String> statuses,
     List<String> globalStatuses,
     SearchResultParameters searchResultParameters)
     implements JsonSerializable {
 
-  public static final String DEFAULT_AGGREGATION_TYPE = "all";
   private static final String DEFAULT_STRING = StringUtils.EMPTY_STRING;
   private static final int DEFAULT_QUERY_SIZE = 10;
   private static final int DEFAULT_OFFSET_SIZE = 0;
@@ -62,7 +61,6 @@ public record CandidateSearchParameters(
   public static CandidateSearchParameters fromRequestInfo(
       RequestInfo requestInfo, List<String> affiliationIdentifiers)
       throws UnauthorizedException, BadRequestException {
-    var aggregationType = extractQueryParamAggregationType(requestInfo);
     return builder()
         .withSearchTerm(extractQueryParamSearchTermOrDefault(requestInfo))
         .withAffiliations(affiliationIdentifiers)
@@ -74,7 +72,6 @@ public record CandidateSearchParameters(
         .withTitle(extractQueryParamTitle(requestInfo))
         .withAssignee(extractQueryParamAssignee(requestInfo))
         .withExcludeUnassigned(extractQueryParamExcludeUnassignedOrDefault(requestInfo))
-        .withAggregationType(aggregationType)
         .withSearchResultParameters(getResultParameters(requestInfo))
         .withTopLevelCristinOrg(requestInfo.getTopLevelOrgCristinId().orElse(null))
         .withExcludeFields(List.of(CONTRIBUTORS_EXCLUDED_TO_REDUCE_RESPONSE_SIZE))
@@ -112,12 +109,6 @@ public record CandidateSearchParameters(
     } catch (IllegalArgumentException exception) {
       throw new BadRequestException(exception.getMessage());
     }
-  }
-
-  private static String extractQueryParamAggregationType(RequestInfo requestInfo) {
-    return requestInfo
-        .getQueryParameterOpt(QUERY_AGGREGATION_TYPE)
-        .orElse(DEFAULT_AGGREGATION_TYPE);
   }
 
   private static Integer extractQueryParamSizeOrDefault(RequestInfo requestInfo) {
@@ -200,7 +191,7 @@ public record CandidateSearchParameters(
     private String assignee;
     private boolean excludeUnassigned;
     private URI topLevelCristinOrg;
-    private String aggregationType;
+    private SearchAggregation aggregation;
     private List<String> excludeFields = emptyList();
     private List<String> statuses = emptyList();
     private List<String> globalStatuses = emptyList();
@@ -264,8 +255,8 @@ public record CandidateSearchParameters(
       return this;
     }
 
-    public Builder withAggregationType(String aggregationType) {
-      this.aggregationType = aggregationType;
+    public Builder withAggregation(SearchAggregation aggregation) {
+      this.aggregation = aggregation;
       return this;
     }
 
@@ -302,7 +293,7 @@ public record CandidateSearchParameters(
           assignee,
           excludeUnassigned,
           topLevelCristinOrg,
-          aggregationType,
+          aggregation,
           excludeFields,
           statuses,
           globalStatuses,

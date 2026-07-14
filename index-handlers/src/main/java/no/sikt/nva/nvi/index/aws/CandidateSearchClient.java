@@ -1,17 +1,19 @@
 package no.sikt.nva.nvi.index.aws;
 
+import static java.util.Collections.emptyMap;
+import static java.util.Objects.isNull;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.MAPPINGS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.NVI_CANDIDATES_INDEX;
 import static nva.commons.core.attempt.Try.attempt;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.model.search.SearchResultParameters;
-import no.sikt.nva.nvi.index.query.Aggregations;
 import no.sikt.nva.nvi.index.utils.SearchConstants;
 import nva.commons.core.JacocoGenerated;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -19,6 +21,7 @@ import org.opensearch.client.opensearch._types.FieldSort;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch._types.SortOrder;
+import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch.core.DeleteRequest;
 import org.opensearch.client.opensearch.core.DeleteResponse;
 import org.opensearch.client.opensearch.core.IndexRequest;
@@ -193,14 +196,20 @@ public class CandidateSearchClient implements SearchClient<NviCandidateIndexDocu
         .index(NVI_CANDIDATES_INDEX)
         .query(query)
         .sort(sortOptions)
-        .aggregations(
-            Aggregations.generateAggregations(
-                parameters.aggregationType(),
-                parameters.username(),
-                parameters.topLevelOrgUriAsString()))
+        .aggregations(generateAggregations(parameters))
         .from(resultParameters.offset())
         .size(resultParameters.size())
         .source(sourceConfig)
         .build();
+  }
+
+  private static Map<String, Aggregation> generateAggregations(
+      CandidateSearchParameters parameters) {
+    var aggregation = parameters.aggregation();
+    return isNull(aggregation)
+        ? emptyMap()
+        : Map.of(
+            aggregation.getAggregationName(),
+            aggregation.generateAggregation(parameters.topLevelOrgUriAsString()));
   }
 }

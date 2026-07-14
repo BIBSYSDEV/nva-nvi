@@ -2,7 +2,6 @@ package no.sikt.nva.nvi.index.utils;
 
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.utils.Validator.hasElements;
-import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_AGGREGATION_TYPE;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_AFFILIATIONS;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_ASSIGNEE;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_CATEGORY;
@@ -71,7 +70,6 @@ public final class PaginatedResultConverter {
     putIfValueNotNull(queryParams, QUERY_PARAM_CATEGORY, parameters.category());
     putIfValueNotNull(queryParams, QUERY_PARAM_TITLE, parameters.title());
     putIfValueNotNull(queryParams, QUERY_PARAM_ASSIGNEE, parameters.assignee());
-    putIfValueNotNull(queryParams, QUERY_AGGREGATION_TYPE, parameters.aggregationType());
     putIfValueNotNull(
         queryParams, QUERY_PARAM_ORDER_BY, parameters.searchResultParameters().orderBy());
     putIfValueNotNull(
