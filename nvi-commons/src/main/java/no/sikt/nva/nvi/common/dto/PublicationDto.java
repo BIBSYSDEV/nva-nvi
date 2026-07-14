@@ -106,7 +106,7 @@ public record PublicationDto(
   public Optional<Organization> findInstitution(URI institutionId) {
     return topLevelOrganizations().stream()
         .filter(organization -> institutionId.equals(organization.id()))
-        .findFirst();
+        .findAny();
   }
 
   public static Builder builder() {

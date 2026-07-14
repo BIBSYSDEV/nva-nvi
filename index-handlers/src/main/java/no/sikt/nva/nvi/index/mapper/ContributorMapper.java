@@ -125,7 +125,7 @@ final class ContributorMapper {
         .map(ContributorDto::roles)
         .orElse(emptyList())
         .stream()
-        .findFirst()
+        .findAny()
         .map(ContributorRole::value)
         .orElse(null);
   }

@@ -191,7 +191,7 @@ public record PublicationDetails(
   public Optional<Organization> findInstitution(URI institutionId) {
     return topLevelOrganizations().stream()
         .filter(organization -> institutionId.equals(organization.id()))
-        .findFirst();
+        .findAny();
   }
 
   // TODO: Remove this when data is migrated and we no longer need the null checking

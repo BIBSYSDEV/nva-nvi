@@ -88,13 +88,13 @@ final class PublicationDetailsMapper {
 
   private Optional<PublicationChannelDto> findChannelDtoById(URI id) {
     return nonNull(id)
-        ? publicationChannels().stream().filter(dto -> id.equals(dto.id())).findFirst()
+        ? publicationChannels().stream().filter(dto -> id.equals(dto.id())).findAny()
         : Optional.empty();
   }
 
   private Optional<PublicationChannelDto> findChannelDtoByType(ChannelType type) {
     return nonNull(type) && type.isValid()
-        ? publicationChannels().stream().filter(dto -> type == dto.channelType()).findFirst()
+        ? publicationChannels().stream().filter(dto -> type == dto.channelType()).findAny()
         : Optional.empty();
   }
 
