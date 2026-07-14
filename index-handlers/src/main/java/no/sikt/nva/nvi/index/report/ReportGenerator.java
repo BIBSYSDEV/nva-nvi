@@ -53,7 +53,7 @@ public class ReportGenerator {
 
   public void generateReport(GenerateReportMessage message) {
     var rows = createReportRows(message);
-    var mediaType = message.reportFormat().getMediaType();
+    var mediaType = message.reportFormat().mediaType();
     var report = generateReport(rows, mediaType);
     var reportPresignedUrl = message.reportPresignedUrl();
     upload(reportPresignedUrl, mediaType, report);
