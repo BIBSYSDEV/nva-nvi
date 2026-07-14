@@ -32,13 +32,10 @@ import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class SearchNviCandidatesHandler
     extends ApiGatewayHandler<Void, PaginatedSearchResult<NviCandidateIndexDocument>> {
 
-  private final Logger logger = LoggerFactory.getLogger(SearchNviCandidatesHandler.class);
   private final SearchClient<NviCandidateIndexDocument> searchClient;
   private final ViewingScopeValidator viewingScopeValidator;
   private final IdentityServiceClient identityServiceClient;
@@ -78,7 +75,6 @@ public class SearchNviCandidatesHandler
     var affiliations = getQueryParamAffiliationsOrViewingScope(requestInfo);
     var candidateSearchParameters =
         CandidateSearchParameters.fromRequestInfo(requestInfo, affiliations);
-    logAggregationType(candidateSearchParameters);
     return attempt(() -> searchClient.search(candidateSearchParameters))
         .map(searchResponse -> toPaginatedResult(searchResponse, candidateSearchParameters))
         .orElseThrow();
@@ -128,13 +124,6 @@ public class SearchNviCandidatesHandler
   private Set<URI> fetchViewingScope(String userName) {
     var user = attempt(() -> identityServiceClient.getUser(userName)).orElseThrow();
     return new HashSet<>(user.viewingScope().includedUnits());
-  }
-
-  private void logAggregationType(CandidateSearchParameters candidateSearchParameters) {
-    logger.info(
-        "Aggregation type {} requested for topLevelCristinOrg {}",
-        candidateSearchParameters.aggregationType(),
-        candidateSearchParameters.topLevelCristinOrg());
   }
 
   private void validateAccessRights(RequestInfo requestInfo) throws UnauthorizedException {

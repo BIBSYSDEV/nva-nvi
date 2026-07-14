@@ -488,7 +488,7 @@ class FetchInstitutionReportHandlerTest {
       List<NviCandidateIndexDocument> indexDocuments, URI topLevelCristinOrg) throws IOException {
     var aggregationRequest =
         buildRequest(topLevelCristinOrg, searchResultParams(0, 0))
-            .withAggregationType(TOTAL_COUNT_AGGREGATION_AGG.getAggregationName())
+            .withAggregation(TOTAL_COUNT_AGGREGATION_AGG)
             .build();
     when(searchClient.search(eq(aggregationRequest)))
         .thenReturn(aggregationResponse(indexDocuments.size()));

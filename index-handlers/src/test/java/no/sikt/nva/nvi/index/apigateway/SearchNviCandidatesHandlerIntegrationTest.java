@@ -25,7 +25,6 @@ import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PAR
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 
 import java.math.BigDecimal;
@@ -454,28 +453,11 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
           .containsExactly(tuple(GlobalApprovalStatus.DISPUTE, REJECTED));
     }
 
-    @ParameterizedTest
-    @MethodSource("defaultAggregationCountProvider")
-    void shouldAggregateBasedOnGlobalStatusByDefault(String aggregationField, int expectedCount) {
+    @Test
+    void shouldReturnEmptyAggregationsField() {
       var response = handleRequest(emptyMap());
 
-      var actualCount = getAggregationCount(response, aggregationField);
-      assertEquals(expectedCount, actualCount);
-    }
-
-    private static int getAggregationCount(
-        PaginatedSearchResult<NviCandidateIndexDocument> response, String field) {
-      return response.getAggregations().get(field).get("docCount").asInt();
-    }
-
-    private static Stream<Arguments> defaultAggregationCountProvider() {
-      return Stream.of(
-          Arguments.of("pending", 10),
-          Arguments.of("approved", 4),
-          Arguments.of("rejected", 4),
-          Arguments.of("dispute", 2),
-          Arguments.of("completed", 10),
-          Arguments.of("totalCount", 20));
+      assertThat(response.getAggregations()).isEmpty();
     }
 
     /**

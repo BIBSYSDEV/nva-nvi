@@ -10,7 +10,6 @@ import static no.sikt.nva.nvi.index.apigateway.utils.AggregateResponseTestUtil.f
 import static no.sikt.nva.nvi.index.apigateway.utils.AggregateResponseTestUtil.getGlobalAggregate;
 import static no.sikt.nva.nvi.index.apigateway.utils.AggregateResponseTestUtil.organizationApprovalStatusAggregate;
 import static no.sikt.nva.nvi.index.apigateway.utils.MockOpenSearchUtil.createSearchResponse;
-import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_AGGREGATION_TYPE;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_AFFILIATIONS;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_CATEGORY;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_EXCLUDE_SUB_UNITS;
@@ -144,15 +143,6 @@ class SearchNviCandidatesHandlerTest extends SearchNviCandidatesHandlerTestBase 
             QUERY_PARAM_EXCLUDE_SUB_UNITS + "=true",
             expectedInstitutionQuery);
     assertThat(actualId).contains(expectedQueryParameters);
-  }
-
-  @Test
-  void shouldReturnPaginatedSearchResultWithAggregationTypeInIdIfGiven() {
-    mockOpenSearchClient();
-    var aggregationType = "organizationApprovalStatuses";
-    var paginatedResult = handleRequest(Map.of(QUERY_AGGREGATION_TYPE, aggregationType));
-    var actualId = paginatedResult.getId().toString();
-    assertThat(actualId).contains(QUERY_AGGREGATION_TYPE + "=" + aggregationType);
   }
 
   @Test

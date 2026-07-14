@@ -2,7 +2,6 @@ package no.sikt.nva.nvi.index.model.search;
 
 public final class SearchQueryParameters {
 
-  public static final String QUERY_AGGREGATION_TYPE = "aggregationType";
   public static final String QUERY_PARAM_EXCLUDE_SUB_UNITS = "excludeSubUnits";
   public static final String QUERY_PARAM_FILTER = "filter";
   public static final String QUERY_PARAM_TITLE = "title";

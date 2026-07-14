@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.index.aws;
 
 import static java.util.Objects.requireNonNull;
-import static java.util.function.Predicate.not;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.createRandomIndexDocumentWithHandle;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomApproval;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomApprovalList;
@@ -11,7 +10,6 @@ import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomNviContributor;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomNviContributorBuilder;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomPages;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomPublicationChannel;
-import static no.sikt.nva.nvi.index.query.SearchAggregation.ORGANIZATION_APPROVAL_STATUS_AGGREGATION;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -30,7 +28,6 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
@@ -184,31 +181,25 @@ class CandidateSearchClientTest {
   }
 
   @Test
-  void shouldReturnDefaultAggregationsWhenAggregationTypeAll() throws IOException {
-    var searchParameters = CandidateSearchParameters.builder().withAggregationType("all").build();
+  void shouldNotReturnAggregationsWhenNoAggregationIsRequested() throws IOException {
+    var searchParameters = defaultSearchParameters().build();
     var searchResponse = searchClient.search(searchParameters);
-    var aggregations = searchResponse.aggregations();
-    var expectedAggregations =
-        Arrays.stream(SearchAggregation.values())
-            .filter(not(aggregation -> aggregation == ORGANIZATION_APPROVAL_STATUS_AGGREGATION))
-            .toList();
-    assertEquals(expectedAggregations.size(), aggregations.size());
+    assertThat(searchResponse.aggregations()).isEmpty();
   }
 
   @ParameterizedTest
   @EnumSource(SearchAggregation.class)
   void shouldReturnSpecificAggregationsWhenSpecificAggregationTypeRequested(
       SearchAggregation aggregation) throws IOException {
-    var requestedAggregation = aggregation.getAggregationName();
     var searchParameters =
         CandidateSearchParameters.builder()
             .withTopLevelCristinOrg(ORGANIZATION)
-            .withAggregationType(requestedAggregation)
+            .withAggregation(aggregation)
             .build();
     var searchResponse = searchClient.search(searchParameters);
     var aggregations = searchResponse.aggregations();
     assertEquals(1, aggregations.size());
-    assertEquals(requestedAggregation, aggregations.keySet().iterator().next());
+    assertEquals(aggregation.getAggregationName(), aggregations.keySet().iterator().next());
   }
 
   @Test

@@ -164,11 +164,13 @@ public class InstitutionReportGenerator {
   }
 
   private long getTotalNumberOfCandidatesForInstitutionAndYear() {
-    var aggregation = TOTAL_COUNT_AGGREGATION_AGG.getAggregationName();
+    var aggregationName = TOTAL_COUNT_AGGREGATION_AGG.getAggregationName();
     var searchParameters =
-        buildSearchRequest(NO_OFFSET, PAGE_SIZE_NO_HITS).withAggregationType(aggregation).build();
+        buildSearchRequest(NO_OFFSET, PAGE_SIZE_NO_HITS)
+            .withAggregation(TOTAL_COUNT_AGGREGATION_AGG)
+            .build();
     var searchResponse = attempt(() -> searchClient.search(searchParameters)).orElseThrow();
-    return ((FilterAggregate) searchResponse.aggregations().get(aggregation)._get()).docCount();
+    return ((FilterAggregate) searchResponse.aggregations().get(aggregationName)._get()).docCount();
   }
 
   private void logNumberOfCandidatesFound(List<NviCandidateIndexDocument> candidates) {
