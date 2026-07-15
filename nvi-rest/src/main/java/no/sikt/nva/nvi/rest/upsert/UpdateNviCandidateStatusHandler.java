@@ -33,7 +33,6 @@ public class UpdateNviCandidateStatusHandler
   private final CandidateService candidateService;
   private final ApprovalService approvalService;
   private final ViewingScopeValidator viewingScopeValidator;
-  private final Environment environment;
 
   @JacocoGenerated
   public UpdateNviCandidateStatusHandler() {
@@ -53,7 +52,6 @@ public class UpdateNviCandidateStatusHandler
     this.candidateService = candidateService;
     this.approvalService = approvalService;
     this.viewingScopeValidator = viewingScopeValidator;
-    this.environment = environment;
   }
 
   @Override

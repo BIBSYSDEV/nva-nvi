@@ -32,7 +32,6 @@ public class FetchNviCandidateByPublicationIdHandler extends ApiGatewayHandler<V
 
   public static final String CANDIDATE_PUBLICATION_ID = "candidatePublicationId";
   private final CandidateService candidateService;
-  private final Environment environment;
 
   @JacocoGenerated
   public FetchNviCandidateByPublicationIdHandler() {
@@ -49,7 +48,6 @@ public class FetchNviCandidateByPublicationIdHandler extends ApiGatewayHandler<V
     super(Void.class, environment);
     this.candidateService =
         new CandidateService(environment, periodRepository, candidateRepository);
-    this.environment = environment;
   }
 
   @Override
