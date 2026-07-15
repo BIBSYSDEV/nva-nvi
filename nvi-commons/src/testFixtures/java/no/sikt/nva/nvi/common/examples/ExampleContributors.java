@@ -44,6 +44,7 @@ public class ExampleContributors {
       ContributorDto.builder()
           .withId(URI.create("https://api.sandbox.nva.aws.unit.no/cristin/person/1685065"))
           .withName("Donald Duck")
+          .withOrcid(URI.create("https://fake.orcid.org/1234-5678-1234-5678"))
           .withRole(ROLE_CREATOR)
           .withVerificationStatus(STATUS_VERIFIED)
           .withAffiliations(List.of(TOP_LEVEL_ORGANIZATION_SIKT))

@@ -139,7 +139,7 @@ WHERE {
         FILTER(?otherName > ?contributorName)
       }
     }
-    OPTIONAL { ?personId :orcid ?orcid }
+    OPTIONAL { ?personId :orcId ?orcid }
 
     # Find all valid affiliations for the contributor
     OPTIONAL {
