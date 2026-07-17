@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import no.sikt.nva.nvi.common.model.ParsableEnum;
 
 public enum DataEntryType implements ParsableEnum {
-  UniquenessEntry("CandidateUniquenessEntry"),
+  UNIQUENESS_ENTRY("CandidateUniquenessEntry"),
   CANDIDATE("Candidate"),
   NON_CANDIDATE("NonCandidate"),
   APPROVAL_STATUS("ApprovalStatus"),

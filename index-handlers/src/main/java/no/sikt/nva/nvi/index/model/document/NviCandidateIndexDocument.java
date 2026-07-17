@@ -75,7 +75,7 @@ public record NviCandidateIndexDocument(
     String indexDocumentCreatedAt)
     implements JsonSerializable {
 
-  private static final Logger logger = LoggerFactory.getLogger(NviCandidateIndexDocument.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(NviCandidateIndexDocument.class);
   private static final String CONTEXT = "@context";
   private static final String NVI_CANDIDATE = "NviCandidate";
   private static final String TYPE = NVI_CANDIDATE;
@@ -119,14 +119,14 @@ public record NviCandidateIndexDocument(
   public List<Map<InstitutionReportHeader, String>> toReportRowsForInstitution(
       URI topLevelOrganization) {
     if (isNull(getApprovalForInstitution(topLevelOrganization))) {
-      logger.warn(
+      LOGGER.warn(
           "No approval found for institution: {}. Cannot convert candidate with id {} to report"
               + " rows",
           topLevelOrganization,
           identifier);
       return emptyList();
     }
-    logger.info("Processing candidate={} for institution={}", identifier, topLevelOrganization);
+    LOGGER.info("Processing candidate={} for institution={}", identifier, topLevelOrganization);
     return getNviContributors().stream()
         .flatMap(
             nviContributor ->

@@ -47,7 +47,7 @@ import org.zalando.problem.Problem;
 class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
   private UUID candidateIdentifier;
 
-  private static final IdentityServiceClient mockIdentityServiceClient =
+  private static final IdentityServiceClient MOCK_IDENTITY_SERVICE_CLIENT =
       mock(IdentityServiceClient.class);
 
   @Override
@@ -55,8 +55,8 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
     return new UpsertAssigneeHandler(
         candidateService,
         approvalService,
-        mockIdentityServiceClient,
-        mockViewingScopeValidator,
+        MOCK_IDENTITY_SERVICE_CLIENT,
+        FAKE_VIEWING_SCOPE_VALIDATOR,
         environment);
   }
 
@@ -106,7 +106,7 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
         new UpsertAssigneeHandler(
             candidateService,
             approvalService,
-            mockIdentityServiceClient,
+            MOCK_IDENTITY_SERVICE_CLIENT,
             viewingScopeValidatorReturningFalse,
             environment);
     handler.handleRequest(createRequest(candidateIdentifier, assignee), output, CONTEXT);
@@ -209,8 +209,8 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
     return new UpsertAssigneeHandler(
         candidateService,
         new ApprovalServiceThrowingTransactionExceptions(scenario.getCandidateRepository()),
-        mockIdentityServiceClient,
-        mockViewingScopeValidator,
+        MOCK_IDENTITY_SERVICE_CLIENT,
+        FAKE_VIEWING_SCOPE_VALIDATOR,
         environment);
   }
 
@@ -269,7 +269,7 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
   private void mockUserIdentity(String userName, List<String> accessRights) {
     var user = UserDto.builder().withUsername(userName).withAccessRights(accessRights).build();
     try {
-      when(mockIdentityServiceClient.getUser(userName)).thenReturn(user);
+      when(MOCK_IDENTITY_SERVICE_CLIENT.getUser(userName)).thenReturn(user);
     } catch (NotFoundException e) {
       throw new RuntimeException(e);
     }

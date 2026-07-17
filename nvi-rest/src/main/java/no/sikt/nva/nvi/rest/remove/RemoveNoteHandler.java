@@ -31,7 +31,6 @@ public class RemoveNoteHandler extends ApiGatewayHandler<Void, CandidateDto>
   private final CandidateService candidateService;
   private final NoteService noteService;
   private final ViewingScopeValidator viewingScopeValidator;
-  private final Environment environment;
 
   @JacocoGenerated
   public RemoveNoteHandler() {
@@ -51,7 +50,6 @@ public class RemoveNoteHandler extends ApiGatewayHandler<Void, CandidateDto>
     this.candidateService = candidateService;
     this.noteService = noteService;
     this.viewingScopeValidator = viewingScopeValidator;
-    this.environment = environment;
   }
 
   @Override

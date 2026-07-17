@@ -55,12 +55,11 @@ import org.zalando.problem.Problem;
 /** Base test class for handlers that return a CandidateDto. */
 @SuppressWarnings("PMD.CouplingBetweenObjects")
 public abstract class BaseCandidateRestHandlerTest {
-  protected static final ViewingScopeValidator mockViewingScopeValidator =
+  protected static final ViewingScopeValidator FAKE_VIEWING_SCOPE_VALIDATOR =
       new FakeViewingScopeValidator(true);
   protected static final Context CONTEXT = new FakeContext();
   protected Environment environment;
   protected String resourcePathParameter;
-  protected List<Organization> topLevelOrganizations;
   protected Organization topLevelOrganization;
   protected URI topLevelOrganizationId;
   protected URI subOrganizationId;
@@ -78,7 +77,6 @@ public abstract class BaseCandidateRestHandlerTest {
     scenario = new TestScenario();
     setupOpenPeriod(scenario, CURRENT_YEAR);
     topLevelOrganization = randomTopLevelOrganization();
-    topLevelOrganizations = List.of(topLevelOrganization);
     topLevelOrganizationId = topLevelOrganization.id();
     subOrganizationId = topLevelOrganization.hasPart().getFirst().id();
     curatorUser = createCuratorUserInstance(topLevelOrganizationId);

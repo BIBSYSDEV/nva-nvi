@@ -45,7 +45,7 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
   @Override
   protected ApiGatewayHandler<Void, CandidateDto> createHandler() {
     return new RemoveNoteHandler(
-        scenario.getCandidateService(), noteService, mockViewingScopeValidator, environment);
+        scenario.getCandidateService(), noteService, FAKE_VIEWING_SCOPE_VALIDATOR, environment);
   }
 
   @Override

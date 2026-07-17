@@ -35,7 +35,7 @@ public class SearchNviCandidatesHandlerTestBase {
 
   private static final Environment ENVIRONMENT = getSearchNviCandidatesHandlerEnvironment();
   private static final Context CONTEXT = new FakeContext();
-  protected static final IdentityServiceClient identityServiceClient =
+  protected static final IdentityServiceClient MOCK_IDENTITY_SERVICE_CLIENT =
       mock(IdentityServiceClient.class);
   protected ByteArrayOutputStream output;
   protected SearchNviCandidatesHandler handler;
@@ -54,7 +54,7 @@ public class SearchNviCandidatesHandlerTestBase {
     output = new ByteArrayOutputStream();
     handler =
         new SearchNviCandidatesHandler(
-            searchClient, viewingScopeValidator, identityServiceClient, ENVIRONMENT);
+            searchClient, viewingScopeValidator, MOCK_IDENTITY_SERVICE_CLIENT, ENVIRONMENT);
   }
 
   protected PaginatedSearchResult<NviCandidateIndexDocument> handleRequest(
@@ -97,7 +97,7 @@ public class SearchNviCandidatesHandlerTestBase {
 
   protected static void mockIdentityService(String username, URI... organizations) {
     try {
-      when(identityServiceClient.getUser(username))
+      when(MOCK_IDENTITY_SERVICE_CLIENT.getUser(username))
           .thenReturn(buildGetUserResponse(List.of(organizations)));
     } catch (NotFoundException e) {
       throw new RuntimeException(e);

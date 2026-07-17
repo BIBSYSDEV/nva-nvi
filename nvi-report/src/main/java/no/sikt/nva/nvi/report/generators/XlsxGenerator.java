@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 
 public class XlsxGenerator implements ReportGenerator {
 
-  private static final Logger logger = LoggerFactory.getLogger(XlsxGenerator.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(XlsxGenerator.class);
   private static final String NVI = "NVI";
   private static final String REPORT = "report";
   private final List<Row> rows;
@@ -35,7 +35,7 @@ public class XlsxGenerator implements ReportGenerator {
       addHeaders(sheet);
       addData(sheet);
     } catch (IOException e) {
-      logger.error("Something went wrong creating Excel workbook ", e);
+      LOGGER.error("Something went wrong creating Excel workbook ", e);
       throw new RuntimeException(e);
     }
     return byteArrayOutputStream.toByteArray();

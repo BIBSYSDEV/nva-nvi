@@ -40,7 +40,7 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
   @Override
   protected ApiGatewayHandler<NviNoteRequest, CandidateDto> createHandler() {
     return new CreateNoteHandler(
-        candidateService, noteService, mockViewingScopeValidator, environment);
+        candidateService, noteService, FAKE_VIEWING_SCOPE_VALIDATOR, environment);
   }
 
   @Override
@@ -133,7 +133,7 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
     return new CreateNoteHandler(
         candidateService,
         new NoteServiceThrowingTransactionExceptions(scenario.getCandidateRepository()),
-        mockViewingScopeValidator,
+        FAKE_VIEWING_SCOPE_VALIDATOR,
         environment);
   }
 

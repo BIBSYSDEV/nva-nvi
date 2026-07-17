@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
  */
 public class PublicationLoaderService {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(PublicationLoaderService.class);
   private static final String CONTEXT_NODE = "@context";
   private static final String JSON_PTR_BODY = "/body";
   private static final String INPUT_CONTEXT_FILE = "nva_context.json";
@@ -44,7 +45,6 @@ public class PublicationLoaderService {
               SparqlConstruct.fromResource("nvi_applicability.rq"),
               SparqlConstruct.fromResource("nvi_international_collaboration.rq")));
 
-  private final Logger logger = LoggerFactory.getLogger(PublicationLoaderService.class);
   private final StorageReader<URI> storageReader;
 
   public PublicationLoaderService(StorageReader<URI> storageReader) {
@@ -67,7 +67,7 @@ public class PublicationLoaderService {
     try {
       return Optional.of(parse(rawContent, publicationBucketUri));
     } catch (ParsingException exception) {
-      logger.error(
+      LOGGER.error(
           "Failed to parse expanded publication ({}), continuing without publication data",
           publicationBucketUri,
           exception);
@@ -76,7 +76,7 @@ public class PublicationLoaderService {
   }
 
   private String readFromStorage(URI publicationBucketUri) {
-    logger.info("Extracting publication from S3 ({})", publicationBucketUri);
+    LOGGER.info("Extracting publication from S3 ({})", publicationBucketUri);
     return storageReader.read(publicationBucketUri);
   }
 
@@ -88,12 +88,12 @@ public class PublicationLoaderService {
 
   private PublicationDto toPublicationDto(String resultJson, URI publicationBucketUri) {
     try {
-      logger.info("Transforming JSON-LD to PublicationDto ({})", publicationBucketUri);
+      LOGGER.info("Transforming JSON-LD to PublicationDto ({})", publicationBucketUri);
       return PublicationDto.from(resultJson);
     } catch (JsonProcessingException exception) {
-      logger.error(
+      LOGGER.error(
           "Failed to transform JSON-LD to PublicationDto ({})", publicationBucketUri, exception);
-      logger.error(resultJson);
+      LOGGER.error(resultJson);
       throw new ParsingException(exception.getMessage());
     }
   }
@@ -103,14 +103,14 @@ public class PublicationLoaderService {
         PublicationGraph.fromJsonLd(ExpandedDocumentTool.prepareJsonNodeForModel(content));
     logIfNonConformant(publicationGraph.validate(new NvaGraphValidator()));
 
-    logger.info("Projecting NVI data with SPARQL queries ({})", publicationBucketUri);
+    LOGGER.info("Projecting NVI data with SPARQL queries ({})", publicationBucketUri);
     var nviGraph = Graph.of(publicationGraph.model()).project(NVI_PROJECTIONS);
     logIfNonConformant(nviGraph.validate(new NviGraphValidator()));
 
     try {
       return nviGraph.frame(PUBLICATION_FRAME);
     } catch (RdfProcessingException exception) {
-      logger.error("Failed to frame graph model as JSON-LD", exception);
+      LOGGER.error("Failed to frame graph model as JSON-LD", exception);
       throw new ParsingException(exception.getMessage());
     }
   }
@@ -118,7 +118,7 @@ public class PublicationLoaderService {
   private void logIfNonConformant(GraphValidation validationReport) {
     // TODO: once the validation is in place, we will throw exceptions at this point
     if (validationReport.isNonConformant()) {
-      validationReport.log(logger);
+      validationReport.log(LOGGER);
     }
   }
 

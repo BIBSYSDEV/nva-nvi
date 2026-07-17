@@ -19,7 +19,7 @@ import org.slf4j.Logger;
 // TODO: Remove this class and POI library
 public final class ExcelWorkbookGenerator {
 
-  private static final Logger logger =
+  private static final Logger LOGGER =
       org.slf4j.LoggerFactory.getLogger(ExcelWorkbookGenerator.class);
   private static final String LINE_BREAK = "\n";
   private static final Encoder ENCODER = Base64.getEncoder();
@@ -93,13 +93,13 @@ public final class ExcelWorkbookGenerator {
   }
 
   private byte[] toXssfWorkbookByteArray() {
-    logger.info("Creating Excel workbook");
+    LOGGER.info("Creating Excel workbook");
     var byteArrayOutputStream = new ByteArrayOutputStream();
     try (var workbook = createWorkbookWithOneSheet()) {
       createSheetWithHeadersAndData(workbook);
       workbook.write(byteArrayOutputStream);
       workbook.close();
-      logger.info("Excel workbook created successfully. Returning workbook as byte array");
+      LOGGER.info("Excel workbook created successfully. Returning workbook as byte array");
       return byteArrayOutputStream.toByteArray();
     } catch (IOException e) {
       throw new RuntimeException(e);

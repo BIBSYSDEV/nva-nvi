@@ -10,12 +10,12 @@ public final class LanguageLabelUtil {
 
   private static final Path LANGUAGE_LABELS_PATH = Path.of("supportedLanguageLabels.csv");
   private static final String LINE_SEPERATOR = ",";
-  private static final Map<String, String> supportedLanguageLabels = readStaticLanguageLabels();
+  private static final Map<String, String> SUPPORTED_LANGUAGE_LABELS = readStaticLanguageLabels();
 
   private LanguageLabelUtil() {}
 
   public static Optional<String> getLabel(String languageUri) {
-    return Optional.ofNullable(supportedLanguageLabels.get(languageUri));
+    return Optional.ofNullable(SUPPORTED_LANGUAGE_LABELS.get(languageUri));
   }
 
   private static Map<String, String> readStaticLanguageLabels() {

@@ -38,7 +38,6 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
   private final ApprovalService approvalService;
   private final IdentityServiceClient identityServiceClient;
   private final ViewingScopeValidator viewingScopeValidator;
-  private final Environment environment;
 
   @JacocoGenerated
   public UpsertAssigneeHandler() {
@@ -61,7 +60,6 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
     this.approvalService = approvalService;
     this.identityServiceClient = identityServiceClient;
     this.viewingScopeValidator = viewingScopeValidator;
-    this.environment = environment;
   }
 
   @Override

@@ -19,27 +19,27 @@ import org.slf4j.LoggerFactory;
 
 public final class ExceptionMapper {
 
-  private static final Logger logger = LoggerFactory.getLogger(ExceptionMapper.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ExceptionMapper.class);
 
   private ExceptionMapper() {}
 
   public static <T> ApiGatewayException map(Failure<T> failure) {
     var exception = failure.getException();
     if (isNotFoundException(exception)) {
-      logger.error("NotFoundException", exception);
+      LOGGER.error("NotFoundException", exception);
       return new NotFoundException("Resource not found!");
     }
     if (exception instanceof IllegalArgumentException
         || exception instanceof UnsupportedOperationException) {
-      logger.error("IllegalArgumentException", exception);
+      LOGGER.error("IllegalArgumentException", exception);
       return new BadRequestException(exception.getMessage());
     }
     if (exception instanceof IllegalStateException) {
-      logger.error("IllegalStateException", exception);
+      LOGGER.error("IllegalStateException", exception);
       return new ConflictException(exception.getMessage());
     }
     if (exception instanceof TransactionException) {
-      logger.error("TransactionException", exception);
+      LOGGER.error("TransactionException", exception);
       return new ConflictException(TransactionException.USER_MESSAGE);
     }
     if (exception instanceof UnauthorizedOperationException
@@ -47,10 +47,10 @@ public final class ExceptionMapper {
       return new UnauthorizedException(exception.getMessage());
     }
     if (exception instanceof NotApplicableException) {
-      logger.warn("Attempted operation which was not allowed", exception);
+      LOGGER.warn("Attempted operation which was not allowed", exception);
       return new MethodNotAllowedException(exception.getMessage());
     }
-    logger.error("BadGatewayException {}", exception.getMessage());
+    LOGGER.error("BadGatewayException {}", exception.getMessage());
     return new BadGatewayException("Something went wrong! Contact application administrator.");
   }
 

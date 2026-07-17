@@ -255,12 +255,12 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
     private static final String UNRELATED_ASSIGNED = "assignedAndUnrelated";
     private static final String UNRELATED_UNASSIGNED = "unassignedAndUnrelated";
 
-    private static final Map<String, NviCandidateIndexDocument> docs =
+    private static final Map<String, NviCandidateIndexDocument> DOCUMENTS =
         createDocumentsForAssigneeTests();
 
     @BeforeEach
     void beforeEach() {
-      addDocumentsToIndex(docs.values());
+      addDocumentsToIndex(DOCUMENTS.values());
     }
 
     @ParameterizedTest
@@ -274,7 +274,7 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
           .allSatisfy(
               doc -> {
                 var actualTitle = doc.publicationDetails().title();
-                assertThat(doc.id()).isEqualTo(docs.get(actualTitle).id());
+                assertThat(doc.id()).isEqualTo(DOCUMENTS.get(actualTitle).id());
                 assertThat(actualTitle).isIn(expectedDocumentKeys);
               });
     }
@@ -354,12 +354,12 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
   @Nested
   @DisplayName("Filter by approval status")
   class StatusTests {
-    private static final Collection<NviCandidateIndexDocument> docsForStatusCombinations =
+    private static final Collection<NviCandidateIndexDocument> DOCUMENTS =
         createDocsForAllApprovalStatusCombinations();
 
     @BeforeEach
     void beforeEach() {
-      addDocumentsToIndex(docsForStatusCombinations);
+      addDocumentsToIndex(DOCUMENTS);
     }
 
     @Test

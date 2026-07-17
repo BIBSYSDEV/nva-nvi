@@ -17,7 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class CandidatePermissions {
-  private static final Logger logger = LoggerFactory.getLogger(CandidatePermissions.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(CandidatePermissions.class);
   private static final String COMMA_DELIMITER = ", ";
   private final Candidate candidate;
   private final UserInstance userInstance;
@@ -78,7 +78,7 @@ public class CandidatePermissions {
             .toList();
 
     if (!strategies.isEmpty()) {
-      logger.warn(
+      LOGGER.warn(
           "User {} was denied access {} on candidate {} from strategies {}",
           userInstance.userName(),
           operation,
@@ -97,7 +97,7 @@ public class CandidatePermissions {
             .toList();
 
     if (strategies.isEmpty()) {
-      logger.warn(
+      LOGGER.warn(
           "User {} was denied access {} on candidate {} because no valid grant strategy was found",
           userInstance.userName(),
           operation,
@@ -105,7 +105,7 @@ public class CandidatePermissions {
       throw new UnauthorizedException(formatUnauthorizedMessage(operation));
     }
 
-    logger.info(
+    LOGGER.info(
         "User {} was allowed {} on candidate {} from strategies {}",
         userInstance.userName(),
         operation,

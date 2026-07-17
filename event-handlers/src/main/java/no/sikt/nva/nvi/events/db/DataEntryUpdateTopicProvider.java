@@ -33,41 +33,27 @@ public class DataEntryUpdateTopicProvider {
   }
 
   private String getInsertTopic(DataEntryType entryType) {
-    switch (entryType) {
-      case DataEntryType.CANDIDATE -> {
-        return environment.readEnv(CANDIDATE_INSERT_TOPIC);
-      }
-      case DataEntryType.APPROVAL_STATUS -> {
-        return environment.readEnv(APPROVAL_INSERT_TOPIC);
-      }
+    return switch (entryType) {
+      case CANDIDATE -> environment.readEnv(CANDIDATE_INSERT_TOPIC);
+      case APPROVAL_STATUS -> environment.readEnv(APPROVAL_INSERT_TOPIC);
       default -> throw new IllegalArgumentException(ILLEGAL_ARGUMENT_MESSAGE + entryType);
-    }
+    };
   }
 
   private String getUpdateTopic(DataEntryType entryType) {
-    switch (entryType) {
-      case DataEntryType.CANDIDATE -> {
-        return environment.readEnv(CANDIDATE_APPLICABLE_UPDATE_TOPIC);
-      }
-      case DataEntryType.NON_CANDIDATE -> {
-        return environment.readEnv(CANDIDATE_NOT_APPLICABLE_UPDATE_TOPIC);
-      }
-      case DataEntryType.APPROVAL_STATUS -> {
-        return environment.readEnv(APPROVAL_UPDATE_TOPIC);
-      }
+    return switch (entryType) {
+      case CANDIDATE -> environment.readEnv(CANDIDATE_APPLICABLE_UPDATE_TOPIC);
+      case NON_CANDIDATE -> environment.readEnv(CANDIDATE_NOT_APPLICABLE_UPDATE_TOPIC);
+      case APPROVAL_STATUS -> environment.readEnv(APPROVAL_UPDATE_TOPIC);
       default -> throw new IllegalArgumentException(ILLEGAL_ARGUMENT_MESSAGE + entryType);
-    }
+    };
   }
 
   private String getRemoveTopic(DataEntryType entryType) {
-    switch (entryType) {
-      case DataEntryType.CANDIDATE, DataEntryType.NON_CANDIDATE -> {
-        return environment.readEnv(CANDIDATE_REMOVE_TOPIC);
-      }
-      case DataEntryType.APPROVAL_STATUS -> {
-        return environment.readEnv(APPROVAL_REMOVE_TOPIC);
-      }
+    return switch (entryType) {
+      case CANDIDATE, DataEntryType.NON_CANDIDATE -> environment.readEnv(CANDIDATE_REMOVE_TOPIC);
+      case APPROVAL_STATUS -> environment.readEnv(APPROVAL_REMOVE_TOPIC);
       default -> throw new IllegalArgumentException(ILLEGAL_ARGUMENT_MESSAGE + entryType);
-    }
+    };
   }
 }

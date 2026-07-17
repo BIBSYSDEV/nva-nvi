@@ -28,12 +28,12 @@ import no.sikt.nva.nvi.test.TestUtils;
 
 public final class SampleCandidateGenerator {
 
+  private static final boolean IS_APPLICABLE = true;
   private final Map<URI, Approval> approvals = new HashMap<>();
   private final List<InstitutionPoints> institutionPoints = new ArrayList<>();
   private final Instant createdDate = randomInstant();
   private final Instant modifiedDate = randomInstant();
   private final UUID candidateIdentifier = UUID.randomUUID();
-  private static final boolean applicable = true;
   private final NviPeriod period = randomPeriod();
   private PointCalculation pointCalculation;
   private PublicationDetails publicationDetails;
@@ -64,7 +64,7 @@ public final class SampleCandidateGenerator {
     applyRandomPublicationDetailsAndCalculationPoints();
     return new Candidate(
         candidateIdentifier,
-        applicable,
+        IS_APPLICABLE,
         approvals,
         emptyMap(),
         period,

@@ -18,19 +18,20 @@ import org.slf4j.LoggerFactory;
 import org.testcontainers.utility.DockerImageName;
 
 public class OpenSearchContainerContext implements Startable {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(OpenSearchContainerContext.class);
   private static final DockerImageName OPEN_SEARCH_IMAGE =
       DockerImageName.parse("opensearchproject/opensearch:3.5.0");
-  private static final OpenSearchContainer<?> container =
+  private static final OpenSearchContainer<?> CONTAINER =
       new OpenSearchContainer<>(OPEN_SEARCH_IMAGE);
   private static CandidateSearchClient searchClient;
   private static ReportAggregationClient reportAggregationClient;
   private static ReportDocumentClient reportDocumentClient;
-  private final Logger logger = LoggerFactory.getLogger(OpenSearchContainerContext.class);
 
   @Override
   public void start() {
-    container.start();
-    var httpHost = HttpHost.create(URI.create(container.getHttpHostAddress()));
+    CONTAINER.start();
+    var httpHost = HttpHost.create(URI.create(CONTAINER.getHttpHostAddress()));
     var fakeJwtProvider = FakeCachedJwtProvider.setup();
     var nativeClient = OpenSearchClientFactory.createClient(httpHost, fakeJwtProvider);
     searchClient = new CandidateSearchClient(nativeClient);
@@ -40,7 +41,7 @@ public class OpenSearchContainerContext implements Startable {
 
   @Override
   public void stop() {
-    container.stop();
+    CONTAINER.stop();
   }
 
   public void createIndex() {
@@ -51,7 +52,7 @@ public class OpenSearchContainerContext implements Startable {
     try {
       searchClient.deleteIndex();
     } catch (OpenSearchException | IOException e) {
-      logger.warn("Could not delete index: {}", e.getMessage());
+      LOGGER.warn("Could not delete index: {}", e.getMessage());
     }
   }
 

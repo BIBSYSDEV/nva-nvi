@@ -24,11 +24,11 @@ import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FetchInstitutionReportHandler extends ApiGatewayHandler<Void, String> {
 
-  private static final Logger logger =
-      org.slf4j.LoggerFactory.getLogger(FetchInstitutionReportHandler.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(FetchInstitutionReportHandler.class);
   private static final String PATH_PARAMETER_YEAR = "year";
   private static final String QUERY_PARAMETER_INSTITUTION_ID = "institutionId";
   private static final String ENV_VAR_INSTITUTION_REPORT_SEARCH_PAGE_SIZE =
@@ -75,12 +75,12 @@ public class FetchInstitutionReportHandler extends ApiGatewayHandler<Void, Strin
     setIsBase64Encoded(true);
     var year = requestInfo.getPathParameter(PATH_PARAMETER_YEAR);
     var institutionId = resolveInstitutionId(requestInfo);
-    logger.info("Generating report for institution {} for year {}", institutionId, year);
+    LOGGER.info("Generating report for institution {} for year {}", institutionId, year);
     var pageSize = parseInt(new Environment().readEnv(ENV_VAR_INSTITUTION_REPORT_SEARCH_PAGE_SIZE));
     var report =
         new InstitutionReportGenerator(searchClient, pageSize, year, institutionId)
             .generateReport();
-    logger.info("Report generated successfully. Returning report as base64 encoded string");
+    LOGGER.info("Report generated successfully. Returning report as base64 encoded string");
     return report.toBase64EncodedString();
   }
 

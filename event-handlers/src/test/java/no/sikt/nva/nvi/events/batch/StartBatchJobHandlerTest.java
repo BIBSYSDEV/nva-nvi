@@ -74,23 +74,23 @@ class StartBatchJobHandlerTest {
   class StaticDatasetTests {
     private static final int CANDIDATES_PER_YEAR = 20;
     private static final int TOTAL_CANDIDATE_COUNT = CANDIDATES_PER_YEAR * 2;
-    private static final TestScenario scenario = new TestScenario();
+    private static final TestScenario SCENARIO = new TestScenario();
 
     @BeforeAll
     static void init() {
-      setupNumberOfCandidatesForYear(scenario, LAST_YEAR, CANDIDATES_PER_YEAR);
-      setupNumberOfCandidatesForYear(scenario, THIS_YEAR, CANDIDATES_PER_YEAR);
+      setupNumberOfCandidatesForYear(SCENARIO, LAST_YEAR, CANDIDATES_PER_YEAR);
+      setupNumberOfCandidatesForYear(SCENARIO, THIS_YEAR, CANDIDATES_PER_YEAR);
     }
 
     @BeforeEach
     void setUp() {
-      handler = getHandler(environment, scenario);
+      handler = getHandler(environment, SCENARIO);
     }
 
     @Test
     void shouldQueueNothingWhenProcessingDisabled() {
       environment.setEnv(PROCESSING_ENABLED.getKey(), "false");
-      handler = getHandler(environment, scenario);
+      handler = getHandler(environment, SCENARIO);
       var request = refreshCandidatesForYear(String.valueOf(CURRENT_YEAR));
 
       runToCompletion(request);

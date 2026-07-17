@@ -13,9 +13,6 @@ import static no.sikt.nva.nvi.common.db.DbPointCalculationFixtures.randomPointCa
 import static no.sikt.nva.nvi.common.db.DbPublicationChannelFixtures.randomDbPublicationChannelBuilder;
 import static no.sikt.nva.nvi.common.model.CandidateFixtures.setupRandomApplicableCandidate;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
-import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_AFFILIATIONS;
-import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_BODY;
-import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_TYPE;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.s3.S3Driver.S3_SCHEME;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -56,9 +53,12 @@ import software.amazon.awssdk.services.sqs.model.SqsException;
  */
 class IndexDocumentHandlerTest extends IndexDocumentHandlerTestBase {
 
-  private static final String JSON_PTR_NVI_CONTRIBUTORS = "/publicationDetails/nviContributors";
-  private static final String JSON_PTR_CONTRIBUTORS = "/publicationDetails/contributors";
+  private static final String JSON_PTR_AFFILIATIONS = "/affiliations";
   private static final String JSON_PTR_APPROVALS = "/approvals";
+  private static final String JSON_PTR_BODY = "/body";
+  private static final String JSON_PTR_CONTRIBUTORS = "/publicationDetails/contributors";
+  private static final String JSON_PTR_NVI_CONTRIBUTORS = "/publicationDetails/nviContributors";
+  private static final String JSON_PTR_TYPE = "/type";
   private static final String INDEX_DLQ = "INDEX_DLQ";
   private static final String INDEX_DLQ_URL = ENVIRONMENT.readEnv(INDEX_DLQ);
   private static final String OUTPUT_QUEUE_URL =

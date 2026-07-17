@@ -49,9 +49,6 @@
     <exclude name="UnnecessaryConstructor"/>
     <!-- Conflicts with the rule category/java/codestyle.xml/AvoidProtectedMethodInFinalClassNotExtending -->
     <exclude name="CommentDefaultAccessModifier"/>
-    <!-- Conflicts with the rule category/java/codestyle.xml/AvoidProtectedMethodInFinalClassNotExtending -->
-
-    <exclude name="FieldNamingConventions"/>
   </rule>
 
 

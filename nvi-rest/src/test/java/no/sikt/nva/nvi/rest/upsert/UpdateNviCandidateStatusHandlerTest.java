@@ -62,7 +62,7 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
   @Override
   protected ApiGatewayHandler<NviStatusRequest, CandidateDto> createHandler() {
     return new UpdateNviCandidateStatusHandler(
-        candidateService, approvalService, mockViewingScopeValidator, environment);
+        candidateService, approvalService, FAKE_VIEWING_SCOPE_VALIDATOR, environment);
   }
 
   @Override
@@ -205,7 +205,7 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
     return new UpdateNviCandidateStatusHandler(
         candidateService,
         new ApprovalServiceThrowingTransactionExceptions(scenario.getCandidateRepository()),
-        mockViewingScopeValidator,
+        FAKE_VIEWING_SCOPE_VALIDATOR,
         environment);
   }
 

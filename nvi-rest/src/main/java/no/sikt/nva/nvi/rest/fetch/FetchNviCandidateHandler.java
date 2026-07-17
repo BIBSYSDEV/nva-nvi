@@ -27,7 +27,6 @@ public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateD
 
   public static final String CANDIDATE_IDENTIFIER = "candidateIdentifier";
   private final CandidateService candidateService;
-  private final Environment environment;
 
   @JacocoGenerated
   public FetchNviCandidateHandler() {
@@ -37,7 +36,6 @@ public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateD
   public FetchNviCandidateHandler(CandidateService candidateService, Environment environment) {
     super(Void.class, environment);
     this.candidateService = candidateService;
-    this.environment = environment;
   }
 
   @Override

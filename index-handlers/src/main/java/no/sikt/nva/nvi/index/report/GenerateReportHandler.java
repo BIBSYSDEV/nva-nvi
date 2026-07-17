@@ -15,8 +15,6 @@ import nva.commons.core.JacocoGenerated;
 
 public class GenerateReportHandler implements RequestHandler<SQSEvent, Void> {
 
-  private static final String PARSING_FAILED_MESSAGE = "Could not parse message body: %s";
-
   private final ReportGenerator reportGenerator;
 
   @JacocoGenerated
@@ -47,6 +45,7 @@ public class GenerateReportHandler implements RequestHandler<SQSEvent, Void> {
 
   private GenerateReportMessage parseMessage(String body) {
     return attempt(() -> GenerateReportMessage.from(body))
-        .orElseThrow(failure -> new RuntimeException(PARSING_FAILED_MESSAGE.formatted(body)));
+        .orElseThrow(
+            failure -> new RuntimeException("Could not parse message body: %s".formatted(body)));
   }
 }
