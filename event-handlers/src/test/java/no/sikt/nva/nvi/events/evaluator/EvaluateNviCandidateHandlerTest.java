@@ -51,8 +51,6 @@ import no.sikt.nva.nvi.common.model.NviCreator;
 import no.sikt.nva.nvi.common.model.PublicationChannel;
 import no.sikt.nva.nvi.common.model.PublicationDate;
 import no.sikt.nva.nvi.common.model.ScientificValue;
-import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
-import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
@@ -476,9 +474,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       assertThat(candidate)
           .extracting(Candidate::isApplicable, Candidate::getCreatorShareCount)
           .containsExactly(true, 1);
-      assertThat(publicationDetails.allCreators())
-          .hasSize(1)
-          .allMatch(VerifiedNviCreatorDto.class::isInstance);
+      assertThat(publicationDetails.nviCreators()).hasSize(1).allMatch(NviCreator::isVerified);
     }
 
     @Test
@@ -491,7 +487,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
 
       var candidate = candidateService.getCandidateByPublicationId(publication.getPublicationId());
       assertThat(candidate.publicationDetails().verifiedCreators())
-          .extracting(VerifiedNviCreatorDto::name)
+          .extracting(NviCreator::name)
           .containsExactly(verifiedContributor.name());
     }
 
@@ -508,9 +504,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       assertThat(candidate)
           .extracting(Candidate::isApplicable, Candidate::getTotalPoints)
           .containsExactly(true, ZERO.setScale(SCALE, ROUNDING_MODE));
-      assertThat(publicationDetails.allCreators())
-          .hasSize(1)
-          .allMatch(UnverifiedNviCreatorDto.class::isInstance);
+      assertThat(publicationDetails.nviCreators()).hasSize(1).noneMatch(NviCreator::isVerified);
     }
 
     @Test

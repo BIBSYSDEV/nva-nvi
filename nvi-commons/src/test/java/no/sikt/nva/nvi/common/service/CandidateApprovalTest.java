@@ -11,11 +11,14 @@ import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeri
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupFuturePeriod;
 import static no.sikt.nva.nvi.common.dto.AllowedOperationFixtures.CURATOR_CAN_FINALIZE_APPROVAL;
 import static no.sikt.nva.nvi.common.dto.AllowedOperationFixtures.CURATOR_CAN_ONLY_REJECT;
-import static no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures.unverifiedNviCreatorDtoFrom;
-import static no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures.verifiedNviCreatorDtoCopiedFrom;
-import static no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures.verifiedNviCreatorDtoFrom;
 import static no.sikt.nva.nvi.common.model.CandidateFixtures.randomApplicableCandidateRequestBuilder;
 import static no.sikt.nva.nvi.common.model.CandidateFixtures.setupRandomApplicableCandidate;
+import static no.sikt.nva.nvi.common.model.ContributorFixtures.STATUS_VERIFIED;
+import static no.sikt.nva.nvi.common.model.NviCreatorFixtures.copyAffiliatedWith;
+import static no.sikt.nva.nvi.common.model.NviCreatorFixtures.unverifiedCopyOf;
+import static no.sikt.nva.nvi.common.model.NviCreatorFixtures.unverifiedNviCreatorFrom;
+import static no.sikt.nva.nvi.common.model.NviCreatorFixtures.verifiedCopyOf;
+import static no.sikt.nva.nvi.common.model.NviCreatorFixtures.verifiedNviCreatorFrom;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.createOrganizationWithSubUnit;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomTopLevelOrganization;
 import static no.sikt.nva.nvi.common.model.UserInstanceFixtures.createCuratorUserInstance;
@@ -45,14 +48,12 @@ import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.ChannelType;
 import no.sikt.nva.nvi.common.model.InstanceType;
 import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
+import no.sikt.nva.nvi.common.model.NviCreator;
 import no.sikt.nva.nvi.common.model.PublicationChannel;
 import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.model.UserInstance;
-import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
-import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
-import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.problem.UnverifiedCreatorFromOrganizationProblem;
 import no.sikt.nva.nvi.common.service.dto.problem.UnverifiedCreatorProblem;
 import no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException;
@@ -84,6 +85,15 @@ class CandidateApprovalTest extends CandidateTestSetup {
   private static final InstanceType HARDCODED_INSTANCE_TYPE = InstanceType.ACADEMIC_ARTICLE;
   private static final BigDecimal HARDCODED_POINTS =
       BigDecimal.ONE.setScale(EXPECTED_SCALE, EXPECTED_ROUNDING_MODE);
+  private static final Organization HARDCODED_ORGANIZATION =
+      createOrganizationWithSubUnit(HARDCODED_INSTITUTION_ID, HARDCODED_SUBUNIT_ID);
+  private static final NviCreator HARDCODED_CREATOR =
+      NviCreator.builder()
+          .withId(HARDCODED_CREATOR_ID)
+          .withVerificationStatus(STATUS_VERIFIED)
+          .withNviAffiliations(List.of(HARDCODED_SUBUNIT_ID))
+          .withTopLevelNviOrganizations(List.of(HARDCODED_ORGANIZATION))
+          .build();
   private static final UserInstance CURATOR_USER =
       createCuratorUserInstance(HARDCODED_INSTITUTION_ID);
   private Organization topLevelOrganization;
@@ -315,16 +325,17 @@ class CandidateApprovalTest extends CandidateTestSetup {
 
   @Test
   void shouldNotResetApprovalsWhenCreatorAffiliationChangesWithinSameInstitution() {
-    var organization = randomTopLevelOrganization();
-    var creator = createVerifiedCreator(organization);
-    Map<Organization, Collection<NviCreatorDto>> creatorMap =
-        Map.of(organization, List.of(creator));
-    var requestBuilder =
-        setupApprovedCandidateAndReturnRequestBuilder(organization.id(), creatorMap);
+    var institution = randomTopLevelOrganization();
+    var firstSubUnit = institution.hasPart().get(0);
+    var secondSubUnit = institution.hasPart().get(1);
 
-    var otherSubUnitId = organization.hasPart().get(1).id();
-    var updatedCreator = new VerifiedNviCreatorDto(creator.id(), null, List.of(otherSubUnitId));
-    creatorMap = Map.of(organization, List.of(updatedCreator));
+    var creator = verifiedNviCreatorFrom(institution, firstSubUnit.id());
+    Map<Organization, Collection<NviCreator>> creatorMap = Map.of(institution, List.of(creator));
+    var requestBuilder =
+        setupApprovedCandidateAndReturnRequestBuilder(institution.id(), creatorMap);
+
+    var updatedCreator = creator.copy().withNviAffiliations(List.of(secondSubUnit.id())).build();
+    creatorMap = Map.of(institution, List.of(updatedCreator));
     var updatedRequest = requestBuilder.withCreatorsAndPoints(creatorMap).build();
     var updatedCandidate = scenario.upsertCandidate(updatedRequest);
 
@@ -332,29 +343,33 @@ class CandidateApprovalTest extends CandidateTestSetup {
 
     assertThat(updatedApprovals)
         .hasSize(1)
-        .extractingByKey(organization.id())
+        .extractingByKey(institution.id())
         .extracting(Approval::status)
         .isEqualTo(ApprovalStatus.APPROVED);
 
     var actualAffiliations = updatedCandidate.getNviCreatorAffiliations();
-    assertThat(actualAffiliations)
-        .contains(otherSubUnitId)
-        .doesNotContain(creator.affiliations().getFirst());
+    assertThat(actualAffiliations).contains(secondSubUnit.id()).doesNotContain(firstSubUnit.id());
   }
 
   @Test
   void shouldNotResetApprovalWhenOtherCreatorBecomesVerified() {
     var organization = randomTopLevelOrganization();
-    var creator = verifiedNviCreatorDtoFrom(organization);
+    var creator = verifiedNviCreatorFrom(organization);
     var otherOrganization = randomTopLevelOrganization();
-    var otherCreator = unverifiedNviCreatorDtoFrom(otherOrganization);
+    var otherCreator = unverifiedNviCreatorFrom(otherOrganization);
 
-    Map<Organization, Collection<NviCreatorDto>> creatorMap =
+    Map<Organization, Collection<NviCreator>> creatorMap =
         Map.of(organization, List.of(creator), otherOrganization, List.of(otherCreator));
     var requestBuilder =
         setupApprovedCandidateAndReturnRequestBuilder(organization.id(), creatorMap);
 
-    var updatedRequest = requestBuilder.withCreatorsAndPoints(creatorMap).build();
+    Map<Organization, Collection<NviCreator>> updatedCreatorMap =
+        Map.of(
+            organization,
+            List.of(creator),
+            otherOrganization,
+            List.of(verifiedCopyOf(otherCreator)));
+    var updatedRequest = requestBuilder.withCreatorsAndPoints(updatedCreatorMap).build();
     var updatedCandidate = scenario.upsertCandidate(updatedRequest);
 
     assertThat(updatedCandidate.approvals())
@@ -367,12 +382,12 @@ class CandidateApprovalTest extends CandidateTestSetup {
   @Test
   void shouldResetApprovalWhenCreatorBecomesUnverified() {
     var organization = randomTopLevelOrganization();
-    var creator = createVerifiedCreator(organization);
+    var creator = verifiedNviCreatorFrom(organization);
     var requestBuilder =
         setupApprovedCandidateAndReturnRequestBuilder(
             organization.id(), Map.of(organization, List.of(creator)));
 
-    var updatedCreator = new UnverifiedNviCreatorDto(randomString(), creator.affiliations());
+    var updatedCreator = unverifiedCopyOf(creator);
     var updatedRequest =
         requestBuilder.withCreatorsAndPoints(Map.of(organization, List.of(updatedCreator))).build();
     var updatedCandidate = scenario.upsertCandidate(updatedRequest);
@@ -387,15 +402,13 @@ class CandidateApprovalTest extends CandidateTestSetup {
   @Test
   void shouldResetApprovalWhenTopLevelAffiliationChanges() {
     var organization = randomTopLevelOrganization();
-    var creator = createVerifiedCreator(organization);
-    Map<Organization, Collection<NviCreatorDto>> creatorMap =
-        Map.of(organization, List.of(creator));
+    var creator = verifiedNviCreatorFrom(organization);
+    Map<Organization, Collection<NviCreator>> creatorMap = Map.of(organization, List.of(creator));
     var requestBuilder =
         setupApprovedCandidateAndReturnRequestBuilder(organization.id(), creatorMap);
 
     var otherOrganization = randomTopLevelOrganization();
-    var updatedCreator =
-        verifiedNviCreatorDtoCopiedFrom(creator, otherOrganization.hasPart().getFirst());
+    var updatedCreator = copyAffiliatedWith(creator, otherOrganization);
     var updatedRequest =
         requestBuilder
             .withCreatorsAndPoints(Map.of(otherOrganization, List.of(updatedCreator)))
@@ -409,12 +422,8 @@ class CandidateApprovalTest extends CandidateTestSetup {
         .isEqualTo(ApprovalStatus.PENDING);
   }
 
-  private VerifiedNviCreatorDto createVerifiedCreator(Organization topLevelOrg) {
-    return verifiedNviCreatorDtoFrom(topLevelOrg.hasPart().getFirst());
-  }
-
   private UpsertRequestBuilder setupApprovedCandidateAndReturnRequestBuilder(
-      URI approvedByOrg, Map<Organization, Collection<NviCreatorDto>> creatorsPerOrganization) {
+      URI approvedByOrg, Map<Organization, Collection<NviCreator>> creatorsPerOrganization) {
     var requestBuilder = randomApplicableCandidateRequestBuilder(creatorsPerOrganization);
     var candidate = scenario.upsertCandidate(requestBuilder.build());
     scenario.updateApprovalStatus(candidate.identifier(), ApprovalStatus.APPROVED, approvedByOrg);
@@ -423,12 +432,15 @@ class CandidateApprovalTest extends CandidateTestSetup {
 
   @Test
   void shouldNotResetApprovalsWhenUpsertRequestContainsSameDecimalsWithAnotherScale() {
-    var upsertCandidateRequest = createUpsertRequestWithDecimalScale(0, HARDCODED_INSTITUTION_ID);
+    var institution = randomTopLevelOrganization();
+    var upsertCandidateRequest = createUpsertRequestWithDecimalScale(0, institution);
     var candidate = scenario.upsertCandidate(upsertCandidateRequest);
     candidateIdentifier = candidate.identifier();
 
-    candidate = updateApprovalStatus(candidateIdentifier, ApprovalStatus.APPROVED);
-    var approval = candidate.approvals().get(HARDCODED_INSTITUTION_ID);
+    candidate =
+        scenario.updateApprovalStatus(
+            candidateIdentifier, ApprovalStatus.APPROVED, institution.id());
+    var approval = candidate.approvals().get(institution.id());
     var samePointsWithDifferentScale =
         upsertCandidateRequest.pointCalculation().institutionPoints().stream()
             .map(
@@ -446,7 +458,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var newUpsertRequest =
         fromRequest(upsertCandidateRequest).withPointCalculation(updatedPointCalculation).build();
     var updatedCandidate = scenario.upsertCandidate(newUpsertRequest);
-    var updatedApproval = updatedCandidate.approvals().get(HARDCODED_INSTITUTION_ID);
+    var updatedApproval = updatedCandidate.approvals().get(institution.id());
 
     assertEquals(approval, updatedApproval);
   }
@@ -483,10 +495,9 @@ class CandidateApprovalTest extends CandidateTestSetup {
             .withChannelType(arguments.channel().channelType())
             .withScientificValue(arguments.channel().scientificValue())
             .build();
-    var creators = arguments.creators().stream().map(NviCreatorDto.class::cast).toList();
     var newUpsertRequest =
         fromRequest(upsertCandidateRequest)
-            .withNviCreators(creators)
+            .withNviCreators(arguments.creators())
             .withInstanceType(arguments.type())
             .withPublicationChannel(channel)
             .withPoints(arguments.institutionPoints())
@@ -512,7 +523,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
 
   @Test
   void shouldAllowRejectingButNotApprovingCandidateWithUnverifiedCreator() {
-    var unverifiedCreator = unverifiedNviCreatorDtoFrom(topLevelOrganization);
+    var unverifiedCreator = unverifiedNviCreatorFrom(topLevelOrganization);
     var request =
         createUpsertCandidateRequest(topLevelOrganizationId)
             .withCreatorsAndPoints(Map.of(topLevelOrganization, List.of(unverifiedCreator)))
@@ -529,7 +540,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
 
   @Test
   void shouldSuccessfullyRejectCandidateWithUnverifiedCreator() {
-    var unverifiedCreator = unverifiedNviCreatorDtoFrom(topLevelOrganization);
+    var unverifiedCreator = unverifiedNviCreatorFrom(topLevelOrganization);
     var request =
         createUpsertCandidateRequest(topLevelOrganizationId)
             .withCreatorsAndPoints(Map.of(topLevelOrganization, List.of(unverifiedCreator)))
@@ -562,7 +573,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
 
   @Test
   void shouldIncludeProblemsWhenCandidateHasUnverifiedCreator() {
-    var unverifiedCreator = unverifiedNviCreatorDtoFrom(topLevelOrganization);
+    var unverifiedCreator = unverifiedNviCreatorFrom(topLevelOrganization);
     var request =
         createUpsertCandidateRequest(topLevelOrganizationId)
             .withCreatorsAndPoints(Map.of(topLevelOrganization, List.of(unverifiedCreator)))
@@ -614,7 +625,9 @@ class CandidateApprovalTest extends CandidateTestSetup {
             Named.of(
                 "creator changed",
                 CandidateResetCauseArgument.defaultBuilder()
-                    .withCreators(List.of(verifiedNviCreatorDtoFrom(HARDCODED_INSTITUTION_ID)))
+                    .withCreators(
+                        List.of(
+                            verifiedNviCreatorFrom(HARDCODED_ORGANIZATION, HARDCODED_SUBUNIT_ID)))
                     .build())),
         Arguments.of(
             Named.of(
@@ -626,8 +639,8 @@ class CandidateApprovalTest extends CandidateTestSetup {
                 CandidateResetCauseArgument.defaultBuilder()
                     .withCreators(
                         List.of(
-                            CandidateResetCauseArgument.Builder.DEFAULT_CREATOR,
-                            verifiedNviCreatorDtoFrom(HARDCODED_INSTITUTION_ID)))
+                            HARDCODED_CREATOR,
+                            verifiedNviCreatorFrom(HARDCODED_ORGANIZATION, HARDCODED_SUBUNIT_ID)))
                     .build())));
   }
 
@@ -643,19 +656,15 @@ class CandidateApprovalTest extends CandidateTestSetup {
   }
 
   private UpsertNviCandidateRequest getUpsertCandidateRequestWithHardcodedValues() {
-    var verifiedCreator =
-        new VerifiedNviCreatorDto(HARDCODED_CREATOR_ID, null, List.of(HARDCODED_SUBUNIT_ID));
     var channel =
         PublicationChannelDto.builder()
             .withId(HARDCODED_CHANNEL_ID)
             .withScientificValue(HARDCODED_LEVEL)
             .withChannelType(ChannelType.JOURNAL)
             .build();
-    var topLevelNviOrganization =
-        createOrganizationWithSubUnit(HARDCODED_INSTITUTION_ID, HARDCODED_SUBUNIT_ID);
     return randomUpsertRequestBuilder()
-        .withNviCreators(verifiedCreator)
-        .withTopLevelOrganizations(List.of(topLevelNviOrganization))
+        .withNviCreators(HARDCODED_CREATOR)
+        .withTopLevelOrganizations(List.of(HARDCODED_ORGANIZATION))
         .withInstanceType(HARDCODED_INSTANCE_TYPE)
         .withPublicationChannel(channel)
         .withPoints(
@@ -682,7 +691,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
       PublicationChannel channel,
       InstanceType type,
       List<InstitutionPoints> institutionPoints,
-      List<VerifiedNviCreatorDto> creators) {
+      List<NviCreator> creators) {
 
     private static CandidateResetCauseArgument.Builder defaultBuilder() {
       return new Builder();
@@ -690,8 +699,6 @@ class CandidateApprovalTest extends CandidateTestSetup {
 
     private static final class Builder {
 
-      private static final VerifiedNviCreatorDto DEFAULT_CREATOR =
-          new VerifiedNviCreatorDto(HARDCODED_CREATOR_ID, null, List.of(HARDCODED_SUBUNIT_ID));
       private PublicationChannel channel =
           new PublicationChannel(HARDCODED_CHANNEL_ID, ChannelType.JOURNAL, HARDCODED_LEVEL);
       private InstanceType type = HARDCODED_INSTANCE_TYPE;
@@ -703,7 +710,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
                   List.of(
                       new CreatorAffiliationPoints(
                           HARDCODED_CREATOR_ID, HARDCODED_SUBUNIT_ID, HARDCODED_POINTS))));
-      private List<VerifiedNviCreatorDto> creators = List.of(DEFAULT_CREATOR);
+      private List<NviCreator> creators = List.of(HARDCODED_CREATOR);
 
       private Builder() {}
 
@@ -712,7 +719,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
         return this;
       }
 
-      private Builder withCreators(List<VerifiedNviCreatorDto> creators) {
+      private Builder withCreators(List<NviCreator> creators) {
         this.creators = creators;
         return this;
       }

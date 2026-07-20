@@ -16,7 +16,7 @@ import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.dto.ContributorDto;
-import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
+import no.sikt.nva.nvi.common.model.NviCreator;
 import nva.commons.core.paths.UriWrapper;
 
 public final class CristinTestUtils {
@@ -94,9 +94,13 @@ public final class CristinTestUtils {
         .withPublicationDate(publicationDate);
   }
 
-  public static VerifiedNviCreatorDto expectedCreator(ScientificPerson person) {
+  public static NviCreator expectedCreator(ScientificPerson person) {
     var creatorId = expectedCreatorId(person);
     var affiliation = organizationIdFromIdentifier(person.getOrganization());
-    return new VerifiedNviCreatorDto(creatorId, null, List.of(affiliation));
+    return NviCreator.builder()
+        .withId(creatorId)
+        .withVerificationStatus(STATUS_VERIFIED)
+        .withNviAffiliations(List.of(affiliation))
+        .build();
   }
 }

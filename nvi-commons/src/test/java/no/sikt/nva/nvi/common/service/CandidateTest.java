@@ -13,10 +13,10 @@ import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.getExpectedUpdatedDb
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidate;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
 import static no.sikt.nva.nvi.common.dto.AllowedOperationFixtures.CURATOR_CAN_FINALIZE_APPROVAL;
-import static no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures.unverifiedNviCreatorDtoFrom;
-import static no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures.verifiedNviCreatorDtoFrom;
 import static no.sikt.nva.nvi.common.dto.PointCalculationDtoBuilder.randomPointCalculationDtoBuilder;
 import static no.sikt.nva.nvi.common.model.CandidateFixtures.setupRandomApplicableCandidate;
+import static no.sikt.nva.nvi.common.model.NviCreatorFixtures.unverifiedNviCreatorFrom;
+import static no.sikt.nva.nvi.common.model.NviCreatorFixtures.verifiedNviCreatorFrom;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomTopLevelOrganization;
 import static no.sikt.nva.nvi.common.model.UserInstanceFixtures.createCuratorUserInstance;
 import static no.sikt.nva.nvi.common.utils.EnvironmentUriFactory.candidateId;
@@ -25,6 +25,7 @@ import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -36,6 +37,7 @@ import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
@@ -102,10 +104,13 @@ class CandidateTest extends CandidateTestSetup {
 
   @Test
   void shouldGetUnverifiedCreatorsFromDetails() {
+    var organization = randomTopLevelOrganization();
+    var verifiedCreator = verifiedNviCreatorFrom(organization);
+    var unverifiedCreator = unverifiedNviCreatorFrom(organization);
     var upsertCandidateRequest =
         randomUpsertRequestBuilder()
-            .withNviCreators(
-                unverifiedNviCreatorDtoFrom(randomUri()), verifiedNviCreatorDtoFrom(randomUri()))
+            .withCreatorsAndPoints(
+                Map.of(organization, List.of(unverifiedCreator, verifiedCreator)))
             .build();
     var expectedUnverifiedCreatorCount = upsertCandidateRequest.unverifiedCreators().size();
     var expectedVerifiedCreatorCount = upsertCandidateRequest.verifiedCreators().size();
@@ -133,7 +138,7 @@ class CandidateTest extends CandidateTestSetup {
   @ParameterizedTest(name = "Should persist new candidate with correct level {0}")
   @ValueSource(ints = {0, 1, 4})
   void shouldPersistNewCandidateWithCorrectScaleForAllDecimals(int scale) {
-    var request = createUpsertRequestWithDecimalScale(scale, randomUri());
+    var request = createUpsertRequestWithDecimalScale(scale, randomTopLevelOrganization());
     var candidate = scenario.upsertCandidate(request);
     var expectedCandidate = getExpectedUpdatedDbCandidate(candidate, request);
     var actualPersistedCandidate =
@@ -215,7 +220,7 @@ class CandidateTest extends CandidateTestSetup {
 
     candidateService.updateCandidate(updateRequest);
     var optionalCandidate = candidateService.findCandidateAndPeriodsByPublicationId(publicationId);
-    Assertions.assertThat(optionalCandidate.getCandidate()).isEmpty();
+    assertThat(optionalCandidate.getCandidate()).isEmpty();
   }
 
   @ParameterizedTest(
@@ -392,8 +397,8 @@ class CandidateTest extends CandidateTestSetup {
     var candidateIdentifier = createCandidateInRepository(candidateRepository, dbCandidate);
 
     var candidate = candidateService.getCandidateByIdentifier(candidateIdentifier);
-    assertEquals(
-        List.of(creator1affiliation, creator2affiliation), candidate.getNviCreatorAffiliations());
+    assertThat(candidate.getNviCreatorAffiliations())
+        .containsExactlyInAnyOrder(creator1affiliation, creator2affiliation);
   }
 
   @Test
@@ -492,7 +497,7 @@ class CandidateTest extends CandidateTestSetup {
     var roundTrippedCandidate =
         candidateService.getCandidateByIdentifier(candidate.identifier()).toDao();
 
-    Assertions.assertThat(originalCandidateDao)
+    assertThat(originalCandidateDao)
         .usingRecursiveComparison()
         .ignoringCollectionOrder()
         .isEqualTo(roundTrippedCandidate);
@@ -535,8 +540,8 @@ class CandidateTest extends CandidateTestSetup {
     candidateService.reportCandidate(candidate.identifier(), reportedDate);
     var reportedCandidate = candidateService.getCandidateByIdentifier(candidate.identifier());
 
-    Assertions.assertThat(reportedCandidate.isReported()).isTrue();
-    Assertions.assertThat(reportedCandidate.reportedDate()).isEqualTo(reportedDate);
+    assertThat(reportedCandidate.isReported()).isTrue();
+    assertThat(reportedCandidate.reportedDate()).isEqualTo(reportedDate);
   }
 
   @Test
@@ -574,7 +579,7 @@ class CandidateTest extends CandidateTestSetup {
 
   private static void assertThatCandidatesAreEqual(
       DbCandidate actualPersistedCandidate, DbCandidate expectedCandidate) {
-    Assertions.assertThat(actualPersistedCandidate)
+    assertThat(actualPersistedCandidate)
         .usingRecursiveComparison()
         .ignoringCollectionOrder()
         .ignoringFields("modifiedDate")

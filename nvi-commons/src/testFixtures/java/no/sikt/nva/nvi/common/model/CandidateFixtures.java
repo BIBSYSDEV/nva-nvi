@@ -13,7 +13,6 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
 import no.sikt.nva.nvi.common.client.model.Organization;
-import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 
 public final class CandidateFixtures {
@@ -26,12 +25,12 @@ public final class CandidateFixtures {
   }
 
   public static UpsertRequestBuilder randomApplicableCandidateRequestBuilder(
-      Map<Organization, Collection<NviCreatorDto>> creatorsPerOrganization) {
+      Map<Organization, Collection<NviCreator>> creatorsPerOrganization) {
     return randomUpsertRequestBuilder().withCreatorsAndPoints(creatorsPerOrganization);
   }
 
   public static Candidate setupRandomApplicableCandidate(
-      TestScenario scenario, Map<Organization, Collection<NviCreatorDto>> creatorsPerOrganization) {
+      TestScenario scenario, Map<Organization, Collection<NviCreator>> creatorsPerOrganization) {
     var candidateRequest =
         randomUpsertRequestBuilder().withCreatorsAndPoints(creatorsPerOrganization).build();
     return scenario.upsertCandidate(candidateRequest);

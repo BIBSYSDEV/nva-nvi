@@ -2,8 +2,8 @@ package no.sikt.nva.nvi.common;
 
 import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
-import static no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures.verifiedNviCreatorDtoFrom;
 import static no.sikt.nva.nvi.common.dto.PointCalculationDtoBuilder.randomPointCalculationDtoBuilder;
+import static no.sikt.nva.nvi.common.model.NviCreatorFixtures.verifiedNviCreatorFrom;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.createOrganizationWithSubUnit;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -17,9 +17,9 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
+import no.sikt.nva.nvi.common.model.NviCreator;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.model.UserInstance;
-import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 
 public final class UpsertRequestFixtures {
@@ -52,11 +52,11 @@ public final class UpsertRequestFixtures {
 
   public static UpsertRequestBuilder createUpsertCandidateRequest(
       Collection<Organization> topLevelOrganizations) {
-    var creators = new ArrayList<NviCreatorDto>();
+    var creators = new ArrayList<NviCreator>();
     var pointCalculation = randomPointCalculationDtoBuilder().withInstitutionPoints(emptyList());
 
     for (var organization : topLevelOrganizations) {
-      var creator = verifiedNviCreatorDtoFrom(organization);
+      var creator = verifiedNviCreatorFrom(organization);
       creators.add(creator);
       pointCalculation =
           pointCalculation.withAdditionalPointFor(organization.id(), randomUri(), creator.id());
@@ -84,10 +84,10 @@ public final class UpsertRequestFixtures {
 
   public static UpsertNviCandidateRequest createUpsertCandidateRequestWithSingleAffiliation(
       URI topLevelOrg, URI affiliation) {
-    var verifiedCreator = verifiedNviCreatorDtoFrom(affiliation);
     var topLevelOrganization = createOrganizationWithSubUnit(topLevelOrg, affiliation);
+    var creators = List.of(verifiedNviCreatorFrom(topLevelOrganization, affiliation));
     return randomUpsertRequestBuilder()
-        .withCreatorsAndPoints(Map.of(topLevelOrganization, List.of(verifiedCreator)))
+        .withCreatorsAndPoints(Map.of(topLevelOrganization, creators))
         .build();
   }
 }

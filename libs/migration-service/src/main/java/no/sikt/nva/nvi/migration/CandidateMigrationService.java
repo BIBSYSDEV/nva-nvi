@@ -111,15 +111,9 @@ public final class CandidateMigrationService implements MigrationService {
 
   private static NviCreator addNameToCreatorIfMissing(
       NviCreator creator, Map<URI, String> creatorNamesFromPublication) {
-    var creatorName =
-        shouldUpdateCreatorName(creator)
-            ? creatorNamesFromPublication.get(creator.id())
-            : creator.name();
-    return new NviCreator(
-        creator.id(),
-        creatorName,
-        creator.verificationStatus(),
-        creator.nviAffiliations(),
-        creator.topLevelNviOrganizations());
+    var nameFromPublication = creatorNamesFromPublication.get(creator.id());
+    return shouldUpdateCreatorName(creator)
+        ? creator.copy().withName(nameFromPublication).build()
+        : creator;
   }
 }

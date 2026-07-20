@@ -6,6 +6,7 @@ import static no.sikt.nva.nvi.common.db.DbPointCalculationFixtures.randomPointCa
 import static no.sikt.nva.nvi.common.db.DbPublicationDetailsFixtures.getExpectedPublicationDetails;
 import static no.sikt.nva.nvi.common.db.DbPublicationDetailsFixtures.randomPublicationBuilder;
 import static no.sikt.nva.nvi.common.model.NviCreatorFixtures.mapToDbCreators;
+import static no.sikt.nva.nvi.test.TestUtils.randomName;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 
@@ -14,7 +15,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.model.DbPointCalculation;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDetails;
@@ -56,7 +56,6 @@ public final class DbCandidateFixtures {
       URI organizationId,
       DbPublicationDetails publicationDetails,
       DbPointCalculation pointCalculation) {
-    var creatorId = randomUri();
     return DbCandidate.builder()
         .pointCalculation(pointCalculation)
         .publicationDetails(publicationDetails)
@@ -64,11 +63,21 @@ public final class DbCandidateFixtures {
         .createdDate(Instant.now())
         .modifiedDate(Instant.now())
         .creators(
-            List.of(
-                DbCreator.builder()
-                    .creatorId(creatorId)
-                    .affiliations(List.of(organizationId))
-                    .build()));
+            List.of(randomDbUnverifiedCreator(organizationId), randomDbCreator(organizationId)));
+  }
+
+  private static CandidateDao.DbUnverifiedCreator randomDbUnverifiedCreator(URI organizationId) {
+    return CandidateDao.DbUnverifiedCreator.builder()
+        .creatorName(randomName())
+        .affiliations(List.of(organizationId))
+        .build();
+  }
+
+  private static CandidateDao.DbCreator randomDbCreator(URI organizationId) {
+    return CandidateDao.DbCreator.builder()
+        .creatorId(randomUri())
+        .affiliations(List.of(organizationId))
+        .build();
   }
 
   public static DbCandidate getExpectedUpdatedDbCandidate(
@@ -84,7 +93,7 @@ public final class DbCandidateFixtures {
   public static CandidateDao getExpectedCandidateDao(
       UUID candidateIdentifier, Instant createdDate, UpsertNviCandidateRequest request) {
     var dtoPublicationDetails = request.publicationDetails();
-    var dbCreators = mapToDbCreators(request.verifiedCreators(), request.unverifiedCreators());
+    var dbCreators = mapToDbCreators(request.nviCreators());
     var dbPointCalculation = getExpectedPointCalculation(request);
     var dbPublicationDetails = getExpectedPublicationDetails(request);
     var dbCandidate =

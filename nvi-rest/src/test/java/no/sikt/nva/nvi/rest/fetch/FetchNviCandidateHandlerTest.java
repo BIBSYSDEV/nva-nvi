@@ -5,7 +5,7 @@ import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBui
 import static no.sikt.nva.nvi.common.dto.AllowedOperationFixtures.CURATOR_CAN_FINALIZE_APPROVAL;
 import static no.sikt.nva.nvi.common.dto.AllowedOperationFixtures.CURATOR_CAN_ONLY_REJECT;
 import static no.sikt.nva.nvi.common.dto.AllowedOperationFixtures.CURATOR_CAN_RESET_APPROVAL;
-import static no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures.verifiedNviCreatorDtoFrom;
+import static no.sikt.nva.nvi.common.model.NviCreatorFixtures.verifiedNviCreatorFrom;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.createOrganizationHierarchy;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
@@ -25,9 +25,9 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.FakeEnvironment;
 import no.sikt.nva.nvi.common.client.model.Organization;
+import no.sikt.nva.nvi.common.model.NviCreator;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
-import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.problem.UnverifiedCreatorFromOrganizationProblem;
 import no.sikt.nva.nvi.common.service.dto.problem.UnverifiedCreatorProblem;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -260,7 +260,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
 
   private static Set<String> getUnverifiedNviCreatorNames(Candidate candidate) {
     return candidate.publicationDetails().unverifiedCreators().stream()
-        .map(UnverifiedNviCreatorDto::name)
+        .map(NviCreator::name)
         .collect(Collectors.toSet());
   }
 
@@ -331,10 +331,9 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
 
   private Candidate setupCandidateWithCreatorFrom(
       Organization topLevelOrganization, URI... affiliations) {
+    var creators = List.of(verifiedNviCreatorFrom(topLevelOrganization, affiliations));
     var upsertRequest =
-        randomUpsertRequestBuilder()
-            .withCreatorsAndPoints(
-                Map.of(topLevelOrganization, List.of(verifiedNviCreatorDtoFrom(affiliations))));
+        randomUpsertRequestBuilder().withCreatorsAndPoints(Map.of(topLevelOrganization, creators));
 
     return scenario.upsertCandidate(upsertRequest.build());
   }

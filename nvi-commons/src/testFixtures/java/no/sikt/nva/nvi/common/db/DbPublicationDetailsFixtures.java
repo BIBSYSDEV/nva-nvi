@@ -52,7 +52,7 @@ public final class DbPublicationDetailsFixtures {
   public static DbPublicationDetails.Builder getExpectedPublicationDetailsBuilder(
       UpsertNviCandidateRequest request) {
     var dtoPublicationDetails = request.publicationDetails();
-    var dbCreators = mapToDbCreators(request.verifiedCreators(), request.unverifiedCreators());
+    var dbCreators = mapToDbCreators(request.nviCreators());
     var dbOrganizations =
         request.topLevelNviOrganizations().stream().map(Organization::toDbOrganization).toList();
     return DbPublicationDetails.builder()

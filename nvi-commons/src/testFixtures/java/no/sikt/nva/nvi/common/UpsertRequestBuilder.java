@@ -4,7 +4,7 @@ import static java.math.BigDecimal.ZERO;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.getExpectedPublicationBucketUri;
 import static no.sikt.nva.nvi.common.dto.PointCalculationDtoBuilder.randomPointCalculationDto;
 import static no.sikt.nva.nvi.common.dto.PublicationDetailsDtoBuilder.randomPublicationDetailsDto;
-import static no.sikt.nva.nvi.common.model.ContributorFixtures.randomVerifiedNviCreatorDto;
+import static no.sikt.nva.nvi.common.model.NviCreatorFixtures.verifiedNviCreatorFrom;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomTopLevelOrganization;
 
 import java.math.BigDecimal;
@@ -21,8 +21,7 @@ import no.sikt.nva.nvi.common.dto.PublicationDetailsDto;
 import no.sikt.nva.nvi.common.dto.PublicationDetailsDtoBuilder;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.InstanceType;
-import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
-import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
+import no.sikt.nva.nvi.common.model.NviCreator;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 
@@ -31,13 +30,13 @@ public class UpsertRequestBuilder {
   private URI publicationBucketUri;
   private PublicationDetailsDto publicationDetails;
   private PointCalculationDto pointCalculation;
-  private List<NviCreatorDto> nviCreators;
+  private List<NviCreator> nviCreators;
   private List<Organization> topLevelNviOrganizations;
 
   public static UpsertRequestBuilder randomUpsertRequestBuilder() {
     var topLevelOrganization = randomTopLevelOrganization();
     var affiliationId = topLevelOrganization.hasPart().getFirst().id();
-    var nviCreator = randomVerifiedNviCreatorDto(affiliationId);
+    var nviCreator = verifiedNviCreatorFrom(topLevelOrganization, affiliationId);
     var publicationDetails = randomPublicationDetailsDto();
 
     return new UpsertRequestBuilder()
@@ -78,12 +77,12 @@ public class UpsertRequestBuilder {
     return this;
   }
 
-  public UpsertRequestBuilder withNviCreators(NviCreatorDto... nviCreators) {
+  public UpsertRequestBuilder withNviCreators(NviCreator... nviCreators) {
     this.nviCreators = List.of(nviCreators);
     return this;
   }
 
-  public UpsertRequestBuilder withNviCreators(Collection<NviCreatorDto> nviCreators) {
+  public UpsertRequestBuilder withNviCreators(Collection<NviCreator> nviCreators) {
     this.nviCreators = List.copyOf(nviCreators);
     return this;
   }
@@ -126,7 +125,7 @@ public class UpsertRequestBuilder {
 
   // Sets all creator and point fields based on the creatorsPerInstitution map
   public UpsertRequestBuilder withCreatorsAndPoints(
-      Map<Organization, Collection<NviCreatorDto>> creatorsPerInstitution) {
+      Map<Organization, Collection<NviCreator>> creatorsPerInstitution) {
     var creators = getNviCreators(creatorsPerInstitution);
     var points = getAllInstitutionPoints(creatorsPerInstitution);
     var totalPoints =
@@ -142,18 +141,18 @@ public class UpsertRequestBuilder {
         .withPointCalculation(updatedPointCalculation);
   }
 
-  private static List<NviCreatorDto> getNviCreators(
-      Map<Organization, Collection<NviCreatorDto>> creatorsPerInstitution) {
+  private static List<NviCreator> getNviCreators(
+      Map<Organization, Collection<NviCreator>> creatorsPerInstitution) {
     return creatorsPerInstitution.values().stream().flatMap(Collection::stream).toList();
   }
 
   private List<InstitutionPoints> getAllInstitutionPoints(
-      Map<Organization, Collection<NviCreatorDto>> creatorsPerInstitution) {
+      Map<Organization, Collection<NviCreator>> creatorsPerInstitution) {
     return creatorsPerInstitution.entrySet().stream().map(this::getInstitutionPoints).toList();
   }
 
   private InstitutionPoints getInstitutionPoints(
-      Map.Entry<Organization, Collection<NviCreatorDto>> entry) {
+      Map.Entry<Organization, Collection<NviCreator>> entry) {
     var institution = entry.getKey();
     var creators = entry.getValue();
     var creatorPoints = getAllCreatorPoints(creators);
@@ -162,17 +161,16 @@ public class UpsertRequestBuilder {
     return new InstitutionPoints(institution.id(), institutionTotal, creatorPoints);
   }
 
-  private List<CreatorAffiliationPoints> getAllCreatorPoints(Collection<NviCreatorDto> creators) {
+  private List<CreatorAffiliationPoints> getAllCreatorPoints(Collection<NviCreator> creators) {
     return creators.stream()
-        .filter(VerifiedNviCreatorDto.class::isInstance)
-        .map(VerifiedNviCreatorDto.class::cast)
+        .filter(NviCreator::isVerified)
         .map(this::getCreatorPoints)
         .flatMap(Collection::stream)
         .toList();
   }
 
-  private List<CreatorAffiliationPoints> getCreatorPoints(VerifiedNviCreatorDto creator) {
-    return creator.affiliations().stream()
+  private List<CreatorAffiliationPoints> getCreatorPoints(NviCreator creator) {
+    return creator.nviAffiliations().stream()
         .map(
             affiliation ->
                 new CreatorAffiliationPoints(

@@ -36,7 +36,7 @@ public final class TestUtils {
 
   private static final LocalDate START_DATE = LocalDate.of(1970, 1, 1);
   private static final String PUBLICATION_API_PATH = "publication";
-  private static final String API_HOST = "example.com";
+  private static final String API_HOST = "api.fake.nva.aws.unit.no";
 
   private TestUtils() {}
 
@@ -65,6 +65,14 @@ public final class TestUtils {
 
   public static String randomName() {
     return FAKER.name().name();
+  }
+
+  public static URI randomContributorId() {
+    return UriWrapper.fromHost(API_HOST)
+        .addChild("cristin")
+        .addChild("person")
+        .addChild(String.valueOf(generateUniqueId()))
+        .getUri();
   }
 
   public static String randomTitle() {

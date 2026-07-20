@@ -1,9 +1,8 @@
 package no.sikt.nva.nvi.common.dto;
 
+import static java.util.function.Predicate.not;
 import static no.sikt.nva.nvi.common.utils.Validator.shouldNotBeNull;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -11,19 +10,15 @@ import java.util.List;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.exceptions.ValidationException;
 import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
-import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
-import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
-import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
+import no.sikt.nva.nvi.common.model.NviCreator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
-@JsonSerialize
 public record UpsertNviCandidateRequest(
     URI publicationBucketUri,
     PointCalculationDto pointCalculation,
     PublicationDetailsDto publicationDetails,
-    Collection<NviCreatorDto> nviCreators,
+    Collection<NviCreator> nviCreators,
     Collection<Organization> topLevelNviOrganizations)
     implements CandidateType {
 
@@ -57,18 +52,12 @@ public record UpsertNviCandidateRequest(
     return ALWAYS_APPLICABLE;
   }
 
-  public List<VerifiedNviCreatorDto> verifiedCreators() {
-    return nviCreators.stream()
-        .filter(VerifiedNviCreatorDto.class::isInstance)
-        .map(VerifiedNviCreatorDto.class::cast)
-        .toList();
+  public List<NviCreator> verifiedCreators() {
+    return nviCreators.stream().filter(NviCreator::isVerified).toList();
   }
 
-  public List<UnverifiedNviCreatorDto> unverifiedCreators() {
-    return nviCreators.stream()
-        .filter(UnverifiedNviCreatorDto.class::isInstance)
-        .map(UnverifiedNviCreatorDto.class::cast)
-        .toList();
+  public List<NviCreator> unverifiedCreators() {
+    return nviCreators.stream().filter(not(NviCreator::isVerified)).toList();
   }
 
   public static Builder builder() {
@@ -80,7 +69,7 @@ public record UpsertNviCandidateRequest(
     private URI publicationBucketUri;
     private PointCalculationDto pointCalculation;
     private PublicationDetailsDto publicationDetails;
-    private final List<NviCreatorDto> nviCreators = new ArrayList<>();
+    private final List<NviCreator> nviCreators = new ArrayList<>();
     private final List<Organization> topLevelNviOrganizations = new ArrayList<>();
 
     private Builder() {}
@@ -100,7 +89,7 @@ public record UpsertNviCandidateRequest(
       return this;
     }
 
-    public Builder withNviCreators(Collection<NviCreatorDto> nviCreators) {
+    public Builder withNviCreators(Collection<NviCreator> nviCreators) {
       this.nviCreators.addAll(nviCreators);
       return this;
     }

@@ -8,12 +8,17 @@ import static no.sikt.nva.nvi.common.db.DbApprovalStatusFixtures.randomApprovalD
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuilder;
 import static no.sikt.nva.nvi.common.db.DbPointCalculationFixtures.randomPointCalculationBuilder;
 import static no.sikt.nva.nvi.common.db.DbPublicationDetailsFixtures.randomPublicationBuilder;
-import static no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures.verifiedNviCreatorDtoFrom;
+import static no.sikt.nva.nvi.common.model.NviCreatorFixtures.randomUnverifiedNviCreator;
+import static no.sikt.nva.nvi.common.model.NviCreatorFixtures.randomVerifiedNviCreator;
+import static no.sikt.nva.nvi.common.model.NviCreatorFixtures.verifiedNviCreatorFrom;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.createOrganizationHierarchy;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.organizationNode;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganization;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomTopLevelOrganization;
 import static no.sikt.nva.nvi.test.TestConstants.PUBLISHED;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
+import static no.sikt.nva.nvi.test.TestUtils.randomName;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,11 +40,9 @@ import no.sikt.nva.nvi.common.dto.PublicationDetailsDtoBuilder;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
 import no.sikt.nva.nvi.common.model.ChannelType;
 import no.sikt.nva.nvi.common.model.InstanceType;
+import no.sikt.nva.nvi.common.model.NviCreator;
 import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.model.Sector;
-import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
-import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
-import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
@@ -64,66 +67,66 @@ class IndexDocumentContentTest extends IndexDocumentHandlerTestBase {
   @ParameterizedTest
   @EnumSource(value = Sector.class, names = "UNKNOWN", mode = EnumSource.Mode.EXCLUDE)
   void shouldPopulateSectorInApprovalViewWhenSectorIsNotUnknown(Sector sector) {
-    var institutionId = randomOrganizationId();
-    var candidate = setupCandidateWithInstitutionPoints(institutionId, sector, false);
+    var institution = randomTopLevelOrganization();
+    var candidate = setupCandidateWithInstitutionPoints(institution, sector, false);
     stubPublication(candidate);
 
     var document = generateIndexDocument(candidate);
 
-    assertThat(approvalFor(document, institutionId).sector()).isEqualTo(sector.toString());
+    assertThat(approvalFor(document, institution).sector()).isEqualTo(sector.toString());
   }
 
   @ParameterizedTest
   @NullSource
   @EnumSource(value = Sector.class, names = "UNKNOWN", mode = EnumSource.Mode.INCLUDE)
   void shouldNotPopulateSectorInApprovalViewWhenSectorIsUnknown(Sector sector) {
-    var institutionId = randomOrganizationId();
-    var candidate = setupCandidateWithInstitutionPoints(institutionId, sector, false);
+    var institution = randomTopLevelOrganization();
+    var candidate = setupCandidateWithInstitutionPoints(institution, sector, false);
     stubPublication(candidate);
 
     var document = generateIndexDocument(candidate);
 
-    assertThat(approvalFor(document, institutionId).sector()).isNull();
+    assertThat(approvalFor(document, institution).sector()).isNull();
   }
 
   @ParameterizedTest
   @ValueSource(booleans = {true, false})
   void shouldPopulateRboInstitutionInIndexDocumentApprovalView(boolean rboInstitution) {
-    var institutionId = randomOrganizationId();
-    var candidate = setupCandidateWithInstitutionPoints(institutionId, Sector.UHI, rboInstitution);
+    var institution = randomTopLevelOrganization();
+    var candidate = setupCandidateWithInstitutionPoints(institution, Sector.UHI, rboInstitution);
     stubPublication(candidate);
 
     var document = generateIndexDocument(candidate);
 
-    assertThat(approvalFor(document, institutionId).rboInstitution()).isEqualTo(rboInstitution);
+    assertThat(approvalFor(document, institution).rboInstitution()).isEqualTo(rboInstitution);
   }
 
   @Test
   void shouldUsePublicationLabelsWhenCandidateHasNoLabels() {
-    var institutionId = randomOrganizationId();
-    var candidate = setupCandidateWithInstitutionPoints(institutionId, Sector.UHI, false);
+    var institution = randomOrganization().withLabels(null).build();
+    var candidate = setupCandidateWithInstitutionPoints(institution, Sector.UHI, false);
     var expectedLabels = Map.of("nb", randomString(), "en", randomString());
     var labeledInstitution =
-        Organization.builder().withId(institutionId).withLabels(expectedLabels).build();
+        Organization.builder().withId(institution.id()).withLabels(expectedLabels).build();
     stubPublication(
         candidate, publicationDtoWithTopLevelOrganizations(candidate, labeledInstitution));
 
     var document = generateIndexDocument(candidate);
 
-    assertThat(approvalFor(document, institutionId).labels()).isEqualTo(expectedLabels);
+    assertThat(approvalFor(document, institution).labels()).isEqualTo(expectedLabels);
   }
 
   @Test
   void shouldReturnEmptyApprovalLabelsWhenNeitherCandidateNorPublicationHasLabels() {
-    var institutionId = randomOrganizationId();
-    var candidate = setupCandidateWithInstitutionPoints(institutionId, Sector.UHI, false);
-    var unlabeledInstitution = Organization.builder().withId(institutionId).build();
+    var institution = randomOrganization().withLabels(null).build();
+    var candidate = setupCandidateWithInstitutionPoints(institution, Sector.UHI, false);
+    var unlabeledInstitution = Organization.builder().withId(institution.id()).build();
     stubPublication(
         candidate, publicationDtoWithTopLevelOrganizations(candidate, unlabeledInstitution));
 
     var document = generateIndexDocument(candidate);
 
-    assertThat(approvalFor(document, institutionId).labels()).isEmpty();
+    assertThat(approvalFor(document, institution).labels()).isEmpty();
   }
 
   @Test
@@ -140,8 +143,9 @@ class IndexDocumentContentTest extends IndexDocumentHandlerTestBase {
 
   @Test
   void shouldIncludeUnverifiedNviCreatorInNviContributors() {
-    var expectedName = randomString();
-    var candidate = setupCandidateWithUnverifiedCreator(randomOrganizationId(), expectedName);
+    var unverifiedCreator = randomUnverifiedNviCreator();
+    var expectedName = unverifiedCreator.name();
+    var candidate = setupCandidateWithUnverifiedCreator(unverifiedCreator);
     stubPublication(candidate);
 
     var document = generateIndexDocument(candidate);
@@ -202,9 +206,8 @@ class IndexDocumentContentTest extends IndexDocumentHandlerTestBase {
    */
   @Test
   void shouldBuildCandidateOnlyIndexDocumentWhenPublicationCannotBeParsed() {
-    var institution = organizationNode(randomOrganizationId(), null);
-    var creator = verifiedNviCreatorDtoFrom(institution.id());
-    var candidate = setupCandidateWithCreator(creator, institution);
+    var creator = randomVerifiedNviCreator();
+    var candidate = setupCandidateWithCreator(creator);
     stubPublicationParseFailure(candidate);
 
     var document = generateIndexDocument(candidate);
@@ -220,14 +223,13 @@ class IndexDocumentContentTest extends IndexDocumentHandlerTestBase {
 
   @Test
   void shouldTolerateContributorWithoutRolesInPublication() {
-    var institution = organizationNode(randomOrganizationId(), null);
-    var creator = verifiedNviCreatorDtoFrom(institution.id());
-    var candidate = setupCandidateWithCreator(creator, institution);
+    var creator = randomVerifiedNviCreator();
+    var candidate = setupCandidateWithCreator(creator);
     var contributorWithoutRoles =
         ContributorDto.builder()
             .withId(randomUri())
-            .withName(randomString())
-            .withAffiliations(List.of(institution))
+            .withName(randomName())
+            .withAffiliations(List.copyOf(creator.topLevelNviOrganizations()))
             .build();
     stubPublication(
         candidate, publicationDtoWithContributors(candidate, List.of(contributorWithoutRoles)));
@@ -241,9 +243,8 @@ class IndexDocumentContentTest extends IndexDocumentHandlerTestBase {
 
   @Test
   void shouldIndexNviCreatorFromCandidateWhenRemovedFromPublication() {
-    var institution = organizationNode(randomOrganizationId(), null);
-    var creator = verifiedNviCreatorDtoFrom(institution.id());
-    var candidate = setupCandidateWithCreator(creator, institution);
+    var creator = randomVerifiedNviCreator();
+    var candidate = setupCandidateWithCreator(creator);
     stubPublication(candidate, publicationDtoWithContributors(candidate, emptyList()));
 
     var document = generateIndexDocument(candidate);
@@ -259,7 +260,7 @@ class IndexDocumentContentTest extends IndexDocumentHandlerTestBase {
     var departmentId = randomOrganizationId();
     var sectionId = randomOrganizationId();
     var institution = createOrganizationHierarchy(topLevelId, departmentId, sectionId);
-    var creator = verifiedNviCreatorDtoFrom(sectionId);
+    var creator = verifiedNviCreatorFrom(institution, sectionId);
     var candidate = setupCandidateWithCreator(creator, institution);
     var otherAffiliation = organizationNode(randomOrganizationId(), null);
     var movedContributor = publicationContributor(creator.id(), creator.name(), otherAffiliation);
@@ -279,7 +280,7 @@ class IndexDocumentContentTest extends IndexDocumentHandlerTestBase {
   @Test
   void shouldIndexNviAffiliationAsStandaloneLeafWhenCandidateHasNoOrganizationTree() {
     var affiliation = organizationNode(randomOrganizationId(), randomOrganizationId());
-    var creator = verifiedNviCreatorDtoFrom(affiliation.id());
+    var creator = verifiedNviCreatorFrom(affiliation);
     var candidate = setupCandidateWithoutOrganizationTree(creator);
     var publicationContributor = publicationContributor(creator.id(), creator.name(), affiliation);
     stubPublication(
@@ -298,7 +299,8 @@ class IndexDocumentContentTest extends IndexDocumentHandlerTestBase {
   @Test
   void shouldFallBackToPublicationNameWhenCandidateCreatorHasNoName() {
     var institution = organizationNode(randomOrganizationId(), null);
-    var creator = new VerifiedNviCreatorDto(randomUri(), null, List.of(institution.id()));
+    var creator =
+        verifiedNviCreatorFrom(institution, institution.id()).copy().withName(null).build();
     var candidate = setupCandidateWithCreator(creator, institution);
     var expectedName = randomString();
     var publicationContributor = publicationContributor(creator.id(), expectedName, institution);
@@ -324,22 +326,22 @@ class IndexDocumentContentTest extends IndexDocumentHandlerTestBase {
         .isEqualTo(InstanceType.ACADEMIC_ARTICLE.getValue());
   }
 
-  private static ApprovalView approvalFor(NviCandidateIndexDocument document, URI institutionId) {
+  private static ApprovalView approvalFor(
+      NviCandidateIndexDocument document, Organization institution) {
     return document.approvals().stream()
-        .filter(approval -> approval.institutionId().equals(institutionId))
+        .filter(approval -> approval.institutionId().equals(institution.id()))
         .findFirst()
         .orElseThrow();
   }
 
   private Candidate setupCandidateWithInstitutionPoints(
-      URI institutionId, Sector sector, boolean rboInstitution) {
-    var verifiedCreator = verifiedNviCreatorDtoFrom(institutionId);
-    var topLevelOrganization = Organization.builder().withId(institutionId).build();
+      Organization institution, Sector sector, boolean rboInstitution) {
+    var verifiedCreator = verifiedNviCreatorFrom(institution);
     var institutionPoints =
-        buildInstitutionPoints(institutionId, sector, rboInstitution, randomBigDecimal());
+        buildInstitutionPoints(institution.id(), sector, rboInstitution, randomBigDecimal());
     var request =
         randomUpsertRequestBuilder()
-            .withCreatorsAndPoints(Map.of(topLevelOrganization, List.of(verifiedCreator)))
+            .withCreatorsAndPoints(Map.of(institution, List.of(verifiedCreator)))
             .withPoints(List.of(institutionPoints))
             .build();
     candidateService.upsertCandidate(request);
@@ -354,12 +356,7 @@ class IndexDocumentContentTest extends IndexDocumentHandlerTestBase {
         institutionId, points, sector, rboInstitution, List.of(creatorAffiliationPoints));
   }
 
-  private Candidate setupCandidateWithUnverifiedCreator(URI institutionId, String creatorName) {
-    var unverifiedCreator =
-        UnverifiedNviCreatorDto.builder()
-            .withName(creatorName)
-            .withAffiliations(List.of(institutionId))
-            .build();
+  private Candidate setupCandidateWithUnverifiedCreator(NviCreator unverifiedCreator) {
     var request = randomUpsertRequestBuilder().withNviCreators(unverifiedCreator).build();
     candidateService.upsertCandidate(request);
     return candidateService.getCandidateByPublicationId(request.publicationId());
@@ -376,7 +373,7 @@ class IndexDocumentContentTest extends IndexDocumentHandlerTestBase {
   }
 
   private Candidate setupCandidateWithCreator(
-      NviCreatorDto creator, Organization topLevelOrganization) {
+      NviCreator creator, Organization topLevelOrganization) {
     var request =
         randomUpsertRequestBuilder()
             .withNviCreators(creator)
@@ -386,11 +383,22 @@ class IndexDocumentContentTest extends IndexDocumentHandlerTestBase {
     return candidateService.getCandidateByPublicationId(request.publicationId());
   }
 
+  private Candidate setupCandidateWithCreator(NviCreator creator) {
+
+    var request =
+        randomUpsertRequestBuilder()
+            .withNviCreators(creator)
+            .withTopLevelOrganizations(creator.topLevelNviOrganizations())
+            .build();
+    candidateService.upsertCandidate(request);
+    return candidateService.getCandidateByPublicationId(request.publicationId());
+  }
+
   /**
    * Simulates a candidate persisted with an incomplete organization hierarchy: the creator's
    * affiliation has no matching entry in the candidate's top-level organization trees.
    */
-  private Candidate setupCandidateWithoutOrganizationTree(NviCreatorDto creator) {
+  private Candidate setupCandidateWithoutOrganizationTree(NviCreator creator) {
     var request = randomUpsertRequestBuilder().withNviCreators(creator).build();
     candidateService.upsertCandidate(request);
     return candidateService.getCandidateByPublicationId(request.publicationId());

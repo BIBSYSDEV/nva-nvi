@@ -4,8 +4,8 @@ import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBui
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertNonCandidateRequest;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
-import static no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures.unverifiedNviCreatorDtoFrom;
-import static no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures.verifiedNviCreatorDtoFrom;
+import static no.sikt.nva.nvi.common.model.NviCreatorFixtures.unverifiedNviCreatorFrom;
+import static no.sikt.nva.nvi.common.model.NviCreatorFixtures.verifiedNviCreatorFrom;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomTopLevelOrganization;
 import static no.sikt.nva.nvi.common.model.UserInstanceFixtures.createCuratorUserInstance;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
@@ -34,8 +34,6 @@ import no.sikt.nva.nvi.common.service.ApprovalService;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.NoteService;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
-import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
-import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.EnvironmentUriFactory;
@@ -95,24 +93,16 @@ public abstract class BaseCandidateRestHandlerTest {
 
   protected abstract ApiGatewayHandler<?, CandidateDto> createHandler();
 
-  protected VerifiedNviCreatorDto setupDefaultVerifiedCreator() {
-    return verifiedNviCreatorDtoFrom(List.of(subOrganizationId));
-  }
-
-  protected UnverifiedNviCreatorDto setupDefaultUnverifiedCreator() {
-    return unverifiedNviCreatorDtoFrom(List.of(subOrganizationId));
-  }
-
   protected UpsertRequestBuilder upsertRequestWithUnverifiedCreator() {
-    var verifiedCreator = setupDefaultVerifiedCreator();
-    var unverifiedCreator = setupDefaultUnverifiedCreator();
+    var verifiedCreator = verifiedNviCreatorFrom(topLevelOrganization);
+    var unverifiedCreator = unverifiedNviCreatorFrom(topLevelOrganization);
     return randomUpsertRequestBuilder()
         .withCreatorsAndPoints(
             Map.of(topLevelOrganization, List.of(verifiedCreator, unverifiedCreator)));
   }
 
   protected UpsertRequestBuilder upsertRequestWithOneVerifiedCreator() {
-    var verifiedCreator = setupDefaultVerifiedCreator();
+    var verifiedCreator = verifiedNviCreatorFrom(topLevelOrganization);
     return randomUpsertRequestBuilder()
         .withCreatorsAndPoints(Map.of(topLevelOrganization, List.of(verifiedCreator)));
   }
@@ -138,9 +128,9 @@ public abstract class BaseCandidateRestHandlerTest {
   }
 
   protected Candidate setupCandidateWithUnverifiedCreatorFromAnotherInstitution() {
-    var verifiedCreator = setupDefaultVerifiedCreator();
+    var verifiedCreator = verifiedNviCreatorFrom(topLevelOrganization);
     var otherOrganization = randomTopLevelOrganization();
-    var unverifiedCreator = unverifiedNviCreatorDtoFrom(otherOrganization.id());
+    var unverifiedCreator = unverifiedNviCreatorFrom(otherOrganization);
 
     return CandidateFixtures.setupRandomApplicableCandidate(
         scenario,

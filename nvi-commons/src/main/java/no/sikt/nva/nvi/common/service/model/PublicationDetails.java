@@ -22,13 +22,10 @@ import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.NviCreator;
 import no.sikt.nva.nvi.common.model.PublicationChannel;
 import no.sikt.nva.nvi.common.model.PublicationDate;
-import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
-import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
-import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.unit.nva.identifiers.SortableIdentifier;
 
 // Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
-@SuppressWarnings({"PMD.TooManyFields", "PMD.CouplingBetweenObjects"})
+@SuppressWarnings("PMD.TooManyFields")
 public record PublicationDetails(
     URI publicationId,
     URI publicationBucketUri,
@@ -57,10 +54,6 @@ public record PublicationDetails(
     var publicationDto = upsertRequest.publicationDetails();
     var publicationChannel = PublicationChannel.from(upsertRequest.pointCalculation().channel());
     var topLevelNviOrganizations = upsertRequest.topLevelNviOrganizations();
-    var nviCreators =
-        upsertRequest.nviCreators().stream()
-            .map(creator -> NviCreator.from(creator, topLevelNviOrganizations))
-            .toList();
 
     return builder()
         .withId(upsertRequest.publicationId())
@@ -74,7 +67,7 @@ public record PublicationDetails(
         .withPageCount(PageCount.from(publicationDto.pageCount()))
         .withIsApplicable(publicationDto.isApplicable())
         .withPublicationChannel(publicationChannel)
-        .withNviCreators(nviCreators)
+        .withNviCreators(upsertRequest.nviCreators())
         .withCreatorCount(publicationDto.creatorCount())
         .withTopLevelOrganizations(topLevelNviOrganizations)
         .withModifiedDate(publicationDto.modifiedDate())
@@ -154,38 +147,23 @@ public record PublicationDetails(
         .build();
   }
 
-  public List<URI> getNviCreatorAffiliations() {
+  public Set<URI> getNviCreatorAffiliations() {
     return nviCreators.stream()
         .map(NviCreator::getAffiliationIds)
-        .flatMap(List::stream)
-        .distinct()
-        .toList();
+        .flatMap(Set::stream)
+        .collect(Collectors.toSet());
   }
 
   public Set<URI> getVerifiedNviCreatorIds() {
-    return verifiedCreators().stream().map(VerifiedNviCreatorDto::id).collect(Collectors.toSet());
+    return verifiedCreators().stream().map(NviCreator::id).collect(Collectors.toSet());
   }
 
-  public List<NviCreatorDto> allCreators() {
-    return nviCreators.stream().map(NviCreator::toDto).toList();
+  public List<NviCreator> verifiedCreators() {
+    return nviCreators.stream().filter(NviCreator::isVerified).toList();
   }
 
-  public List<VerifiedNviCreatorDto> verifiedCreators() {
-    return nviCreators.stream()
-        .filter(NviCreator::isVerified)
-        .map(NviCreator::toDto)
-        .filter(VerifiedNviCreatorDto.class::isInstance)
-        .map(VerifiedNviCreatorDto.class::cast)
-        .toList();
-  }
-
-  public List<UnverifiedNviCreatorDto> unverifiedCreators() {
-    return nviCreators.stream()
-        .filter(not(NviCreator::isVerified))
-        .map(NviCreator::toDto)
-        .filter(UnverifiedNviCreatorDto.class::isInstance)
-        .map(UnverifiedNviCreatorDto.class::cast)
-        .toList();
+  public List<NviCreator> unverifiedCreators() {
+    return nviCreators.stream().filter(not(NviCreator::isVerified)).toList();
   }
 
   public Optional<Organization> findInstitution(URI institutionId) {
