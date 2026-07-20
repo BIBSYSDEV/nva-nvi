@@ -1,16 +1,13 @@
 package no.sikt.nva.nvi.common.model;
 
+import static no.sikt.nva.nvi.test.TestUtils.randomContributorId;
 import static no.sikt.nva.nvi.test.TestUtils.randomName;
-import static no.sikt.nva.nvi.test.TestUtils.randomUriWithSuffix;
-import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 
-import java.net.URI;
 import java.util.List;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.dto.ContributorDto;
 import no.sikt.nva.nvi.common.dto.ContributorRole;
 import no.sikt.nva.nvi.common.dto.VerificationStatus;
-import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 
 public final class ContributorFixtures {
   public static final ContributorRole ROLE_CREATOR = new ContributorRole("Creator");
@@ -20,17 +17,9 @@ public final class ContributorFixtures {
 
   private ContributorFixtures() {}
 
-  public static VerifiedNviCreatorDto randomVerifiedNviCreatorDto(URI... affiliations) {
-    return VerifiedNviCreatorDto.builder()
-        .withId(randomUri())
-        .withName(randomName())
-        .withAffiliations(List.of(affiliations))
-        .build();
-  }
-
   public static ContributorDto.Builder randomContributorDtoBuilder(Organization... affiliations) {
     return ContributorDto.builder()
-        .withId(randomUri())
+        .withId(randomContributorId())
         .withName(randomName())
         .withRole(ROLE_CREATOR)
         .withVerificationStatus(STATUS_VERIFIED)
@@ -38,21 +27,13 @@ public final class ContributorFixtures {
   }
 
   public static ContributorDto verifiedCreatorFrom(Organization... affiliations) {
-    return ContributorDto.builder()
-        .withId(randomUriWithSuffix("creatorId"))
-        .withName(randomName())
-        .withVerificationStatus(STATUS_VERIFIED)
-        .withRole(ROLE_CREATOR)
-        .withAffiliations(List.of(affiliations))
-        .build();
+    return randomContributorDtoBuilder(affiliations).build();
   }
 
   public static ContributorDto unverifiedCreatorFrom(Organization... affiliations) {
-    return ContributorDto.builder()
-        .withName(randomName())
+    return randomContributorDtoBuilder(affiliations)
+        .withId(null)
         .withVerificationStatus(STATUS_UNVERIFIED)
-        .withRole(ROLE_CREATOR)
-        .withAffiliations(List.of(affiliations))
         .build();
   }
 

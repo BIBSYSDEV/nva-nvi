@@ -13,8 +13,6 @@ import no.sikt.nva.nvi.common.dto.ContributorDto;
 import no.sikt.nva.nvi.common.dto.ContributorRole;
 import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
-import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
-import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 
 public final class PublicationDtoFixtures {
@@ -59,20 +57,17 @@ public final class PublicationDtoFixtures {
     return contributors;
   }
 
-  private static ContributorDto contributorFor(NviCreatorDto creator) {
+  private static ContributorDto contributorFor(NviCreator creator) {
     var affiliations =
-        creator.affiliations().stream()
+        creator.nviAffiliations().stream()
             .map(uri -> Organization.builder().withId(uri).build())
             .toList();
-    var builder =
-        ContributorDto.builder()
-            .withName(creator.name())
-            .withRole(ContributorRole.CREATOR)
-            .withAffiliations(affiliations);
-    if (creator instanceof VerifiedNviCreatorDto verified) {
-      builder.withId(verified.id());
-    }
-    return builder.build();
+    return ContributorDto.builder()
+        .withId(creator.id())
+        .withName(creator.name())
+        .withRole(ContributorRole.CREATOR)
+        .withAffiliations(affiliations)
+        .build();
   }
 
   private static ContributorDto nonNviContributor(Collection<Organization> topLevelOrganizations) {

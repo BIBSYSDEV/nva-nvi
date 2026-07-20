@@ -3,15 +3,15 @@ package no.sikt.nva.nvi.common.service;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getGlobalEnvironment;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
-import static no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures.verifiedNviCreatorDtoFrom;
 import static no.sikt.nva.nvi.common.dto.PointCalculationDtoBuilder.randomPointCalculationDtoBuilder;
-import static no.sikt.nva.nvi.common.model.OrganizationFixtures.getAsOrganizationLeafNode;
+import static no.sikt.nva.nvi.common.model.NviCreatorFixtures.verifiedNviCreatorFrom;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 
 import java.math.RoundingMode;
 import java.net.URI;
 import no.sikt.nva.nvi.common.TestScenario;
+import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
@@ -32,21 +32,21 @@ public class CandidateTestSetup {
   protected PeriodRepository periodRepository;
 
   protected static UpsertNviCandidateRequest createUpsertRequestWithDecimalScale(
-      int scale, URI institutionId) {
-    var creator = verifiedNviCreatorDtoFrom(institutionId);
+      int scale, Organization institution) {
+    var creator = verifiedNviCreatorFrom(institution);
     var pointValue = randomBigDecimal(scale);
     var pointCalculation =
         randomPointCalculationDtoBuilder()
             .withCollaborationFactor(randomBigDecimal(scale))
             .withBasePoints(pointValue)
             .withTotalPoints(pointValue)
-            .withAdditionalPointFor(institutionId, institutionId, pointValue, creator.id())
+            .withAdditionalPointFor(institution.id(), institution.id(), pointValue, creator.id())
             .build();
 
     return randomUpsertRequestBuilder()
         .withPointCalculation(pointCalculation)
         .withNviCreators(creator)
-        .withTopLevelOrganizations(getAsOrganizationLeafNode(institutionId))
+        .withTopLevelOrganizations(institution)
         .build();
   }
 

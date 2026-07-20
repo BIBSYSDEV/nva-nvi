@@ -50,11 +50,12 @@ class CandidateMigrationServiceTest {
   @Test
   void shouldMigrateCreatorNames() {
     var nviOrg = publicationFactory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
-    var creator = verifiedNviCreatorFrom(nviOrg, nviOrg.id());
+    var creator = verifiedNviCreatorFrom(nviOrg);
     var publication =
         publicationFactory.withContributor(mapToContributorDto(creator)).getExpandedPublication();
 
-    var creatorWithoutName = new DbCreator(creator.id(), null, creator.getAffiliationIds());
+    var affiliations = List.copyOf(creator.getAffiliationIds());
+    var creatorWithoutName = new DbCreator(creator.id(), null, affiliations);
     var candidateId =
         createLegacyCandidate(
             publication, builder -> builder.creators(List.of(creatorWithoutName)));

@@ -31,7 +31,7 @@ import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.dto.ContributorDto;
-import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
+import no.sikt.nva.nvi.common.model.NviCreator;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -314,7 +314,8 @@ public class IndexingSteps {
   private static Map<String, Set<URI>> indexedNviAffiliations(NviCandidateIndexDocument document) {
     return document.publicationDetails().nviContributors().stream()
         .collect(
-            Collectors.toMap(IndexingSteps::creatorIdentity, IndexingSteps::nviAffiliationIds));
+            Collectors.toMap(
+                IndexingSteps::indexDocContributorIdentity, IndexingSteps::nviAffiliationIds));
   }
 
   private static Set<URI> nviAffiliationIds(NviContributor contributor) {
@@ -325,19 +326,8 @@ public class IndexingSteps {
 
   private Map<String, Set<URI>> candidateAffiliations() {
     var publicationDetails = candidate.publicationDetails();
-    return Stream.concat(
-            publicationDetails.verifiedCreators().stream()
-                .map(
-                    verifiedCreator ->
-                        Map.entry(
-                            verifiedCreator.id().toString(),
-                            Set.copyOf(verifiedCreator.affiliations()))),
-            publicationDetails.unverifiedCreators().stream()
-                .map(
-                    unverifiedCreator ->
-                        Map.entry(
-                            unverifiedCreator.name(),
-                            Set.copyOf(unverifiedCreator.affiliations()))))
+    return publicationDetails.nviCreators().stream()
+        .map(creator -> Map.entry(candidateCreatorIdentity(creator), creator.getAffiliationIds()))
         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
@@ -365,12 +355,16 @@ public class IndexingSteps {
    */
   private static Set<String> indexedCreators(NviCandidateIndexDocument document) {
     return document.publicationDetails().nviContributors().stream()
-        .map(IndexingSteps::creatorIdentity)
+        .map(IndexingSteps::indexDocContributorIdentity)
         .collect(Collectors.toSet());
   }
 
-  private static String creatorIdentity(NviContributor contributor) {
+  private static String indexDocContributorIdentity(NviContributor contributor) {
     return nonNull(contributor.id()) ? contributor.id() : contributor.name();
+  }
+
+  private static String candidateCreatorIdentity(NviCreator creator) {
+    return creator.isVerified() ? creator.id().toString() : creator.name();
   }
 
   private Set<String> candidateCreators() {
@@ -378,7 +372,7 @@ public class IndexingSteps {
     return Stream.concat(
             publicationDetails.verifiedCreators().stream()
                 .map(verifiedCreator -> verifiedCreator.id().toString()),
-            publicationDetails.unverifiedCreators().stream().map(UnverifiedNviCreatorDto::name))
+            publicationDetails.unverifiedCreators().stream().map(NviCreator::name))
         .collect(Collectors.toSet());
   }
 

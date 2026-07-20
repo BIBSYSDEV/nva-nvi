@@ -33,8 +33,7 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.dto.PageCountDto;
-import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
-import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
+import no.sikt.nva.nvi.common.model.NviCreator;
 import no.sikt.nva.nvi.test.SampleAdditionalIdentifier;
 import no.sikt.nva.nvi.test.SampleExpandedContributor;
 import org.junit.jupiter.api.BeforeEach;
@@ -210,8 +209,8 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
     var candidate = candidateService.getCandidateByPublicationId(publicationId);
     assertThat(candidate.publicationDetails().unverifiedCreators())
         .hasSize(2)
-        .allMatch(creator -> creator instanceof UnverifiedNviCreatorDto)
-        .extracting(NviCreatorDto::name)
+        .noneMatch(NviCreator::isVerified)
+        .extracting(NviCreator::name)
         .containsExactlyInAnyOrder(unverifiedCreator.name(), invalidCreator.names().getFirst());
   }
 

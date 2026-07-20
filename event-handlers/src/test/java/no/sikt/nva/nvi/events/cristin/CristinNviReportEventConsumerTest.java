@@ -29,12 +29,12 @@ import java.net.URI;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.model.NviCreator;
 import no.sikt.nva.nvi.common.service.CandidateService;
-import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -282,17 +282,31 @@ class CristinNviReportEventConsumerTest {
         .containsExactlyInAnyOrder(
             cristinNviReport.publicationDate(), expectedPublicationBucketUri);
 
-    assertThat(candidate.publicationDetails().allCreators())
+    assertThat(candidate.publicationDetails().nviCreators())
         .usingRecursiveComparison()
         .ignoringCollectionOrder()
+        .ignoringFields("topLevelNviOrganizations")
         .isEqualTo(expectedCreators(cristinNviReport));
+
+    var expectedInstitutionIdByCreatorId =
+        cristinNviReport.getCreators().stream()
+            .collect(
+                Collectors.toMap(
+                    CristinTestUtils::expectedCreatorId,
+                    person -> CristinIdWrapper.from(person).getInstitutionId()));
+    assertThat(candidate.publicationDetails().nviCreators())
+        .allSatisfy(
+            creator ->
+                assertThat(creator.topLevelNviOrganizations())
+                    .extracting(Organization::id)
+                    .containsExactly(expectedInstitutionIdByCreatorId.get(creator.id())));
 
     assertThat(candidate.approvals().values())
         .extracting(Approval::status)
         .containsOnly(ApprovalStatus.APPROVED);
   }
 
-  private List<VerifiedNviCreatorDto> expectedCreators(CristinNviReport cristinNviReport) {
+  private List<NviCreator> expectedCreators(CristinNviReport cristinNviReport) {
     return cristinNviReport.getCreators().stream().map(CristinTestUtils::expectedCreator).toList();
   }
 

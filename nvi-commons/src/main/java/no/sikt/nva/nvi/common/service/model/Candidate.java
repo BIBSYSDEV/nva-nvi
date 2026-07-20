@@ -17,7 +17,6 @@ import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.PENDING;
 import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.REJECTED;
 import static no.sikt.nva.nvi.common.utils.CollectionUtils.copyOfNullable;
 import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
-import static no.sikt.nva.nvi.common.utils.RequestUtil.getAllCreators;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
 
 import java.math.BigDecimal;
@@ -43,13 +42,12 @@ import no.sikt.nva.nvi.common.db.NoteDao;
 import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.InstanceType;
+import no.sikt.nva.nvi.common.model.NviCreator;
 import no.sikt.nva.nvi.common.model.PointCalculation;
 import no.sikt.nva.nvi.common.model.PublicationChannel;
 import no.sikt.nva.nvi.common.model.UpdateApprovalRequest;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
-import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
-import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException;
 import no.sikt.nva.nvi.common.service.requests.CreateNoteRequest;
 import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
@@ -369,8 +367,9 @@ public record Candidate(
     return publicationDetails.publicationId();
   }
 
+  // TODO: This should return Set<URI>
   public List<URI> getNviCreatorAffiliations() {
-    return publicationDetails.getNviCreatorAffiliations();
+    return List.copyOf(publicationDetails.getNviCreatorAffiliations());
   }
 
   public static List<InstitutionPoints> getUpdatedInstitutionPoints(
@@ -451,7 +450,7 @@ public record Candidate(
   private static boolean creatorsAreUpdated(
       UpsertNviCandidateRequest request, Candidate candidate) {
     var oldCreatorCount = candidate.publicationDetails().nviCreators().size();
-    var newCreatorCount = getAllCreators(request).size();
+    var newCreatorCount = request.nviCreators().size();
     var hasSameCount = oldCreatorCount == newCreatorCount;
     var hasSameCreators = hasSameCreators(request, candidate);
     return !(hasSameCount && hasSameCreators);
@@ -461,7 +460,7 @@ public record Candidate(
     var affiliationsOfRemovedUnverifiedCreators =
         candidate.publicationDetails().unverifiedCreators().stream()
             .filter(not(creator -> request.unverifiedCreators().contains(creator)))
-            .map(UnverifiedNviCreatorDto::affiliations)
+            .map(NviCreator::nviAffiliations)
             .map(HashSet::new)
             .toList();
 
@@ -469,7 +468,7 @@ public record Candidate(
     var affiliationsOfNewVerifiedCreators =
         request.verifiedCreators().stream()
             .filter(not(creator -> currentCreatorIds.contains(creator.id())))
-            .map(VerifiedNviCreatorDto::affiliations)
+            .map(NviCreator::nviAffiliations)
             .map(HashSet::new)
             .toList();
 

@@ -14,6 +14,7 @@ import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_SWEDEN;
 import static no.sikt.nva.nvi.test.TestConstants.JOURNAL_TYPE;
 import static no.sikt.nva.nvi.test.TestConstants.LEVEL_ONE;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
+import static no.sikt.nva.nvi.test.TestUtils.randomContributorId;
 import static no.sikt.nva.nvi.test.TestUtils.randomUriWithSuffix;
 import static no.unit.nva.testutils.RandomDataGenerator.randomIsbn13;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -151,7 +152,7 @@ public class SampleExpandedPublicationFactory {
   }
 
   private void addContributor(String name, String role, Collection<Organization> affiliations) {
-    addContributor(randomUriWithSuffix("creator"), name, role, affiliations);
+    addContributor(randomContributorId(), name, role, affiliations);
   }
 
   public static SampleExpandedAffiliation mapOrganizationToAffiliation(Organization organization) {

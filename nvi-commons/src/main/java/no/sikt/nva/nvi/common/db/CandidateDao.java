@@ -36,9 +36,6 @@ import no.sikt.nva.nvi.common.db.model.DbPointCalculation;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDetails;
 import no.sikt.nva.nvi.common.model.Sector;
-import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
-import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
-import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.unit.nva.commons.json.JsonUtils;
@@ -491,8 +488,6 @@ public final class CandidateDao extends Dao {
     List<URI> affiliations();
 
     DbCreatorType copy();
-
-    NviCreatorDto toNviCreator();
   }
 
   @JsonSerialize
@@ -513,12 +508,6 @@ public final class CandidateDao extends Dao {
           .creatorName(creatorName)
           .affiliations(new ArrayList<>(affiliations))
           .build();
-    }
-
-    @Override
-    @DynamoDbIgnore
-    public NviCreatorDto toNviCreator() {
-      return new VerifiedNviCreatorDto(creatorId, creatorName, affiliations);
     }
 
     public static final class Builder {
@@ -564,12 +553,6 @@ public final class CandidateDao extends Dao {
     @DynamoDbIgnore
     public DbUnverifiedCreator copy() {
       return builder().creatorName(creatorName).affiliations(new ArrayList<>(affiliations)).build();
-    }
-
-    @Override
-    @DynamoDbIgnore
-    public NviCreatorDto toNviCreator() {
-      return new UnverifiedNviCreatorDto(creatorName, affiliations);
     }
 
     public static final class Builder {

@@ -4,9 +4,6 @@ import static nva.commons.apigateway.RestRequestHandler.COMMA;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Stream;
-import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
-import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Username;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.RequestInfo;
@@ -33,14 +30,6 @@ public final class RequestUtil {
 
   public static boolean isNviCurator(RequestInfo requestInfo) {
     return requestInfo.userIsAuthorized(AccessRight.MANAGE_NVI_CANDIDATES);
-  }
-
-  public static List<NviCreatorDto> getAllCreators(UpsertNviCandidateRequest request) {
-    var verifiedCreators = request.verifiedCreators().stream();
-    var unverifiedCreators = request.unverifiedCreators().stream();
-    return Stream.concat(verifiedCreators, unverifiedCreators)
-        .map(NviCreatorDto.class::cast)
-        .toList();
   }
 
   public static List<String> parseStringAsCommaSeparatedList(String commaSeparatedValues) {

@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.StorageReader;
@@ -24,11 +23,10 @@ import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.exceptions.ValidationException;
 import no.sikt.nva.nvi.common.model.Customer;
+import no.sikt.nva.nvi.common.model.NviCreator;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.CandidateAndPeriods;
-import no.sikt.nva.nvi.events.evaluator.model.NviCreator;
-import no.sikt.nva.nvi.events.evaluator.model.NviOrganization;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.publication.PublicationLoaderService;
 import no.unit.nva.clients.IdentityServiceClient;
@@ -188,36 +186,25 @@ public class EvaluatorService {
       URI publicationBucketUri,
       Collection<NviCreator> creators,
       Map<URI, Customer> customers) {
-    var nviCreatorsAsDto = creators.stream().map(NviCreator::toDto).toList();
     var pointCalculation = PointService.calculatePoints(publicationDto, creators, customers);
     var publicationDetails = fromPublicationDto(publicationDto);
-    var topLevelNviOrganizations = getTopLevelNviOrganizations(publicationDto, creators);
+    var topLevelNviOrganizations = getTopLevelNviOrganizations(creators);
 
     return UpsertNviCandidateRequest.builder()
         .withPublicationBucketUri(publicationBucketUri)
         .withPointCalculation(pointCalculation)
         .withPublicationDetails(publicationDetails)
-        .withNviCreators(nviCreatorsAsDto)
+        .withNviCreators(creators)
         .withTopLevelNviOrganizations(topLevelNviOrganizations)
         .build();
   }
 
-  private static List<Organization> getTopLevelNviOrganizations(
-      PublicationDto publicationDto, Collection<NviCreator> creators) {
-    var topLevelNviAffiliations =
-        creators.stream()
-            .map(NviCreator::nviAffiliations)
-            .flatMap(List::stream)
-            .map(NviOrganization::topLevelOrganization)
-            .map(NviOrganization::id)
-            .collect(Collectors.toSet());
-    return publicationDto.topLevelOrganizations().stream()
-        .filter(isOneOf(topLevelNviAffiliations))
+  private static List<Organization> getTopLevelNviOrganizations(Collection<NviCreator> creators) {
+    return creators.stream()
+        .map(NviCreator::topLevelNviOrganizations)
+        .flatMap(Collection::stream)
+        .distinct()
         .toList();
-  }
-
-  private static Predicate<Organization> isOneOf(Collection<URI> organizationIds) {
-    return organization -> organizationIds.contains(organization.id());
   }
 
   private boolean hasInvalidPublicationYear(PublicationDto publication) {
