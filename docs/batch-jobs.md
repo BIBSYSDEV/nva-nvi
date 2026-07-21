@@ -25,7 +25,9 @@ d2 data_flow.d2 -l tala data_flow.png
 
 ## Job types
 
-This section lists the job types currently implemented with relevant examples. Note that `jobType` is the only required parameter.
+This section lists the job types currently implemented with relevant examples.
+Note that `type` and `jobType` are the only required parameters.
+The `type` field must always be set to `StartBatchJobRequest` when triggering a job manually.
 
 ### Refresh candidates
 
@@ -33,6 +35,7 @@ Reads candidates from DB and writes them back, triggering "on read" migrations (
 
 ```json
 {
+  "type": "StartBatchJobRequest",
   "jobType": "REFRESH_CANDIDATES",
   "maxParallelSegments": 5,
   "maxItems": 5000
@@ -45,6 +48,7 @@ Reads candidates from DB, fetches original publication from S3, enriches with mi
 
 ```json
 {
+  "type": "StartBatchJobRequest",
   "jobType": "MIGRATE_CANDIDATES",
   "filter": { "reportingYears": ["2024", "2025"] },
   "maxItems": 500
@@ -57,6 +61,7 @@ Reads periods from DB and writes them back.
 
 ```json
 {
+  "type": "StartBatchJobRequest",
   "jobType": "REFRESH_PERIODS"
 }
 ```
@@ -69,6 +74,7 @@ Candidates that are PENDING, REJECTED, or DISPUTE are skipped, as are already-re
 
 ```json
 {
+  "type": "StartBatchJobRequest",
   "jobType": "REPORT_APPROVED_CANDIDATES",
   "filter": { "reportingYears": ["2024"] }
 }
@@ -92,6 +98,7 @@ Other filters may be implemented later as needed.
 
 ```json
 {
+  "type": "StartBatchJobRequest",
   "jobType": "REFRESH_CANDIDATES",
   "filter": { "reportingYears": ["2024"] },
   "maxItems": 10
@@ -102,6 +109,7 @@ Other filters may be implemented later as needed.
 
 ```json
 {
+  "type": "StartBatchJobRequest",
   "jobType": "REFRESH_CANDIDATES",
   "maxParallelSegments": 5
 }
