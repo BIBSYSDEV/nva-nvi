@@ -11,9 +11,6 @@ import software.amazon.awssdk.regions.Region;
 @JacocoGenerated
 public final class ApplicationConstants {
 
-  public static final Environment ENVIRONMENT = new Environment();
-  public static final String NVI_TABLE_NAME = readNviTableName();
-  public static final Region REGION = acquireAwsRegion();
   public static final ZoneId DEFAULT_TIME_ZONE = ZoneId.of("Europe/Oslo");
 
   private ApplicationConstants() {}
@@ -22,11 +19,11 @@ public final class ApplicationConstants {
     return Year.now(DEFAULT_TIME_ZONE);
   }
 
-  private static String readNviTableName() {
-    return ENVIRONMENT.readEnv("NVI_TABLE_NAME");
+  public static String getTableName(Environment environment) {
+    return environment.readEnv("NVI_TABLE_NAME");
   }
 
-  private static Region acquireAwsRegion() {
-    return ENVIRONMENT.readEnvOpt(AWS_REGION_ENV_VARIABLE).map(Region::of).orElse(Region.EU_WEST_1);
+  public static Region getRegion(Environment environment) {
+    return environment.readEnvOpt(AWS_REGION_ENV_VARIABLE).map(Region::of).orElse(Region.EU_WEST_1);
   }
 }

@@ -29,8 +29,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandl
 
   @Override
   protected ApiGatewayHandler<Void, CandidateDto> createHandler() {
-    return new FetchNviCandidateByPublicationIdHandler(
-        scenario.getCandidateRepository(), scenario.getPeriodRepository(), environment);
+    return new FetchNviCandidateByPublicationIdHandler(scenario.getCandidateService(), environment);
   }
 
   @Override

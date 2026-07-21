@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.common.db;
 
 import static java.util.Collections.emptyList;
 import static java.util.UUID.randomUUID;
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.getGlobalEnvironment;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.createCandidateDao;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.randomApplicableCandidateDao;
@@ -91,7 +92,7 @@ class CandidateRepositoryTest {
   @Test
   void shouldThrowTransactionExceptionWhenFailingOnSendingTransaction() {
     var client = mock(DynamoDbClient.class);
-    var failingRepository = new CandidateRepository(client);
+    var failingRepository = new CandidateRepository(client, getGlobalEnvironment());
 
     when(client.transactWriteItems((TransactWriteItemsRequest) any()))
         .thenThrow(getTransactionCanceledException());

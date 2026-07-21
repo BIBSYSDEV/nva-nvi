@@ -12,6 +12,7 @@ import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_MONOGRAPH;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDate;
 import static no.sikt.nva.nvi.common.model.UserInstanceFixtures.createCuratorUserInstance;
+import static no.sikt.nva.nvi.common.utils.ApplicationConstants.getTableName;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -42,6 +43,7 @@ import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import nva.commons.core.Environment;
 import org.assertj.core.api.ThrowableAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -62,6 +64,7 @@ import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
  * business/domain objects.
  */
 class ConcurrencyHandlingTests {
+  private static final Environment ENVIRONMENT = getGlobalEnvironment();
   private static final URI ORGANIZATION_1 = randomOrganizationId();
   private static final URI ORGANIZATION_2 = randomOrganizationId();
   private static final PublicationDate PUBLICATION_DATE = randomPublicationDate();
@@ -474,8 +477,8 @@ class ConcurrencyHandlingTests {
       var testService =
           new CandidateService(
               getGlobalEnvironment(),
-              new PeriodRepository(mockClient),
-              new CandidateRepository(mockClient));
+              new PeriodRepository(mockClient, ENVIRONMENT),
+              new CandidateRepository(mockClient, ENVIRONMENT));
 
       testService.getCandidateByIdentifier(candidateIdentifier);
 
@@ -489,8 +492,8 @@ class ConcurrencyHandlingTests {
       var testService =
           new CandidateService(
               getGlobalEnvironment(),
-              new PeriodRepository(mockClient),
-              new CandidateRepository(mockClient));
+              new PeriodRepository(mockClient, ENVIRONMENT),
+              new CandidateRepository(mockClient, ENVIRONMENT));
 
       testService.findCandidateAndPeriodsByPublicationId(publicationId);
 
@@ -619,7 +622,7 @@ class ConcurrencyHandlingTests {
   private void updateDirectlyWithLowLevelClient(CandidateDao current, String updateExpression) {
     candidateRepository.defaultClient.updateItem(
         UpdateItemRequest.builder()
-            .tableName(System.getenv("NVI_TABLE_NAME"))
+            .tableName(getTableName(getGlobalEnvironment()))
             .key(
                 Map.of(
                     "PrimaryKeyHashKey",

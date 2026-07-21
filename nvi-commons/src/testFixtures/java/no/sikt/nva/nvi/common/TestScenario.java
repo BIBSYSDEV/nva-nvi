@@ -9,7 +9,7 @@ import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDateDtoInYear;
 import static no.sikt.nva.nvi.common.model.UserInstanceFixtures.createCuratorUserInstance;
-import static no.sikt.nva.nvi.common.utils.ApplicationConstants.NVI_TABLE_NAME;
+import static no.sikt.nva.nvi.common.utils.ApplicationConstants.getTableName;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 
 import java.io.IOException;
@@ -48,12 +48,12 @@ public class TestScenario {
   private final CandidateService candidateService;
 
   public TestScenario() {
-    localDynamo = initializeTestDatabase(NVI_TABLE_NAME);
-    candidateRepository = new CandidateRepository(localDynamo);
-    periodRepository = new PeriodRepository(localDynamo);
-    periodService = new NviPeriodService(getGlobalEnvironment(), periodRepository);
-    candidateService =
-        new CandidateService(getGlobalEnvironment(), periodRepository, candidateRepository);
+    var environment = getGlobalEnvironment();
+    localDynamo = initializeTestDatabase(getTableName(environment));
+    candidateRepository = new CandidateRepository(localDynamo, environment);
+    periodRepository = new PeriodRepository(localDynamo, environment);
+    periodService = new NviPeriodService(environment, periodRepository);
+    candidateService = new CandidateService(environment, periodRepository, candidateRepository);
 
     s3Client = new FakeS3Client();
     s3Driver = new S3Driver(s3Client, EnvironmentFixtures.EXPANDED_RESOURCES_BUCKET.getValue());
