@@ -139,7 +139,11 @@ WHERE {
         FILTER(?otherName > ?contributorName)
       }
     }
-    OPTIONAL { ?personId :orcId ?orcid }
+    # The ORCID is currently stored with the key "orcId" in expanded publications, but we
+    # accept both casing variants in case this is normalized to "orcid" upstream.
+    OPTIONAL { ?personId :orcId ?mixedCaseOrcid }
+    OPTIONAL { ?personId :orcid ?lowerCaseOrcid }
+    BIND(COALESCE(?mixedCaseOrcid, ?lowerCaseOrcid) AS ?orcid)
 
     # Find all valid affiliations for the contributor
     OPTIONAL {
