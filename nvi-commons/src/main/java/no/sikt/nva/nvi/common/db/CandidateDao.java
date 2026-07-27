@@ -541,7 +541,7 @@ public final class CandidateDao extends Dao {
 
   @JsonSerialize
   @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
-  @DynamoDbImmutable(builder = DbCreator.Builder.class)
+  @DynamoDbImmutable(builder = DbUnverifiedCreator.Builder.class)
   public record DbUnverifiedCreator(String creatorName, List<URI> affiliations)
       implements DbCreatorType {
 
