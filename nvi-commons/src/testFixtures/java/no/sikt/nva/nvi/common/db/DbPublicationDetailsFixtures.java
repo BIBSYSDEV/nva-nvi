@@ -7,6 +7,7 @@ import static no.sikt.nva.nvi.common.model.NviCreatorFixtures.mapToDbCreators;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.mapToDbPublicationDate;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDateInCurrentYear;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
+import static no.sikt.nva.nvi.test.TestUtils.randomOrcid;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 
 import java.net.URI;
@@ -41,6 +42,7 @@ public final class DbPublicationDetailsFixtures {
             List.of(
                 DbCreator.builder()
                     .creatorId(creatorId)
+                    .orcid(randomOrcid())
                     .affiliations(List.of(organizationId))
                     .build()));
   }

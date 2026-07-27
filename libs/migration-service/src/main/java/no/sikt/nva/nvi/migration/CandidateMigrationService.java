@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.migration;
 
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static java.util.function.Predicate.not;
 import static no.sikt.nva.nvi.common.service.CandidateService.defaultCandidateService;
 import static nva.commons.core.StringUtils.isBlank;
@@ -27,7 +29,8 @@ import org.slf4j.LoggerFactory;
 /**
  * Service intended for updating persisted candidates with data from external sources, such as
  * expanded publications stored in S3. This can be used in batch migrations to add missing fields to
- * reported candidates. Currently, backfills missing verified creator names (NP-51445).
+ * reported candidates. Currently, backfills missing verified creator names (NP-51445) and missing
+ * creator ORCID (NP-51468).
  */
 public final class CandidateMigrationService implements MigrationService {
 
@@ -68,13 +71,14 @@ public final class CandidateMigrationService implements MigrationService {
 
   private static boolean shouldMigrate(Candidate candidate) {
     var details = candidate.publicationDetails();
-    return hasCreatorsWithMissingNames(details.nviCreators());
+    return details.nviCreators().stream()
+        .anyMatch(CandidateMigrationService::hasMissingCreatorData);
   }
 
   private static Candidate addMissingPublicationDetails(
       Candidate candidate, PublicationDto publication) {
     var currentDetails = candidate.publicationDetails();
-    var updatedCreators = addMissingCreatorNames(currentDetails.nviCreators(), publication);
+    var updatedCreators = addMissingCreatorData(currentDetails.nviCreators(), publication);
     var updatedDetails = currentDetails.copy().withNviCreators(updatedCreators).build();
 
     return candidate
@@ -84,20 +88,25 @@ public final class CandidateMigrationService implements MigrationService {
         .build();
   }
 
-  private static boolean hasCreatorsWithMissingNames(Collection<NviCreator> creators) {
-    return creators.stream().anyMatch(CandidateMigrationService::shouldUpdateCreatorName);
+  private static boolean hasMissingCreatorData(NviCreator creator) {
+    return shouldUpdateCreatorName(creator) || shouldUpdateCreatorOrcid(creator);
   }
 
   private static boolean shouldUpdateCreatorName(NviCreator creator) {
     return creator.isVerified() && isBlank(creator.name());
   }
 
-  private static List<NviCreator> addMissingCreatorNames(
+  private static boolean shouldUpdateCreatorOrcid(NviCreator creator) {
+    return creator.isVerified() && isNull(creator.orcid());
+  }
+
+  private static List<NviCreator> addMissingCreatorData(
       Collection<NviCreator> currentCreators, PublicationDto publication) {
     var creatorNames = buildCreatorNameMap(publication);
+    var creatorOrcids = buildCreatorOrcidMap(publication);
 
     return currentCreators.stream()
-        .map(creator -> addNameToCreatorIfMissing(creator, creatorNames))
+        .map(creator -> addMissingCreatorData(creator, creatorNames, creatorOrcids))
         .toList();
   }
 
@@ -109,11 +118,23 @@ public final class CandidateMigrationService implements MigrationService {
         .collect(Collectors.toMap(ContributorDto::id, ContributorDto::name));
   }
 
-  private static NviCreator addNameToCreatorIfMissing(
-      NviCreator creator, Map<URI, String> creatorNamesFromPublication) {
-    var nameFromPublication = creatorNamesFromPublication.get(creator.id());
-    return shouldUpdateCreatorName(creator)
-        ? creator.copy().withName(nameFromPublication).build()
-        : creator;
+  private static Map<URI, URI> buildCreatorOrcidMap(PublicationDto publication) {
+    return publication.contributors().stream()
+        .filter(ContributorDto::isCreator)
+        .filter(ContributorDto::isVerified)
+        .filter(contributor -> nonNull(contributor.orcid()))
+        .collect(Collectors.toMap(ContributorDto::id, ContributorDto::orcid));
+  }
+
+  private static NviCreator addMissingCreatorData(
+      NviCreator creator, Map<URI, String> creatorNames, Map<URI, URI> creatorOrcids) {
+    var updatedCreator = creator.copy();
+    if (shouldUpdateCreatorName(creator)) {
+      updatedCreator.withName(creatorNames.get(creator.id()));
+    }
+    if (shouldUpdateCreatorOrcid(creator)) {
+      updatedCreator.withOrcid(creatorOrcids.get(creator.id()));
+    }
+    return updatedCreator.build();
   }
 }

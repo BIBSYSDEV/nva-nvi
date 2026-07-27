@@ -6,6 +6,7 @@ import static no.sikt.nva.nvi.common.model.ContributorFixtures.STATUS_VERIFIED;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomTopLevelOrganization;
 import static no.sikt.nva.nvi.test.TestUtils.randomContributorId;
 import static no.sikt.nva.nvi.test.TestUtils.randomName;
+import static no.sikt.nva.nvi.test.TestUtils.randomOrcid;
 
 import java.net.URI;
 import java.util.Collection;
@@ -27,6 +28,7 @@ public final class NviCreatorFixtures {
     return NviCreator.builder()
         .withId(randomContributorId())
         .withName(randomName())
+        .withOrcid(randomOrcid())
         .withVerificationStatus(STATUS_VERIFIED)
         .withNviAffiliations(List.of(affiliationId))
         .withTopLevelNviOrganizations(List.of(institution));
@@ -45,6 +47,7 @@ public final class NviCreatorFixtures {
     return new NviCreator(
         randomContributorId(),
         randomName(),
+        randomOrcid(),
         STATUS_VERIFIED,
         List.of(affiliations),
         List.of(topLevelOrganization));
@@ -59,6 +62,7 @@ public final class NviCreatorFixtures {
     return new NviCreator(
         null,
         randomName(),
+        null,
         STATUS_UNVERIFIED,
         List.of(affiliations),
         List.of(topLevelOrganization));

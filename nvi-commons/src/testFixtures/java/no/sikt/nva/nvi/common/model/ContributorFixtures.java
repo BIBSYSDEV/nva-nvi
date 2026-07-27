@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.common.model;
 
 import static no.sikt.nva.nvi.test.TestUtils.randomContributorId;
 import static no.sikt.nva.nvi.test.TestUtils.randomName;
+import static no.sikt.nva.nvi.test.TestUtils.randomOrcid;
 
 import java.util.List;
 import no.sikt.nva.nvi.common.client.model.Organization;
@@ -21,6 +22,7 @@ public final class ContributorFixtures {
     return ContributorDto.builder()
         .withId(randomContributorId())
         .withName(randomName())
+        .withOrcid(randomOrcid())
         .withRole(ROLE_CREATOR)
         .withVerificationStatus(STATUS_VERIFIED)
         .withAffiliations(List.of(affiliations));
@@ -45,6 +47,7 @@ public final class ContributorFixtures {
     return ContributorDto.builder()
         .withId(nviCreator.id())
         .withName(nviCreator.name())
+        .withOrcid(nviCreator.orcid())
         .withVerificationStatus(nviCreator.verificationStatus())
         .withRole(ROLE_CREATOR)
         .withAffiliations(affiliations)
