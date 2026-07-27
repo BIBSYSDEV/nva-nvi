@@ -1,6 +1,6 @@
 package no.sikt.nva.nvi.common.service;
 
-import static no.sikt.nva.nvi.common.db.PeriodRepository.defaultPeriodRepository;
+import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 
 import java.net.URI;
 import java.util.Collection;
@@ -35,7 +35,9 @@ public class NviPeriodService {
 
   @JacocoGenerated
   public static NviPeriodService defaultNviPeriodService() {
-    return new NviPeriodService(new Environment(), defaultPeriodRepository());
+    var environment = new Environment();
+    return new NviPeriodService(
+        environment, new PeriodRepository(defaultDynamoClient(), environment));
   }
 
   public void create(CreatePeriodRequest request) {

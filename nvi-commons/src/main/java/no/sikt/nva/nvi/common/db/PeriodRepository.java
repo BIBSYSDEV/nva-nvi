@@ -6,7 +6,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import nva.commons.core.Environment;
-import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
@@ -25,11 +24,6 @@ public class PeriodRepository extends DynamoRepository {
   public PeriodRepository(DynamoDbClient client, Environment environment) {
     super(client);
     this.nviPeriodTable = this.client.table(getTableName(environment), NviPeriodDao.TABLE_SCHEMA);
-  }
-
-  @JacocoGenerated
-  public static PeriodRepository defaultPeriodRepository() {
-    return new PeriodRepository(defaultDynamoClient(), new Environment());
   }
 
   public void create(NviPeriodDao period) {

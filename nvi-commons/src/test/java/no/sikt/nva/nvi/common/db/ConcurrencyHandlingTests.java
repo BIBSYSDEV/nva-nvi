@@ -476,7 +476,7 @@ class ConcurrencyHandlingTests {
       var mockClient = spy(scenario.getLocalDynamo());
       var testService =
           new CandidateService(
-              getGlobalEnvironment(),
+              ENVIRONMENT,
               new PeriodRepository(mockClient, ENVIRONMENT),
               new CandidateRepository(mockClient, ENVIRONMENT));
 
@@ -491,7 +491,7 @@ class ConcurrencyHandlingTests {
       var mockClient = spy(scenario.getLocalDynamo());
       var testService =
           new CandidateService(
-              getGlobalEnvironment(),
+              ENVIRONMENT,
               new PeriodRepository(mockClient, ENVIRONMENT),
               new CandidateRepository(mockClient, ENVIRONMENT));
 
@@ -622,7 +622,7 @@ class ConcurrencyHandlingTests {
   private void updateDirectlyWithLowLevelClient(CandidateDao current, String updateExpression) {
     candidateRepository.defaultClient.updateItem(
         UpdateItemRequest.builder()
-            .tableName(getTableName(getGlobalEnvironment()))
+            .tableName(getTableName(ENVIRONMENT))
             .key(
                 Map.of(
                     "PrimaryKeyHashKey",

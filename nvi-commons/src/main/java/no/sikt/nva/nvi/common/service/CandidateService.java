@@ -2,8 +2,7 @@ package no.sikt.nva.nvi.common.service;
 
 import static java.util.Collections.emptyList;
 import static java.util.UUID.randomUUID;
-import static no.sikt.nva.nvi.common.db.CandidateRepository.defaultCandidateRepository;
-import static no.sikt.nva.nvi.common.db.PeriodRepository.defaultPeriodRepository;
+import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 import static no.sikt.nva.nvi.common.service.NviPeriodService.findByPublishingYear;
 import static no.sikt.nva.nvi.common.service.model.Candidate.getApprovalsToDelete;
 import static no.sikt.nva.nvi.common.service.model.Candidate.getUpdatedInstitutionPoints;
@@ -50,8 +49,12 @@ public class CandidateService {
 
   @JacocoGenerated
   public static CandidateService defaultCandidateService() {
+    var environment = new Environment();
+    var dynamoClient = defaultDynamoClient();
     return new CandidateService(
-        new Environment(), defaultPeriodRepository(), defaultCandidateRepository());
+        new Environment(),
+        new PeriodRepository(dynamoClient, environment),
+        new CandidateRepository(dynamoClient, environment));
   }
 
   public void upsertCandidate(UpsertNviCandidateRequest request) {

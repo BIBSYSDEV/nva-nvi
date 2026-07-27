@@ -8,7 +8,6 @@ import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.regions.Region;
 
-@JacocoGenerated
 public final class ApplicationConstants {
 
   public static final ZoneId DEFAULT_TIME_ZONE = ZoneId.of("Europe/Oslo");
@@ -23,6 +22,7 @@ public final class ApplicationConstants {
     return environment.readEnv("NVI_TABLE_NAME");
   }
 
+  @JacocoGenerated
   public static Region getRegion(Environment environment) {
     return environment.readEnvOpt(AWS_REGION_ENV_VARIABLE).map(Region::of).orElse(Region.EU_WEST_1);
   }
