@@ -7,6 +7,7 @@ import static no.sikt.nva.nvi.common.db.DbPublicationDetailsFixtures.getExpected
 import static no.sikt.nva.nvi.common.db.DbPublicationDetailsFixtures.randomPublicationBuilder;
 import static no.sikt.nva.nvi.common.model.NviCreatorFixtures.mapToDbCreators;
 import static no.sikt.nva.nvi.test.TestUtils.randomName;
+import static no.sikt.nva.nvi.test.TestUtils.randomOrcid;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 
@@ -76,6 +77,7 @@ public final class DbCandidateFixtures {
   private static CandidateDao.DbCreator randomDbCreator(URI organizationId) {
     return CandidateDao.DbCreator.builder()
         .creatorId(randomUri())
+        .orcid(randomOrcid())
         .affiliations(List.of(organizationId))
         .build();
   }

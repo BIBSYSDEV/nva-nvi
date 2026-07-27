@@ -26,10 +26,10 @@ import org.slf4j.LoggerFactory;
  * Maps contributors for the index document into two independent lists:
  *
  * <ul>
- *   <li>{@code nviContributors} - one per NVI creator on the frozen Candidate, carrying the
- *       Candidate's affiliations, enriched (name fallback, orcid, role) from the matching
- *       Publication creator when one is found. Indexed even if the Publication no longer has the
- *       creator.
+ *   <li>{@code nviContributors} - one per NVI creator on the frozen Candidate, carrying the name,
+ *       orcid, role and affiliations persisted on the Candidate, with fallback to the matching
+ *       Publication creator for data not yet migrated to the Candidate. Indexed even if the
+ *       Publication no longer has the creator.
  *   <li>{@code contributors} - the full Publication author list as plain {@link Contributor}s
  *       carrying the Publication's current data.
  * </ul>
@@ -65,8 +65,8 @@ final class ContributorMapper {
     return NviContributor.builder()
         .withId(creator.id())
         .withName(extractName(creator, enrichment))
-        .withOrcid(extractOrcid(enrichment))
-        .withRole(extractRole(enrichment))
+        .withOrcid(extractOrcid(creator, enrichment))
+        .withRole(creator.role().value())
         .withAffiliations(buildNviCreatorAffiliations(creator))
         .build();
   }
@@ -86,8 +86,8 @@ final class ContributorMapper {
     return Contributor.builder()
         .withId(contributorDto.id())
         .withName(contributorDto.name())
-        .withOrcid(extractOrcid(contributorDto))
-        .withRole(extractRole(contributorDto))
+        .withOrcid(orcidFromPublication(contributorDto).orElse(null))
+        .withRole(roleFromPublication(contributorDto).orElse(null))
         .withAffiliations(buildSimpleAffiliations(contributorDto))
         .build();
   }
@@ -110,22 +110,25 @@ final class ContributorMapper {
   }
 
   // TODO: NP-51468 - Remove fallback when ORCID is migrated
-  private static String extractOrcid(ContributorDto contributorDto) {
-    return Optional.ofNullable(contributorDto)
-        .map(ContributorDto::orcid)
-        .map(Object::toString)
-        .orElse(null);
+  private static String extractOrcid(NviCreator creator, ContributorDto contributorDto) {
+    return orcidFromCandidate(creator).or(() -> orcidFromPublication(contributorDto)).orElse(null);
   }
 
-  // TODO: NP-51468 - Remove fallback when role is migrated
-  private static String extractRole(ContributorDto contributorDto) {
+  private static Optional<String> orcidFromCandidate(NviCreator creator) {
+    return Optional.ofNullable(creator).map(NviCreator::orcid).map(Object::toString);
+  }
+
+  private static Optional<String> orcidFromPublication(ContributorDto contributorDto) {
+    return Optional.ofNullable(contributorDto).map(ContributorDto::orcid).map(Object::toString);
+  }
+
+  private static Optional<String> roleFromPublication(ContributorDto contributorDto) {
     return Optional.ofNullable(contributorDto)
         .map(ContributorDto::roles)
         .orElse(emptyList())
         .stream()
         .findAny()
-        .map(ContributorRole::value)
-        .orElse(null);
+        .map(ContributorRole::value);
   }
 
   /**

@@ -13,6 +13,7 @@ import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_PUBLIC
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_WITH_DUPLICATE_DATE;
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_WITH_NO_TITLE;
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_WITH_TWO_TITLES;
+import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
@@ -21,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
@@ -192,6 +194,30 @@ class PublicationLoaderServiceTest {
 
     assertThat(logRecorder.asString())
         .doesNotContain("Should contain at least one verified or unverified contributor");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"orcId", "orcid"})
+  void shouldParseContributorOrcidRegardlessOfKeyCasing(String orcidKey) throws IOException {
+    var expectedOrcid = URI.create("https://orcid.org/0000-0001-2345-6789");
+    var document = withOrcidOnAllContributors(orcidKey, expectedOrcid);
+
+    var publication = parseExampleDocument(EXAMPLE_PUBLICATION_1_PATH, document);
+
+    assertThat(publication.contributors())
+        .isNotEmpty()
+        .allSatisfy(contributor -> assertThat(contributor.orcid()).isEqualTo(expectedOrcid));
+  }
+
+  private static String withOrcidOnAllContributors(String orcidKey, URI orcid) throws IOException {
+    var rawDocument = stringFromResources(Path.of(EXAMPLE_PUBLICATION_1_PATH));
+    var document = (ObjectNode) dtoObjectMapper.readTree(rawDocument);
+    var contributors = document.at("/body/entityDescription/contributors");
+    for (var contributor : contributors) {
+      var identity = (ObjectNode) contributor.get("identity");
+      identity.put(orcidKey, orcid.toString());
+    }
+    return dtoObjectMapper.writeValueAsString(document);
   }
 
   @Test

@@ -183,14 +183,13 @@ public class SampleExpandedPublicationFactory {
     if (nonNull(additionalNames)) {
       names.addAll(List.of(additionalNames));
     }
-    var orcId = randomUri();
     for (var role : contributor.roles()) {
       var expandedContributor =
           SampleExpandedContributor.builder()
               .withId(contributor.id())
               .withNames(names)
               .withRole(role.getValue())
-              .withOrcId(orcId)
+              .withOrcId(contributor.orcid())
               .withVerificationStatus(contributor.verificationStatus().getValue())
               .withAffiliations(expandedAffiliations)
               .build();

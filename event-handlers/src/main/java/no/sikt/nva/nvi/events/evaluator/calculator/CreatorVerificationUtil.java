@@ -64,6 +64,7 @@ public final class CreatorVerificationUtil {
     return new NviCreator(
         contributor.id(),
         contributor.name(),
+        contributor.orcid(),
         contributor.verificationStatus(),
         nviAffiliations.stream().map(Organization::id).toList(),
         creatorOrganizations);

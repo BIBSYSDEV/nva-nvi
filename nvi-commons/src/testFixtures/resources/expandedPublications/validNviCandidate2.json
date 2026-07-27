@@ -89,6 +89,7 @@
           "id" : "https://api.sandbox.nva.aws.unit.no/cristin/person/1685065",
           "type" : "Identity",
           "name" : "Donald Duck",
+          "orcId" : "https://fake.orcid.org/1234-5678-1234-5678",
           "verificationStatus" : "Verified"
         },
         "role" : {
@@ -296,6 +297,7 @@
           "id" : "https://api.sandbox.nva.aws.unit.no/cristin/person/1685065",
           "type" : "Identity",
           "name" : "Donald Duck",
+          "orcId" : "https://fake.orcid.org/1234-5678-1234-5678",
           "verificationStatus" : "Verified"
         },
         "role" : {

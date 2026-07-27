@@ -17,6 +17,7 @@ import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreatorType;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbUnverifiedCreator;
+import no.sikt.nva.nvi.common.dto.ContributorRole;
 import no.sikt.nva.nvi.common.dto.VerificationStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +33,7 @@ import org.slf4j.LoggerFactory;
  *
  * @param id Unique ID as a URI, which can be dereferenced for more information.
  * @param name The name of the person, which is used for display purposes.
+ * @param orcid The ORCID of the person, if known.
  * @param verificationStatus The verification status of the person, which indicates whether their
  *     identity is confirmed.
  * @param nviAffiliations A collection of organizations that the person is directly affiliated with.
@@ -42,6 +44,7 @@ import org.slf4j.LoggerFactory;
 public record NviCreator(
     URI id,
     String name,
+    URI orcid,
     VerificationStatus verificationStatus,
     Collection<URI> nviAffiliations,
     Collection<Organization> topLevelNviOrganizations) {
@@ -65,6 +68,7 @@ public record NviCreator(
     return builder()
         .withId(id)
         .withName(name)
+        .withOrcid(orcid)
         .withVerificationStatus(verificationStatus)
         .withNviAffiliations(nviAffiliations)
         .withTopLevelNviOrganizations(topLevelNviOrganizations);
@@ -93,9 +97,18 @@ public record NviCreator(
     return new NviCreator(
         creatorId,
         creator.creatorName(),
+        creator.orcid(),
         verificationStatus,
         creator.affiliations(),
         affiliatedTopLevelOrganizations);
+  }
+
+  /**
+   * The role of the person on the publication. An NviCreator is by definition a 'Creator' (i.e.
+   * author or equivalent), so this is a constant value.
+   */
+  public ContributorRole role() {
+    return ContributorRole.CREATOR;
   }
 
   public Set<URI> getAffiliationIds() {
@@ -162,14 +175,15 @@ public record NviCreator(
 
   public DbCreatorType toDbCreatorType() {
     if (isVerified()) {
-      return new DbCreator(id, name, List.copyOf(nviAffiliations));
+      return new DbCreator(id, name, orcid, List.copyOf(nviAffiliations));
     }
-    return new DbUnverifiedCreator(name, List.copyOf(nviAffiliations));
+    return new DbUnverifiedCreator(name, orcid, List.copyOf(nviAffiliations));
   }
 
   public static final class Builder {
     private URI id;
     private String name;
+    private URI orcid;
     private VerificationStatus verificationStatus;
     private Collection<URI> nviAffiliations;
     private Collection<Organization> topLevelNviOrganizations;
@@ -183,6 +197,11 @@ public record NviCreator(
 
     public Builder withName(String name) {
       this.name = name;
+      return this;
+    }
+
+    public Builder withOrcid(URI orcid) {
+      this.orcid = orcid;
       return this;
     }
 
@@ -203,7 +222,7 @@ public record NviCreator(
 
     public NviCreator build() {
       return new NviCreator(
-          id, name, verificationStatus, nviAffiliations, topLevelNviOrganizations);
+          id, name, orcid, verificationStatus, nviAffiliations, topLevelNviOrganizations);
     }
   }
 }
