@@ -49,11 +49,12 @@ public class CandidateService {
 
   @JacocoGenerated
   public static CandidateService defaultCandidateService() {
+    var environment = new Environment();
     var dynamoClient = defaultDynamoClient();
     return new CandidateService(
         new Environment(),
-        new PeriodRepository(dynamoClient),
-        new CandidateRepository(dynamoClient));
+        new PeriodRepository(dynamoClient, environment),
+        new CandidateRepository(dynamoClient, environment));
   }
 
   public void upsertCandidate(UpsertNviCandidateRequest request) {

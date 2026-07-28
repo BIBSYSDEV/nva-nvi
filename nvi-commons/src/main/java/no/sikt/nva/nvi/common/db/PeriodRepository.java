@@ -1,10 +1,11 @@
 package no.sikt.nva.nvi.common.db;
 
-import static no.sikt.nva.nvi.common.utils.ApplicationConstants.NVI_TABLE_NAME;
+import static no.sikt.nva.nvi.common.utils.ApplicationConstants.getTableName;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import nva.commons.core.Environment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
@@ -20,9 +21,9 @@ public class PeriodRepository extends DynamoRepository {
   private static final Logger LOGGER = LoggerFactory.getLogger(PeriodRepository.class);
   protected final DynamoDbTable<NviPeriodDao> nviPeriodTable;
 
-  public PeriodRepository(DynamoDbClient client) {
+  public PeriodRepository(DynamoDbClient client, Environment environment) {
     super(client);
-    this.nviPeriodTable = this.client.table(NVI_TABLE_NAME, NviPeriodDao.TABLE_SCHEMA);
+    this.nviPeriodTable = this.client.table(getTableName(environment), NviPeriodDao.TABLE_SCHEMA);
   }
 
   public void create(NviPeriodDao period) {

@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.common.service;
 
 import static java.util.Collections.emptyList;
-import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
+import static no.sikt.nva.nvi.common.db.CandidateRepository.defaultCandidateRepository;
 
 import java.util.List;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
@@ -27,8 +27,7 @@ public class ApprovalService {
 
   @JacocoGenerated
   public static ApprovalService defaultApprovalService() {
-    var dynamoClient = defaultDynamoClient();
-    return new ApprovalService(new CandidateRepository(dynamoClient));
+    return new ApprovalService(defaultCandidateRepository());
   }
 
   public void updateApproval(

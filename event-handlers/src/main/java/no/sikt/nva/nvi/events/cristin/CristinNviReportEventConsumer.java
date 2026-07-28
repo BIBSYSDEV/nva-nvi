@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.events.cristin;
 
 import static java.util.Collections.emptyList;
-import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
+import static no.sikt.nva.nvi.common.db.CandidateRepository.defaultCandidateRepository;
 import static no.sikt.nva.nvi.common.utils.Validator.isMissing;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.StringUtils.isNotBlank;
@@ -52,10 +52,7 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
 
   @JacocoGenerated
   public CristinNviReportEventConsumer() {
-    this(
-        new CandidateRepository(defaultDynamoClient()),
-        S3Driver.defaultS3Client().build(),
-        new Environment());
+    this(defaultCandidateRepository(), S3Driver.defaultS3Client().build(), new Environment());
   }
 
   public CristinNviReportEventConsumer(

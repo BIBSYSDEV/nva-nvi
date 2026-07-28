@@ -10,7 +10,7 @@ import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_PUBLICATI
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_YEAR;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_YEAR_HASH_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
-import static no.sikt.nva.nvi.common.utils.ApplicationConstants.NVI_TABLE_NAME;
+import static no.sikt.nva.nvi.common.utils.ApplicationConstants.getTableName;
 import static no.sikt.nva.nvi.common.utils.Validator.hasElements;
 import static software.amazon.awssdk.enhanced.dynamodb.TableSchema.fromImmutableClass;
 import static software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional.keyEqualTo;
@@ -28,6 +28,8 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.model.TableScanRequest;
 import no.sikt.nva.nvi.common.db.model.YearQueryRequest;
 import no.sikt.nva.nvi.common.model.ListingResult;
+import nva.commons.core.Environment;
+import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
@@ -56,18 +58,25 @@ public class CandidateRepository extends DynamoRepository {
   protected final DynamoDbTable<NviPeriodDao> periodTable;
   private final DynamoDbIndex<CandidateDao> publicationIdIndex;
   private final DynamoDbIndex<CandidateDao> yearIndex;
+  private final String tableName;
 
-  public CandidateRepository(DynamoDbClient client) {
+  public CandidateRepository(DynamoDbClient client, Environment environment) {
     super(client);
-    this.candidateTable = this.client.table(NVI_TABLE_NAME, fromImmutableClass(CandidateDao.class));
+    this.tableName = getTableName(environment);
+    this.candidateTable = this.client.table(tableName, fromImmutableClass(CandidateDao.class));
     this.uniquenessTable =
-        this.client.table(NVI_TABLE_NAME, fromImmutableClass(CandidateUniquenessEntryDao.class));
+        this.client.table(tableName, fromImmutableClass(CandidateUniquenessEntryDao.class));
     this.publicationIdIndex = this.candidateTable.index(SECONDARY_INDEX_PUBLICATION_ID);
     this.yearIndex = this.candidateTable.index(SECONDARY_INDEX_YEAR);
     this.approvalStatusTable =
-        this.client.table(NVI_TABLE_NAME, fromImmutableClass(ApprovalStatusDao.class));
-    this.noteTable = this.client.table(NVI_TABLE_NAME, fromImmutableClass(NoteDao.class));
-    this.periodTable = this.client.table(NVI_TABLE_NAME, fromImmutableClass(NviPeriodDao.class));
+        this.client.table(tableName, fromImmutableClass(ApprovalStatusDao.class));
+    this.noteTable = this.client.table(tableName, fromImmutableClass(NoteDao.class));
+    this.periodTable = this.client.table(tableName, fromImmutableClass(NviPeriodDao.class));
+  }
+
+  @JacocoGenerated
+  public static CandidateRepository defaultCandidateRepository() {
+    return new CandidateRepository(defaultDynamoClient(), new Environment());
   }
 
   public ListingResult<UUID> weaklyConsistentCandidateScan(TableScanRequest requestParameters) {
@@ -76,9 +85,9 @@ public class CandidateRepository extends DynamoRepository {
     return mapToListingResult(scanResponse.lastEvaluatedKey(), scanResponse.items());
   }
 
-  private static ScanRequest createCandidateScanRequest(TableScanRequest request) {
+  private ScanRequest createCandidateScanRequest(TableScanRequest request) {
     return ScanRequest.builder()
-        .tableName(NVI_TABLE_NAME)
+        .tableName(tableName)
         .filterExpression("begins_with(#pk, :prefix) AND begins_with(#sk, :prefix)")
         .expressionAttributeNames(Map.of("#pk", HASH_KEY, "#sk", SORT_KEY))
         .expressionAttributeValues(Map.of(":prefix", AttributeValue.fromS(CandidateDao.TYPE)))
@@ -96,9 +105,9 @@ public class CandidateRepository extends DynamoRepository {
     return mapToListingResult(queryResponse.lastEvaluatedKey(), queryResponse.items());
   }
 
-  private static QueryRequest createYearQueryRequest(YearQueryRequest request) {
+  private QueryRequest createYearQueryRequest(YearQueryRequest request) {
     return QueryRequest.builder()
-        .tableName(NVI_TABLE_NAME)
+        .tableName(tableName)
         .indexName(SECONDARY_INDEX_YEAR)
         .keyConditionExpression("#year = :year")
         .expressionAttributeNames(Map.of("#year", SECONDARY_INDEX_YEAR_HASH_KEY))
@@ -313,7 +322,7 @@ public class CandidateRepository extends DynamoRepository {
   private QueryRequest getCandidateAggregateRequest(UUID candidateId) {
     var candidateKey = CandidateDao.createPartitionKey(candidateId.toString());
     return QueryRequest.builder()
-        .tableName(NVI_TABLE_NAME)
+        .tableName(tableName)
         .keyConditionExpression("#pk = :pk")
         .expressionAttributeNames(Map.of("#pk", HASH_KEY))
         .expressionAttributeValues(Map.of(":pk", AttributeValue.builder().s(candidateKey).build()))

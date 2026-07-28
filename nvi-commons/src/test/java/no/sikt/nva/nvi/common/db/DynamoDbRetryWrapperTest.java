@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.common.db;
 
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.randomApplicableCandidateDao;
-import static no.sikt.nva.nvi.common.utils.ApplicationConstants.NVI_TABLE_NAME;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -43,7 +42,7 @@ class DynamoDbRetryWrapperTest {
             .dynamoDbClient(dynamodb)
             .initialRetryWaitTimeMs(INITIAL_RETRY_WAIT_TIME_MS)
             .writeRetriesMaxCount(WRITE_RETRIES_MAX_COUNT)
-            .tableName(NVI_TABLE_NAME)
+            .tableName(TABLE_NAME)
             .build();
   }
 
@@ -94,7 +93,7 @@ class DynamoDbRetryWrapperTest {
             .dynamoDbClient(dynamodb)
             .initialRetryWaitTimeMs(veryLongInitialRetryWaitTimeMs)
             .writeRetriesMaxCount(WRITE_RETRIES_MAX_COUNT)
-            .tableName(NVI_TABLE_NAME)
+            .tableName(TABLE_NAME)
             .build();
 
     when(dynamodb.batchWriteItem(any(BatchWriteItemRequest.class)))

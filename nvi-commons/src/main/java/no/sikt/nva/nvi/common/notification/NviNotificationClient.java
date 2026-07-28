@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.common.notification;
 
 import java.time.Duration;
 import no.sikt.nva.nvi.common.utils.ApplicationConstants;
+import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.http.SdkHttpClient;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
@@ -38,7 +39,7 @@ public class NviNotificationClient implements NotificationClient<NviPublishMessa
   @JacocoGenerated
   private static SnsClient defaultSnsClient() {
     return SnsClient.builder()
-        .region(ApplicationConstants.REGION)
+        .region(ApplicationConstants.getRegion(new Environment()))
         .httpClient(httpClientForConcurrentQueries())
         .build();
   }
