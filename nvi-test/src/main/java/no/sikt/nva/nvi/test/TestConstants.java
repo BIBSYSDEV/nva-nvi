@@ -45,7 +45,7 @@ public final class TestConstants {
 
   public static final int ONE = 1;
   public static final String AFFILIATIONS_FIELD = "affiliations";
-  public static final String ORCID_FIELD = "orcid";
+  public static final String ORCID_FIELD = "orcId";
   public static final String VERIFICATION_STATUS_FIELD = "verificationStatus";
   public static final String MAIN_TITLE_FIELD = "mainTitle";
   public static final String PUBLICATION_DATE_FIELD = "publicationDate";

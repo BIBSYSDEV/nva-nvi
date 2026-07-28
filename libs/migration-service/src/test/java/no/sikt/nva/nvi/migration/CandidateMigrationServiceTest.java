@@ -5,6 +5,7 @@ import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuild
 import static no.sikt.nva.nvi.common.db.DbPublicationDetailsFixtures.randomPublicationBuilder;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.model.ContributorFixtures.mapToContributorDto;
+import static no.sikt.nva.nvi.common.model.ContributorFixtures.randomContributorDtoBuilder;
 import static no.sikt.nva.nvi.common.model.NviCreatorFixtures.verifiedNviCreatorFrom;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
@@ -12,6 +13,7 @@ import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.net.URI;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -55,7 +57,7 @@ class CandidateMigrationServiceTest {
         publicationFactory.withContributor(mapToContributorDto(creator)).getExpandedPublication();
 
     var affiliations = List.copyOf(creator.getAffiliationIds());
-    var creatorWithoutName = new DbCreator(creator.id(), null, affiliations);
+    var creatorWithoutName = new DbCreator(creator.id(), null, null, affiliations);
     var candidateId =
         createLegacyCandidate(
             publication, builder -> builder.creators(List.of(creatorWithoutName)));
@@ -69,9 +71,48 @@ class CandidateMigrationServiceTest {
   }
 
   @Test
+  void shouldMigrateCreatorOrcid() {
+    var nviOrg = publicationFactory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
+    var creator = verifiedNviCreatorFrom(nviOrg, nviOrg.id());
+    var publication =
+        publicationFactory.withContributor(mapToContributorDto(creator)).getExpandedPublication();
+
+    var creatorWithoutOrcid =
+        new DbCreator(creator.id(), creator.name(), null, List.copyOf(creator.getAffiliationIds()));
+    var candidateId =
+        createLegacyCandidate(
+            publication, builder -> builder.creators(List.of(creatorWithoutOrcid)));
+
+    migrationService.migrateCandidate(candidateId);
+
+    var updatedCreator = getCreatorById(candidateId, creator.id());
+    assertThat(updatedCreator.orcid()).isEqualTo(creator.orcid());
+  }
+
+  @Test
+  void shouldNotOverwriteExistingCreatorData() {
+    var nviOrg = publicationFactory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
+    var creator = verifiedNviCreatorFrom(nviOrg, nviOrg.id());
+    var contributorWithDifferentData =
+        randomContributorDtoBuilder(nviOrg).withId(creator.id()).build();
+    var publication =
+        publicationFactory.withContributor(contributorWithDifferentData).getExpandedPublication();
+
+    var candidateId =
+        createLegacyCandidate(
+            publication, builder -> builder.creators(List.of(creator.toDbCreatorType())));
+
+    migrationService.migrateCandidate(candidateId);
+
+    var updatedCreator = getCreatorById(candidateId, creator.id());
+    assertThat(updatedCreator.name()).isEqualTo(creator.name());
+    assertThat(updatedCreator.orcid()).isEqualTo(creator.orcid());
+  }
+
+  @Test
   void shouldPreserveCreatorNotFoundInPublication() {
     var orphanCreatorId = randomUri();
-    var orphanCreator = new DbCreator(orphanCreatorId, null, List.of(randomUri()));
+    var orphanCreator = new DbCreator(orphanCreatorId, null, null, List.of(randomUri()));
 
     var candidateId =
         createLegacyCandidate(
@@ -83,6 +124,14 @@ class CandidateMigrationServiceTest {
     var updatedCandidate = candidateService.getCandidateByIdentifier(candidateId);
     assertThat(updatedCandidate.publicationDetails().nviCreators())
         .anyMatch(creator -> orphanCreatorId.equals(creator.id()));
+  }
+
+  private NviCreator getCreatorById(UUID candidateIdentifier, URI creatorId) {
+    var updatedCandidate = candidateService.getCandidateByIdentifier(candidateIdentifier);
+    return updatedCandidate.publicationDetails().nviCreators().stream()
+        .filter(creator -> creatorId.equals(creator.id()))
+        .findFirst()
+        .orElseThrow();
   }
 
   private UUID createLegacyCandidate(

@@ -107,6 +107,12 @@ public final class TestUtils {
         .getUri();
   }
 
+  public static URI randomOrcid() {
+    return UriWrapper.fromHost("https://fake.orcid.org")
+        .addChild(FAKER.numerify("####-####-####-####"))
+        .getUri();
+  }
+
   public static BigDecimal randomBigDecimal() {
     return randomBigDecimal(SCALE);
   }

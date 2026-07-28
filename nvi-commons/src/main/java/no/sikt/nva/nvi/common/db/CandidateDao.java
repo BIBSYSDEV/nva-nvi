@@ -485,6 +485,8 @@ public final class CandidateDao extends Dao {
   public sealed interface DbCreatorType permits DbCreator, DbUnverifiedCreator {
     String creatorName();
 
+    URI orcid();
+
     List<URI> affiliations();
 
     DbCreatorType copy();
@@ -493,7 +495,7 @@ public final class CandidateDao extends Dao {
   @JsonSerialize
   @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
   @DynamoDbImmutable(builder = DbCreator.Builder.class)
-  public record DbCreator(URI creatorId, String creatorName, List<URI> affiliations)
+  public record DbCreator(URI creatorId, String creatorName, URI orcid, List<URI> affiliations)
       implements DbCreatorType {
 
     public static Builder builder() {
@@ -506,6 +508,7 @@ public final class CandidateDao extends Dao {
       return builder()
           .creatorId(creatorId)
           .creatorName(creatorName)
+          .orcid(orcid)
           .affiliations(new ArrayList<>(affiliations))
           .build();
     }
@@ -514,6 +517,7 @@ public final class CandidateDao extends Dao {
 
       private URI creatorId;
       private String creatorName;
+      private URI orcid;
       private List<URI> affiliations;
 
       private Builder() {}
@@ -528,21 +532,26 @@ public final class CandidateDao extends Dao {
         return this;
       }
 
+      public Builder orcid(URI orcid) {
+        this.orcid = orcid;
+        return this;
+      }
+
       public Builder affiliations(List<URI> affiliations) {
         this.affiliations = affiliations;
         return this;
       }
 
       public DbCreator build() {
-        return new DbCreator(creatorId, creatorName, affiliations);
+        return new DbCreator(creatorId, creatorName, orcid, affiliations);
       }
     }
   }
 
   @JsonSerialize
   @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
-  @DynamoDbImmutable(builder = DbCreator.Builder.class)
-  public record DbUnverifiedCreator(String creatorName, List<URI> affiliations)
+  @DynamoDbImmutable(builder = DbUnverifiedCreator.Builder.class)
+  public record DbUnverifiedCreator(String creatorName, URI orcid, List<URI> affiliations)
       implements DbCreatorType {
 
     public static Builder builder() {
@@ -552,12 +561,17 @@ public final class CandidateDao extends Dao {
     @Override
     @DynamoDbIgnore
     public DbUnverifiedCreator copy() {
-      return builder().creatorName(creatorName).affiliations(new ArrayList<>(affiliations)).build();
+      return builder()
+          .creatorName(creatorName)
+          .orcid(orcid)
+          .affiliations(new ArrayList<>(affiliations))
+          .build();
     }
 
     public static final class Builder {
 
       private String creatorName;
+      private URI builderOrcid;
       private List<URI> builderAffiliations;
 
       private Builder() {}
@@ -567,13 +581,18 @@ public final class CandidateDao extends Dao {
         return this;
       }
 
+      public Builder orcid(URI orcid) {
+        this.builderOrcid = orcid;
+        return this;
+      }
+
       public Builder affiliations(List<URI> affiliations) {
         this.builderAffiliations = affiliations;
         return this;
       }
 
       public DbUnverifiedCreator build() {
-        return new DbUnverifiedCreator(creatorName, builderAffiliations);
+        return new DbUnverifiedCreator(creatorName, builderOrcid, builderAffiliations);
       }
     }
   }
