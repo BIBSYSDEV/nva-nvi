@@ -1,12 +1,11 @@
 package no.sikt.nva.nvi.rest.fetch;
 
-import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
+import static no.sikt.nva.nvi.common.service.NviPeriodService.defaultNviPeriodService;
 import static nva.commons.core.attempt.Try.attempt;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
 import java.util.List;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.common.utils.RequestUtil;
@@ -24,9 +23,7 @@ public class FetchNviPeriodsHandler extends ApiGatewayHandler<Void, NviPeriodsRe
 
   @JacocoGenerated
   public FetchNviPeriodsHandler() {
-    this(
-        new NviPeriodService(new Environment(), new PeriodRepository(defaultDynamoClient())),
-        new Environment());
+    this(defaultNviPeriodService(), new Environment());
   }
 
   public FetchNviPeriodsHandler(NviPeriodService nviPeriodService, Environment environment) {

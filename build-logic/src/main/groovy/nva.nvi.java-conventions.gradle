@@ -30,7 +30,6 @@ test {
     environment("COGNITO_AUTHORIZER_URLS", "http://localhost:3000")
     environment("CUSTOM_DOMAIN_BASE_PATH", "scientific-index")
     environment("LOG_LEVEL", "info")
-    environment("NVI_TABLE_NAME", "some-table")
     environment("SEARCH_INFRASTRUCTURE_API_HOST", "localhost")
     environment("SEARCH_INFRASTRUCTURE_AUTH_URI", "localhost")
 }

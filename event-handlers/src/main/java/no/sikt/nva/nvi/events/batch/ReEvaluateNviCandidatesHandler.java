@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.events.batch;
 
 import static java.util.Objects.isNull;
-import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
+import static no.sikt.nva.nvi.common.db.CandidateRepository.defaultCandidateRepository;
 import static nva.commons.core.attempt.Try.attempt;
 
 import com.amazonaws.services.lambda.runtime.Context;
@@ -54,7 +54,7 @@ public class ReEvaluateNviCandidatesHandler extends EventHandler<ReEvaluateReque
   @JacocoGenerated
   public ReEvaluateNviCandidatesHandler() {
     this(
-        new CandidateRepository(defaultDynamoClient()),
+        defaultCandidateRepository(),
         new NviQueueClient(),
         new Environment(),
         defaultEventBridgeClient());

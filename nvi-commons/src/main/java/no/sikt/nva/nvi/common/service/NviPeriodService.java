@@ -35,8 +35,9 @@ public class NviPeriodService {
 
   @JacocoGenerated
   public static NviPeriodService defaultNviPeriodService() {
-    var dynamoClient = defaultDynamoClient();
-    return new NviPeriodService(new Environment(), new PeriodRepository(dynamoClient));
+    var environment = new Environment();
+    return new NviPeriodService(
+        environment, new PeriodRepository(defaultDynamoClient(), environment));
   }
 
   public void create(CreatePeriodRequest request) {

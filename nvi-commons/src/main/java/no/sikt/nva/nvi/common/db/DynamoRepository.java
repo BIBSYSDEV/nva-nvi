@@ -3,11 +3,12 @@ package no.sikt.nva.nvi.common.db;
 import static java.util.Objects.isNull;
 import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
-import static no.sikt.nva.nvi.common.utils.ApplicationConstants.REGION;
+import static no.sikt.nva.nvi.common.utils.ApplicationConstants.getRegion;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import no.sikt.nva.nvi.common.exceptions.TransactionException;
+import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,10 +94,11 @@ public class DynamoRepository {
 
   @JacocoGenerated
   public static DynamoDbClient defaultDynamoClient() {
+    var environment = new Environment();
     return DynamoDbClient.builder()
         .httpClient(UrlConnectionHttpClient.create())
         .credentialsProvider(DefaultCredentialsProvider.builder().build())
-        .region(REGION)
+        .region(getRegion(environment))
         .build();
   }
 

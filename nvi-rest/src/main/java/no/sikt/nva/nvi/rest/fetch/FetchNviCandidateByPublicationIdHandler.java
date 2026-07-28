@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.rest.fetch;
 
 import static java.net.HttpURLConnection.HTTP_OK;
-import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
+import static no.sikt.nva.nvi.common.service.CandidateService.defaultCandidateService;
 import static no.sikt.nva.nvi.common.utils.RequestUtil.isNviAdmin;
 import static no.sikt.nva.nvi.common.utils.RequestUtil.isNviCurator;
 import static nva.commons.core.attempt.Try.attempt;
@@ -10,8 +10,6 @@ import com.amazonaws.services.lambda.runtime.Context;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.model.UserInstance;
 import no.sikt.nva.nvi.common.service.CandidateResponseFactory;
 import no.sikt.nva.nvi.common.service.CandidateService;
@@ -35,19 +33,13 @@ public class FetchNviCandidateByPublicationIdHandler extends ApiGatewayHandler<V
 
   @JacocoGenerated
   public FetchNviCandidateByPublicationIdHandler() {
-    this(
-        new CandidateRepository(defaultDynamoClient()),
-        new PeriodRepository(defaultDynamoClient()),
-        new Environment());
+    this(defaultCandidateService(), new Environment());
   }
 
   public FetchNviCandidateByPublicationIdHandler(
-      CandidateRepository candidateRepository,
-      PeriodRepository periodRepository,
-      Environment environment) {
+      CandidateService candidateService, Environment environment) {
     super(Void.class, environment);
-    this.candidateService =
-        new CandidateService(environment, periodRepository, candidateRepository);
+    this.candidateService = candidateService;
   }
 
   @Override

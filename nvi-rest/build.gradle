@@ -12,7 +12,6 @@ dependencies {
     api(nvaLibs.json)
     api(project(':nvi-commons'))
     api(project(':viewing-scope'))
-    implementation(nvaCatalog.aws.sdk2.dynamo)
     implementation(nvaCatalog.slf4j.api)
     implementation(nvaLibs.auth)
     testFixturesApi(testFixtures(project(":nvi-commons")))
