@@ -36,6 +36,7 @@ public class FetchInstitutionReportHandler extends ApiGatewayHandler<Void, Strin
   private static final String ENV_VAR_API_HOST = "API_HOST";
   private final SearchClient<NviCandidateIndexDocument> searchClient;
   private final String apiHost;
+  private final int pageSize;
 
   @JacocoGenerated
   public FetchInstitutionReportHandler() {
@@ -47,6 +48,7 @@ public class FetchInstitutionReportHandler extends ApiGatewayHandler<Void, Strin
     super(Void.class, environment);
     this.searchClient = searchClient;
     this.apiHost = environment.readEnv(ENV_VAR_API_HOST);
+    this.pageSize = parseInt(environment.readEnv(ENV_VAR_INSTITUTION_REPORT_SEARCH_PAGE_SIZE));
   }
 
   @Override
@@ -76,7 +78,6 @@ public class FetchInstitutionReportHandler extends ApiGatewayHandler<Void, Strin
     var year = requestInfo.getPathParameter(PATH_PARAMETER_YEAR);
     var institutionId = resolveInstitutionId(requestInfo);
     LOGGER.info("Generating report for institution {} for year {}", institutionId, year);
-    var pageSize = parseInt(new Environment().readEnv(ENV_VAR_INSTITUTION_REPORT_SEARCH_PAGE_SIZE));
     var report =
         new InstitutionReportGenerator(searchClient, pageSize, year, institutionId)
             .generateReport();

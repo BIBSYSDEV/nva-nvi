@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.index.apigateway;
 
-import static no.sikt.nva.nvi.common.EnvironmentFixtures.getSearchNviCandidatesHandlerEnvironment;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.SEARCH_RESULT_TYPE;
+import static no.sikt.nva.nvi.index.IndexHandlerEnvironments.getSearchNviCandidatesHandlerEnvironment;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;

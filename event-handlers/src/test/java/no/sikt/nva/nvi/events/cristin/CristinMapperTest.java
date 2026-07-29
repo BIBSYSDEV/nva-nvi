@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.events.cristin;
 
 import static java.util.Objects.nonNull;
-import static no.sikt.nva.nvi.common.EnvironmentFixtures.getCristinNviReportEventConsumerEnvironment;
+import static no.sikt.nva.nvi.events.EventHandlerEnvironments.getCristinNviReportEventConsumerEnvironment;
 import static no.sikt.nva.nvi.events.cristin.CristinMapper.FHI_CRISTIN_IDENTIFIER;
 import static no.sikt.nva.nvi.events.cristin.CristinTestUtils.expectedCreatorId;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;

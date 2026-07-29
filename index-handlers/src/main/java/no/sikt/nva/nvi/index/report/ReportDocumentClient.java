@@ -1,12 +1,15 @@
 package no.sikt.nva.nvi.index.report;
 
 import static java.util.Objects.nonNull;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.NVI_CANDIDATES_INDEX;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.getSearchIndexName;
 import static nva.commons.core.attempt.Try.attempt;
 
 import java.util.ArrayList;
 import java.util.List;
+import no.sikt.nva.nvi.index.aws.OpenSearchClientFactory;
 import no.sikt.nva.nvi.index.model.report.ReportDocument;
+import nva.commons.core.Environment;
+import nva.commons.core.JacocoGenerated;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.ClearScrollRequest;
@@ -54,9 +57,19 @@ public class ReportDocumentClient {
                                   "approvals.points.institutionPoints"))));
 
   private final OpenSearchClient client;
+  private final String indexName;
 
-  public ReportDocumentClient(OpenSearchClient client) {
+  public ReportDocumentClient(OpenSearchClient client, String indexName) {
     this.client = client;
+    this.indexName = indexName;
+  }
+
+  @JacocoGenerated
+  public static ReportDocumentClient defaultClient() {
+    var environment = new Environment();
+    return new ReportDocumentClient(
+        OpenSearchClientFactory.createAuthenticatedClient(environment),
+        getSearchIndexName(environment));
   }
 
   public List<ReportDocument> fetchDocuments(Query query) {
@@ -73,7 +86,7 @@ public class ReportDocumentClient {
   private String initializeScroll(List<ReportDocument> documents, Query query) {
     var request =
         new SearchRequest.Builder()
-            .index(NVI_CANDIDATES_INDEX)
+            .index(indexName)
             .size(SCROLL_PAGE_SIZE)
             .query(query)
             .source(REPORT_SOURCE_CONFIG)

@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.events;
 
+import static no.sikt.nva.nvi.events.EventHandlerEnvironments.getQueuePersistedResourceHandlerEnvironment;
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.createS3Event;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -22,7 +23,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 class QueuePersistedResourceHandlerTest {
 
-  private static final Environment ENVIRONMENT = new Environment();
+  private static final Environment ENVIRONMENT = getQueuePersistedResourceHandlerEnvironment();
   private static final String QUEUE_URL = ENVIRONMENT.readEnv("PERSISTED_RESOURCE_QUEUE_URL");
   private final Context context = new FakeContext();
   private QueuePersistedResourceHandler handler;

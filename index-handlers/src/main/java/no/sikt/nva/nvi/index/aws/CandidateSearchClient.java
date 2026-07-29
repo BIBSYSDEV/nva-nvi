@@ -3,7 +3,7 @@ package no.sikt.nva.nvi.index.aws;
 import static java.util.Collections.emptyMap;
 import static java.util.Objects.isNull;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.MAPPINGS;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.NVI_CANDIDATES_INDEX;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.getSearchIndexName;
 import static nva.commons.core.attempt.Try.attempt;
 
 import java.io.IOException;
@@ -15,6 +15,7 @@ import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.model.search.SearchResultParameters;
 import no.sikt.nva.nvi.index.utils.SearchConstants;
+import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.FieldSort;
@@ -42,18 +43,24 @@ public class CandidateSearchClient implements SearchClient<NviCandidateIndexDocu
 
   private static final String INDEX_NOT_FOUND_EXCEPTION = "index_not_found_exception";
   private static final Logger LOGGER = LoggerFactory.getLogger(CandidateSearchClient.class);
-  private static final String ERROR_MSG_CREATE_INDEX =
-      "Error while creating index: " + NVI_CANDIDATES_INDEX;
   private static final int MAX_QUERY_SIZE = 150;
   private final OpenSearchClient client;
+  private final String readIndexName;
+  private final String writeIndexName;
 
-  public CandidateSearchClient(OpenSearchClient client) {
+  public CandidateSearchClient(
+      OpenSearchClient client, String readIndexName, String writeIndexName) {
     this.client = client;
+    this.readIndexName = readIndexName;
+    this.writeIndexName = writeIndexName;
   }
 
   @JacocoGenerated
   public static CandidateSearchClient defaultOpenSearchClient() {
-    return new CandidateSearchClient(OpenSearchClientFactory.createAuthenticatedClient());
+    var environment = new Environment();
+    var indexName = getSearchIndexName(environment);
+    var authenticatedClient = OpenSearchClientFactory.createAuthenticatedClient(environment);
+    return new CandidateSearchClient(authenticatedClient, indexName, indexName);
   }
 
   @Override
@@ -106,12 +113,12 @@ public class CandidateSearchClient implements SearchClient<NviCandidateIndexDocu
 
   @Override
   public void deleteIndex() throws IOException {
-    client.indices().delete(new DeleteIndexRequest.Builder().index(NVI_CANDIDATES_INDEX).build());
+    client.indices().delete(new DeleteIndexRequest.Builder().index(writeIndexName).build());
   }
 
   public boolean indexExists() {
     try {
-      client.indices().get(GetIndexRequest.of(request -> request.index(NVI_CANDIDATES_INDEX)));
+      client.indices().get(GetIndexRequest.of(request -> request.index(writeIndexName)));
     } catch (IOException io) {
       throw new RuntimeException(io);
     } catch (OpenSearchException osex) {
@@ -125,7 +132,10 @@ public class CandidateSearchClient implements SearchClient<NviCandidateIndexDocu
 
   public void createIndex() {
     attempt(() -> client.indices().create(getCreateIndexRequest()))
-        .orElseThrow(failure -> handleFailure(ERROR_MSG_CREATE_INDEX, failure.getException()));
+        .orElseThrow(
+            failure ->
+                handleFailure(
+                    "Error while creating index: " + writeIndexName, failure.getException()));
   }
 
   public void refreshIndex() {
@@ -133,24 +143,21 @@ public class CandidateSearchClient implements SearchClient<NviCandidateIndexDocu
         .orElseThrow(failure -> handleFailure("Failed to refresh index", failure.getException()));
   }
 
-  private static DeleteRequest contructDeleteRequest(UUID identifier) {
-    return new DeleteRequest.Builder()
-        .index(NVI_CANDIDATES_INDEX)
-        .id(identifier.toString())
-        .build();
+  private DeleteRequest contructDeleteRequest(UUID identifier) {
+    return new DeleteRequest.Builder().index(writeIndexName).id(identifier.toString()).build();
   }
 
-  private static IndexRequest<NviCandidateIndexDocument> constructIndexRequest(
+  private IndexRequest<NviCandidateIndexDocument> constructIndexRequest(
       NviCandidateIndexDocument indexDocument) {
     return new IndexRequest.Builder<NviCandidateIndexDocument>()
-        .index(NVI_CANDIDATES_INDEX)
+        .index(writeIndexName)
         .id(indexDocument.identifier().toString())
         .document(indexDocument)
         .build();
   }
 
-  private static CreateIndexRequest getCreateIndexRequest() {
-    return new CreateIndexRequest.Builder().mappings(MAPPINGS).index(NVI_CANDIDATES_INDEX).build();
+  private CreateIndexRequest getCreateIndexRequest() {
+    return new CreateIndexRequest.Builder().mappings(MAPPINGS).index(writeIndexName).build();
   }
 
   private static SortOptions getSortOptions(CandidateSearchParameters parameters) {
@@ -193,7 +200,7 @@ public class CandidateSearchClient implements SearchClient<NviCandidateIndexDocu
     var sortOptions = getSortOptions(parameters);
     var sourceConfig = getSourceConfigWithExcludedFields(parameters);
     return new SearchRequest.Builder()
-        .index(NVI_CANDIDATES_INDEX)
+        .index(readIndexName)
         .query(query)
         .sort(sortOptions)
         .aggregations(generateAggregations(parameters))

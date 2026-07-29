@@ -1,11 +1,11 @@
 package no.sikt.nva.nvi.index;
 
-import static no.sikt.nva.nvi.common.EnvironmentFixtures.getIndexDocumentHandlerEnvironment;
 import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createEvent;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.model.PublicationDtoFixtures.publicationDtoMirroring;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.GZIP_ENDING;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.NVI_CANDIDATES_FOLDER;
+import static no.sikt.nva.nvi.index.IndexHandlerEnvironments.getIndexDocumentHandlerEnvironment;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.s3.S3Driver.S3_SCHEME;

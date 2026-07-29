@@ -12,6 +12,7 @@ import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.indexDocumentWithoutO
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.indexDocumentWithoutPages;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomCristinOrgUri;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomIndexDocumentWith;
+import static no.sikt.nva.nvi.index.IndexHandlerEnvironments.getFetchInstitutionReportHandlerEnvironment;
 import static no.sikt.nva.nvi.index.apigateway.utils.AggregateResponseTestUtil.filterAggregate;
 import static no.sikt.nva.nvi.index.apigateway.utils.ExcelWorkbookUtil.extractLinesInInstitutionIdentifierColumn;
 import static no.sikt.nva.nvi.index.apigateway.utils.ExcelWorkbookUtil.fromInputStream;
@@ -122,9 +123,9 @@ class FetchInstitutionReportHandlerTest {
 
   private static final String YEAR = "year";
   private static final Context CONTEXT = new FakeContext();
-  protected static final Environment ENVIRONMENT = new Environment();
+  protected static final Environment ENVIRONMENT = getFetchInstitutionReportHandlerEnvironment();
   private static final int PAGE_SIZE =
-      Integer.parseInt(new Environment().readEnv("INSTITUTION_REPORT_SEARCH_PAGE_SIZE"));
+      Integer.parseInt(ENVIRONMENT.readEnv("INSTITUTION_REPORT_SEARCH_PAGE_SIZE"));
   private static final String NESTED_FIELD_CONTRIBUTORS = "publicationDetails.contributors";
   private static final String EXPECTED_SORT_ORDER = SortOrder.Asc.jsonValue();
   private static SearchClient<NviCandidateIndexDocument> searchClient;

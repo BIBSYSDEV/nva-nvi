@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.index.apigateway.utils;
 
-import static no.sikt.nva.nvi.index.utils.SearchConstants.NVI_CANDIDATES_INDEX;
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.getGlobalEnvironment;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.getSearchIndexName;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 
 import java.util.List;
@@ -75,7 +76,7 @@ public final class MockOpenSearchUtil {
   private static Hit<NviCandidateIndexDocument> toHit(NviCandidateIndexDocument document) {
     return new Hit.Builder<NviCandidateIndexDocument>()
         .id(randomString())
-        .index(NVI_CANDIDATES_INDEX)
+        .index(getSearchIndexName(getGlobalEnvironment()))
         .source(document)
         .build();
   }

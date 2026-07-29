@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.index.utils;
 
 import static nva.commons.core.StringUtils.isNotBlank;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -40,11 +41,7 @@ public final class SearchConstants {
   public static final String NAME = "name";
   public static final String AFFILIATIONS = "affiliations";
   public static final String PART_OF = "partOf";
-  public static final String NVI_CANDIDATES_INDEX = "nvi-candidates";
   public static final String SEARCH_INFRASTRUCTURE_CREDENTIALS = "SearchInfrastructureCredentials";
-  public static final Environment ENVIRONMENT = new Environment();
-  public static final String SEARCH_INFRASTRUCTURE_API_HOST = readSearchInfrastructureApiHost();
-  public static final String SEARCH_INFRASTRUCTURE_AUTH_URI = readSearchInfrastructureAuthUri();
   public static final String JSON_PATH_DELIMITER = ".";
   public static final String JSON_PATH_CONTRIBUTORS_NAME =
       String.join(
@@ -66,6 +63,18 @@ public final class SearchConstants {
   public static final String INDEXED_AT = "indexDocumentCreatedAt";
 
   private SearchConstants() {}
+
+  public static String getSearchIndexName(Environment environment) {
+    return environment.readEnv("NVI_SEARCH_INDEX");
+  }
+
+  public static URI getSearchInfrastructureApiHost(Environment environment) {
+    return URI.create(environment.readEnv("SEARCH_INFRASTRUCTURE_API_HOST"));
+  }
+
+  public static URI getSearchInfrastructureAuthUri(Environment environment) {
+    return URI.create(environment.readEnv("SEARCH_INFRASTRUCTURE_AUTH_URI"));
+  }
 
   public static Query constructQuery(CandidateSearchParameters params) {
     var queryFilter =
@@ -107,14 +116,6 @@ public final class SearchConstants {
         .properties(properties)
         .build()
         .toProperty();
-  }
-
-  private static String readSearchInfrastructureApiHost() {
-    return ENVIRONMENT.readEnv("SEARCH_INFRASTRUCTURE_API_HOST");
-  }
-
-  private static String readSearchInfrastructureAuthUri() {
-    return ENVIRONMENT.readEnv("SEARCH_INFRASTRUCTURE_AUTH_URI");
   }
 
   private static Map<String, Property> approvalProperties() {

@@ -1,6 +1,6 @@
 package no.sikt.nva.nvi.events;
 
-import static no.sikt.nva.nvi.common.EnvironmentFixtures.getDynamoDbEventToQueueHandlerEnvironment;
+import static no.sikt.nva.nvi.events.EventHandlerEnvironments.getDynamoDbEventToQueueHandlerEnvironment;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;

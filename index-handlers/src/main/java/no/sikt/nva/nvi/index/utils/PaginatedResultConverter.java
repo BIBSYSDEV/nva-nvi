@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.index.utils;
 
 import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.common.utils.ApplicationConstants.getBaseUri;
 import static no.sikt.nva.nvi.common.utils.Validator.hasElements;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_AFFILIATIONS;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_ASSIGNEE;
@@ -32,22 +33,21 @@ import org.slf4j.LoggerFactory;
 public final class PaginatedResultConverter {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(PaginatedResultConverter.class);
-  private static final Environment ENVIRONMENT = new Environment();
-  private static final String HOST = ENVIRONMENT.readEnv("API_HOST");
-  private static final String CUSTOM_DOMAIN_BASE_PATH =
-      ENVIRONMENT.readEnv("CUSTOM_DOMAIN_BASE_PATH");
   private static final String CANDIDATE_PATH = "candidate";
+  private final URI baseUri;
 
-  private PaginatedResultConverter() {}
+  public PaginatedResultConverter(Environment environment) {
+    baseUri = constructBaseUri(environment);
+  }
 
-  public static PaginatedSearchResult<NviCandidateIndexDocument> toPaginatedResult(
+  public PaginatedSearchResult<NviCandidateIndexDocument> toPaginatedResult(
       SearchResponse<NviCandidateIndexDocument> searchResponse,
       CandidateSearchParameters candidateSearchParameters)
       throws UnprocessableContentException {
     var searchResultParameters = candidateSearchParameters.searchResultParameters();
     var paginatedSearchResult =
         PaginatedSearchResult.create(
-            constructBaseUri(),
+            baseUri,
             searchResultParameters.offset(),
             searchResultParameters.size(),
             extractTotalNumberOfHits(searchResponse),
@@ -117,10 +117,8 @@ public final class PaginatedResultConverter {
     return searchResponse.hits().hits().stream().map(Hit::source).toList();
   }
 
-  private static URI constructBaseUri() {
-    return UriWrapper.fromHost(HOST)
-        .addChild(CUSTOM_DOMAIN_BASE_PATH)
-        .addChild(CANDIDATE_PATH)
-        .getUri();
+  private static URI constructBaseUri(Environment environment) {
+    var baseUri = getBaseUri(environment);
+    return UriWrapper.fromUri(baseUri).addChild(CANDIDATE_PATH).getUri();
   }
 }

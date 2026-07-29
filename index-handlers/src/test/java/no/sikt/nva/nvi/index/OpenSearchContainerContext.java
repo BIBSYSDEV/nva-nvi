@@ -1,7 +1,11 @@
 package no.sikt.nva.nvi.index;
 
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.SEARCH_INFRASTRUCTURE_API_HOST;
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.getDefaultEnvironmentBuilder;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.getSearchIndexName;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.getSearchInfrastructureApiHost;
+
 import java.io.IOException;
-import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import no.sikt.nva.nvi.index.aws.CandidateSearchClient;
@@ -31,12 +35,17 @@ public class OpenSearchContainerContext implements Startable {
   @Override
   public void start() {
     CONTAINER.start();
-    var httpHost = HttpHost.create(URI.create(CONTAINER.getHttpHostAddress()));
+    var environment =
+        getDefaultEnvironmentBuilder()
+            .with(SEARCH_INFRASTRUCTURE_API_HOST.getKey(), CONTAINER.getHttpHostAddress())
+            .build();
+    var httpHost = HttpHost.create(getSearchInfrastructureApiHost(environment));
     var fakeJwtProvider = FakeCachedJwtProvider.setup();
     var nativeClient = OpenSearchClientFactory.createClient(httpHost, fakeJwtProvider);
-    searchClient = new CandidateSearchClient(nativeClient);
-    reportAggregationClient = new ReportAggregationClient(nativeClient);
-    reportDocumentClient = new ReportDocumentClient(nativeClient);
+    var indexName = getSearchIndexName(environment);
+    searchClient = new CandidateSearchClient(nativeClient, indexName, indexName);
+    reportAggregationClient = new ReportAggregationClient(nativeClient, indexName);
+    reportDocumentClient = new ReportDocumentClient(nativeClient, indexName);
   }
 
   @Override

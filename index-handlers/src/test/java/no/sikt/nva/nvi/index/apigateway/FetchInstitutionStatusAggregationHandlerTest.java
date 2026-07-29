@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.index.apigateway;
 
 import static java.util.Collections.emptyMap;
-import static no.sikt.nva.nvi.common.EnvironmentFixtures.getFetchInstitutionStatusAggregationHandlerEnvironment;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.organizationIdFromIdentifier;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
 import static no.sikt.nva.nvi.common.utils.CollectionUtils.mergeCollections;
@@ -9,6 +8,7 @@ import static no.sikt.nva.nvi.index.IndexDocumentFixtures.createRandomIndexDocum
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.documentWithApprovals;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.documentsForAllStatusCombinations;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomApproval;
+import static no.sikt.nva.nvi.index.IndexHandlerEnvironments.getFetchInstitutionStatusAggregationHandlerEnvironment;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.FAKER;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;

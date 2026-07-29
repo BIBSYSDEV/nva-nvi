@@ -4,7 +4,6 @@ import static no.sikt.nva.nvi.common.utils.RequestUtil.isNviAdmin;
 import static no.sikt.nva.nvi.index.apigateway.CristinOrgUriUtil.toCristinOrgUri;
 import static no.sikt.nva.nvi.index.aws.CandidateSearchClient.defaultOpenSearchClient;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_AFFILIATIONS;
-import static no.sikt.nva.nvi.index.utils.PaginatedResultConverter.toPaginatedResult;
 import static nva.commons.core.attempt.Try.attempt;
 
 import com.amazonaws.services.lambda.runtime.Context;
@@ -19,6 +18,7 @@ import no.sikt.nva.nvi.common.utils.RequestUtil;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
+import no.sikt.nva.nvi.index.utils.PaginatedResultConverter;
 import no.sikt.nva.nvi.viewingscope.ViewingScopeValidator;
 import no.sikt.nva.nvi.viewingscope.ViewingScopeValidatorImpl;
 import no.unit.nva.auth.uriretriever.UriRetriever;
@@ -40,6 +40,7 @@ public class SearchNviCandidatesHandler
   private final ViewingScopeValidator viewingScopeValidator;
   private final IdentityServiceClient identityServiceClient;
   private final String apiHost;
+  private final PaginatedResultConverter resultConverter;
 
   @JacocoGenerated
   public SearchNviCandidatesHandler() {
@@ -60,6 +61,7 @@ public class SearchNviCandidatesHandler
     this.viewingScopeValidator = viewingScopeValidator;
     this.identityServiceClient = identityServiceClient;
     this.apiHost = environment.readEnv("API_HOST");
+    this.resultConverter = new PaginatedResultConverter(environment);
   }
 
   @Override
@@ -76,7 +78,9 @@ public class SearchNviCandidatesHandler
     var candidateSearchParameters =
         CandidateSearchParameters.fromRequestInfo(requestInfo, affiliations);
     return attempt(() -> searchClient.search(candidateSearchParameters))
-        .map(searchResponse -> toPaginatedResult(searchResponse, candidateSearchParameters))
+        .map(
+            searchResponse ->
+                resultConverter.toPaginatedResult(searchResponse, candidateSearchParameters))
         .orElseThrow();
   }
 

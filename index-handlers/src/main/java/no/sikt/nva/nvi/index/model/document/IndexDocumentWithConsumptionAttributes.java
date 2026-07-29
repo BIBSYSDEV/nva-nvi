@@ -17,9 +17,10 @@ public record IndexDocumentWithConsumptionAttributes(
   private static final String CONSUMPTION_ATTRIBUTES = "consumptionAttributes";
   private static final String BODY = "body";
 
-  public static IndexDocumentWithConsumptionAttributes from(NviCandidateIndexDocument document) {
-    return new IndexDocumentWithConsumptionAttributes(
-        document, ConsumptionAttributes.from(document.identifier()));
+  public static IndexDocumentWithConsumptionAttributes from(
+      NviCandidateIndexDocument document, String indexName) {
+    var attributes = new ConsumptionAttributes(document.identifier(), indexName);
+    return new IndexDocumentWithConsumptionAttributes(document, attributes);
   }
 
   public URI persist(StorageWriter<IndexDocumentWithConsumptionAttributes> storageWriter)

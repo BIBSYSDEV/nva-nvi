@@ -1,11 +1,11 @@
 package no.sikt.nva.nvi.index.apigateway;
 
 import static java.util.Collections.emptyMap;
-import static no.sikt.nva.nvi.common.EnvironmentFixtures.getSearchNviCandidatesHandlerEnvironment;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationIdentifier;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.getRandomDateInCurrentYearAsDto;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomPages;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomPublicationChannel;
+import static no.sikt.nva.nvi.index.IndexHandlerEnvironments.getSearchNviCandidatesHandlerEnvironment;
 import static no.sikt.nva.nvi.index.apigateway.utils.AggregateResponseTestUtil.filterAggregate;
 import static no.sikt.nva.nvi.index.apigateway.utils.AggregateResponseTestUtil.getGlobalAggregate;
 import static no.sikt.nva.nvi.index.apigateway.utils.AggregateResponseTestUtil.organizationApprovalStatusAggregate;

@@ -8,7 +8,6 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
-import no.sikt.nva.nvi.index.aws.OpenSearchClientFactory;
 import no.sikt.nva.nvi.index.report.response.GenerateReportMessage;
 import no.unit.nva.s3.S3Driver;
 import nva.commons.core.JacocoGenerated;
@@ -22,7 +21,7 @@ public class GenerateReportHandler implements RequestHandler<SQSEvent, Void> {
     this(
         new ReportGenerator(
             NviPeriodService.defaultNviPeriodService(),
-            new ReportDocumentClient(OpenSearchClientFactory.createAuthenticatedClient()),
+            ReportDocumentClient.defaultClient(),
             ReportAggregationClient.defaultClient(),
             S3Driver.defaultS3Client().build()));
   }

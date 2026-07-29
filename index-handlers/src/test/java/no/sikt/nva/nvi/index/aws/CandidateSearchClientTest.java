@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.index.aws;
 
 import static java.util.Objects.requireNonNull;
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.getGlobalEnvironment;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.createRandomIndexDocumentWithHandle;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomApproval;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomApprovalList;
@@ -11,6 +12,7 @@ import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomNviContributor;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomNviContributorBuilder;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomPages;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomPublicationChannel;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.getSearchIndexName;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -47,6 +49,7 @@ import no.sikt.nva.nvi.index.model.search.OrderByFields;
 import no.sikt.nva.nvi.index.model.search.SearchResultParameters;
 import no.sikt.nva.nvi.index.query.QueryFilterType;
 import no.sikt.nva.nvi.index.query.SearchAggregation;
+import nva.commons.core.Environment;
 import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UriWrapper;
 import org.apache.hc.core5.http.HttpHost;
@@ -84,6 +87,7 @@ class CandidateSearchClientTest {
       "document_with_contributor_from_ntnu_subunit.json";
   private static final OpenSearchContainerContext CONTAINER = new OpenSearchContainerContext();
   private static final int DEFAULT_CANDIDATE_COUNT = 5;
+  private static final Environment ENVIRONMENT = getGlobalEnvironment();
   private static CandidateSearchClient searchClient;
 
   @BeforeAll
@@ -743,7 +747,8 @@ class CandidateSearchClientTest {
     var unreachableHost = new HttpHost("http", "localhost", 1);
     var fakeJwtProvider = FakeCachedJwtProvider.setup();
     var nativeClient = OpenSearchClientFactory.createClient(unreachableHost, fakeJwtProvider);
-    return new CandidateSearchClient(nativeClient);
+    var indexName = getSearchIndexName(ENVIRONMENT);
+    return new CandidateSearchClient(nativeClient, indexName, indexName);
   }
 
   private static List<NviCandidateIndexDocument>
