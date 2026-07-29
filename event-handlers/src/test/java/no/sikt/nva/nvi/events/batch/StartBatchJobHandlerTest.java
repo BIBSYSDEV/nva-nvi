@@ -6,7 +6,7 @@ import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeri
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupFuturePeriod;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.model.CandidateFixtures.setupNumberOfCandidatesForYear;
-import static no.sikt.nva.nvi.events.EventHandlerEnvironments.getStartBatchJobHandlerEnvironment;
+import static no.sikt.nva.nvi.events.EventHandlerEnvironments.forHandler;
 import static no.sikt.nva.nvi.events.RequestFixtures.migrateCandidatesForCurrentYear;
 import static no.sikt.nva.nvi.events.RequestFixtures.refreshAllCandidates;
 import static no.sikt.nva.nvi.events.RequestFixtures.refreshAllPeriods;
@@ -67,7 +67,7 @@ class StartBatchJobHandlerTest {
     queueClient = new FakeSqsClient();
     output = new ByteArrayOutputStream();
     eventBridgeClient = new FakeEventBridgeClient();
-    environment = getStartBatchJobHandlerEnvironment();
+    environment = forHandler(StartBatchJobHandler.class);
   }
 
   @Nested

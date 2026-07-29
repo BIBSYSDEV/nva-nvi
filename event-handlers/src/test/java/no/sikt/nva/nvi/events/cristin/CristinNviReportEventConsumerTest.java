@@ -8,7 +8,7 @@ import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeri
 import static no.sikt.nva.nvi.common.model.EnumFixtures.randomValidInstanceType;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomTopLevelOrganization;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDateInYear;
-import static no.sikt.nva.nvi.events.EventHandlerEnvironments.getCristinNviReportEventConsumerEnvironment;
+import static no.sikt.nva.nvi.events.EventHandlerEnvironments.forHandler;
 import static no.sikt.nva.nvi.events.cristin.CristinNviReportEventConsumer.NVI_ERRORS;
 import static no.sikt.nva.nvi.events.cristin.CristinTestUtils.createPublicationFactory;
 import static no.sikt.nva.nvi.events.cristin.CristinTestUtils.getTopLevelOrganizations;
@@ -65,7 +65,7 @@ class CristinNviReportEventConsumerTest {
     var candidateRepository = scenario.getCandidateRepository();
     var s3Client = scenario.getS3Client();
     s3Driver = new S3Driver(s3Client, CRISTIN_IMPORT_BUCKET);
-    var environment = getCristinNviReportEventConsumerEnvironment();
+    var environment = forHandler(CristinNviReportEventConsumer.class);
     candidateService =
         new CandidateService(environment, scenario.getPeriodRepository(), candidateRepository);
     handler = new CristinNviReportEventConsumer(candidateRepository, s3Client, environment);

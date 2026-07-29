@@ -8,7 +8,7 @@ import static no.sikt.nva.nvi.index.IndexDocumentFixtures.createRandomIndexDocum
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.documentWithApprovals;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.documentsForAllStatusCombinations;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomApproval;
-import static no.sikt.nva.nvi.index.IndexHandlerEnvironments.getFetchInstitutionStatusAggregationHandlerEnvironment;
+import static no.sikt.nva.nvi.index.IndexHandlerEnvironments.forHandler;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.FAKER;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
@@ -59,7 +59,7 @@ class FetchInstitutionStatusAggregationHandlerTest {
   private static final OpenSearchContainerContext CONTAINER = new OpenSearchContainerContext();
   private static final Context CONTEXT = new FakeContext();
   private static final Environment ENVIRONMENT =
-      getFetchInstitutionStatusAggregationHandlerEnvironment();
+      forHandler(FetchInstitutionStatusAggregationHandler.class);
   private String username;
   private URI userTopLevelOrg;
   private AccessRight userAccessRight;

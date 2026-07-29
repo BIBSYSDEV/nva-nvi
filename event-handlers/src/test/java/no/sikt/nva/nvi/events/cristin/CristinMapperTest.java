@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.events.cristin;
 
 import static java.util.Objects.nonNull;
-import static no.sikt.nva.nvi.events.EventHandlerEnvironments.getCristinNviReportEventConsumerEnvironment;
+import static no.sikt.nva.nvi.events.EventHandlerEnvironments.forHandler;
 import static no.sikt.nva.nvi.events.cristin.CristinMapper.FHI_CRISTIN_IDENTIFIER;
 import static no.sikt.nva.nvi.events.cristin.CristinTestUtils.expectedCreatorId;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -48,7 +48,7 @@ class CristinMapperTest {
   private static final String CRISTIN_PERSON_IDENTIFIER = randomString();
   private static final CristinMapper CRISTIN_MAPPER =
       CristinMapper.withDepartmentTransfers(
-          readCristinDepartments(), getCristinNviReportEventConsumerEnvironment());
+          readCristinDepartments(), forHandler(CristinNviReportEventConsumer.class));
   private static final String VALID_QUALITY_CODE = "1";
   private static final URI WORLD_SCIENTIFIC_JOURNAL =
       URI.create(

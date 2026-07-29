@@ -1,6 +1,6 @@
 package no.sikt.nva.nvi.events;
 
-import static no.sikt.nva.nvi.events.EventHandlerEnvironments.getDynamoDbEventToQueueHandlerEnvironment;
+import static no.sikt.nva.nvi.events.EventHandlerEnvironments.forHandler;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
@@ -11,7 +11,7 @@ import nva.commons.core.Environment;
 
 public class DynamoDbToEventQueueHandlerContext {
   private static final Context CONTEXT = new FakeContext();
-  private static final Environment ENVIRONMENT = getDynamoDbEventToQueueHandlerEnvironment();
+  private static final Environment ENVIRONMENT = forHandler(DynamoDbEventToQueueHandler.class);
   private final DynamoDbEventToQueueHandler handler;
   private final FakeSqsClient queueClient;
 

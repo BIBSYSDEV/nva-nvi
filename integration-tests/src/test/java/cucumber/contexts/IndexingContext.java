@@ -2,7 +2,7 @@ package cucumber.contexts;
 
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.EXPANDED_RESOURCES_BUCKET;
 import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createEvent;
-import static no.sikt.nva.nvi.index.IndexHandlerEnvironments.getIndexDocumentHandlerEnvironment;
+import static no.sikt.nva.nvi.index.IndexHandlerEnvironments.forHandler;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 
@@ -46,8 +46,8 @@ public class IndexingContext {
             new IndexDocumentGenerator(
                 new PublicationLoaderService(
                     scenario.getS3StorageReaderForExpandedResourcesBucket()),
-                getIndexDocumentHandlerEnvironment()),
-            getIndexDocumentHandlerEnvironment());
+                forHandler(IndexDocumentHandler.class)),
+            forHandler(IndexDocumentHandler.class));
   }
 
   /**

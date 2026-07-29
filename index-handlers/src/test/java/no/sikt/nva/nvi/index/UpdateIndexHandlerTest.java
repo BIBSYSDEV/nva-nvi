@@ -5,7 +5,7 @@ import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod
 import static no.sikt.nva.nvi.common.model.CandidateFixtures.setupRandomApplicableCandidate;
 import static no.sikt.nva.nvi.common.model.PublicationDtoFixtures.publicationDtoMirroring;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.createPath;
-import static no.sikt.nva.nvi.index.IndexHandlerEnvironments.getUpdateIndexHandlerEnvironment;
+import static no.sikt.nva.nvi.index.IndexHandlerEnvironments.forHandler;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.getSearchIndexName;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.s3.S3Driver.S3_SCHEME;
@@ -51,7 +51,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 class UpdateIndexHandlerTest {
 
   private static final Context CONTEXT = new FakeContext();
-  private static final Environment ENVIRONMENT = getUpdateIndexHandlerEnvironment();
+  private static final Environment ENVIRONMENT = forHandler(UpdateIndexHandler.class);
   private static final String INDEX_DLQ = "INDEX_DLQ";
   private static final String INDEX_DLQ_URL = ENVIRONMENT.readEnv(INDEX_DLQ);
   private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";

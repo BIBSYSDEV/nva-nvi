@@ -4,7 +4,7 @@ import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.createNumberOfCandi
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.getYearIndexStartMarker;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.sortByIdentifier;
 import static no.sikt.nva.nvi.common.model.CandidateFixtures.setupNumberOfCandidatesForYear;
-import static no.sikt.nva.nvi.events.EventHandlerEnvironments.getReEvaluateNviCandidateHandlerEnvironment;
+import static no.sikt.nva.nvi.events.EventHandlerEnvironments.forHandler;
 import static no.sikt.nva.nvi.test.TestConstants.THIS_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.randomIntBetween;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
@@ -49,7 +49,7 @@ class ReEvaluateNviCandidatesHandlerTest {
 
   private static final int MAX_PAGE_SIZE = 1000;
   private static final int DEFAULT_PAGE_SIZE = 500;
-  private static final Environment ENVIRONMENT = getReEvaluateNviCandidateHandlerEnvironment();
+  private static final Environment ENVIRONMENT = forHandler(ReEvaluateNviCandidatesHandler.class);
   private static final String OUTPUT_TOPIC = ENVIRONMENT.readEnv("TOPIC_REEVALUATE_CANDIDATES");
   private static final int BATCH_SIZE = 10;
   private final Context context = mock(Context.class);

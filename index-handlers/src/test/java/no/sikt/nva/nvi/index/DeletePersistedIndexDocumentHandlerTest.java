@@ -5,7 +5,7 @@ import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createEventWithOneInv
 import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createEventWithOneRecordMissingIdentifier;
 import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createEventWithOnlyOneRecordMissingIdentifier;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.randomApplicableCandidateDao;
-import static no.sikt.nva.nvi.index.IndexHandlerEnvironments.getDeletePersistedIndexDocumentHandlerEnvironment;
+import static no.sikt.nva.nvi.index.IndexHandlerEnvironments.forHandler;
 import static no.sikt.nva.nvi.index.aws.S3StorageWriter.GZIP_ENDING;
 import static no.sikt.nva.nvi.index.aws.S3StorageWriter.NVI_CANDIDATES_FOLDER;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.getSearchIndexName;
@@ -36,7 +36,7 @@ class DeletePersistedIndexDocumentHandlerTest {
 
   private static final String PERSISTED_NVI_CANDIDATES_FOLDER = "nvi-candidates";
   private static final Environment ENVIRONMENT =
-      getDeletePersistedIndexDocumentHandlerEnvironment();
+      forHandler(DeletePersistedIndexDocumentHandler.class);
   private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
   private static final String BUCKET_NAME = ENVIRONMENT.readEnv(EXPANDED_RESOURCES_BUCKET);
   private DeletePersistedIndexDocumentHandler handler;

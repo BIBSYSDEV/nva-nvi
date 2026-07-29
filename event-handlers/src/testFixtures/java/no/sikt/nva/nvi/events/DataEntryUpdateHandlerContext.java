@@ -1,6 +1,6 @@
 package no.sikt.nva.nvi.events;
 
-import static no.sikt.nva.nvi.events.EventHandlerEnvironments.getDataEntryUpdateHandlerEnvironment;
+import static no.sikt.nva.nvi.events.EventHandlerEnvironments.forHandler;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
@@ -11,7 +11,7 @@ import nva.commons.core.Environment;
 
 public class DataEntryUpdateHandlerContext {
   private static final Context CONTEXT = new FakeContext();
-  private static final Environment ENVIRONMENT = getDataEntryUpdateHandlerEnvironment();
+  private static final Environment ENVIRONMENT = forHandler(DataEntryUpdateHandler.class);
   private final DataEntryUpdateHandler handler;
   private final FakeSqsClient queueClient;
   private final FakeNotificationClient snsClient;

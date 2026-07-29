@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.index.apigateway;
 
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.SEARCH_RESULT_TYPE;
-import static no.sikt.nva.nvi.index.IndexHandlerEnvironments.getSearchNviCandidatesHandlerEnvironment;
+import static no.sikt.nva.nvi.index.IndexHandlerEnvironments.forHandler;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -33,7 +33,7 @@ import org.zalando.problem.Problem;
 
 public class SearchNviCandidatesHandlerTestBase {
 
-  private static final Environment ENVIRONMENT = getSearchNviCandidatesHandlerEnvironment();
+  private static final Environment ENVIRONMENT = forHandler(SearchNviCandidatesHandler.class);
   private static final Context CONTEXT = new FakeContext();
   protected static final IdentityServiceClient MOCK_IDENTITY_SERVICE_CLIENT =
       mock(IdentityServiceClient.class);
