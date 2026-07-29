@@ -22,7 +22,7 @@ import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.Username;
 import no.sikt.nva.nvi.rest.BaseCandidateRestHandlerTest;
-import no.sikt.nva.nvi.rest.EnvironmentFixtures;
+import no.sikt.nva.nvi.rest.RestHandlerEnvironments;
 import no.sikt.nva.nvi.rest.create.NviNoteRequest;
 import no.sikt.nva.nvi.viewingscope.FakeViewingScopeValidator;
 import no.unit.nva.testutils.HandlerRequestBuilder;
@@ -50,7 +50,7 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Override
   protected FakeEnvironment getHandlerEnvironment() {
-    return EnvironmentFixtures.REMOVE_NOTE_HANDLER;
+    return RestHandlerEnvironments.forHandler(RemoveNoteHandler.class);
   }
 
   @BeforeEach

@@ -32,7 +32,7 @@ import no.sikt.nva.nvi.common.service.dto.problem.UnverifiedCreatorFromOrganizat
 import no.sikt.nva.nvi.common.service.dto.problem.UnverifiedCreatorProblem;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.rest.BaseCandidateRestHandlerTest;
-import no.sikt.nva.nvi.rest.EnvironmentFixtures;
+import no.sikt.nva.nvi.rest.RestHandlerEnvironments;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
@@ -55,7 +55,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Override
   protected FakeEnvironment getHandlerEnvironment() {
-    return EnvironmentFixtures.FETCH_NVI_CANDIDATE_HANDLER;
+    return RestHandlerEnvironments.forHandler(FetchNviCandidateHandler.class);
   }
 
   @BeforeEach

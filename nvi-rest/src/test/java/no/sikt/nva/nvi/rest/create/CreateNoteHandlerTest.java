@@ -24,7 +24,7 @@ import no.sikt.nva.nvi.common.service.NoteServiceThrowingTransactionExceptions;
 import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.rest.BaseCandidateRestHandlerTest;
-import no.sikt.nva.nvi.rest.EnvironmentFixtures;
+import no.sikt.nva.nvi.rest.RestHandlerEnvironments;
 import no.sikt.nva.nvi.viewingscope.FakeViewingScopeValidator;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
@@ -45,7 +45,7 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Override
   protected FakeEnvironment getHandlerEnvironment() {
-    return EnvironmentFixtures.CREATE_NOTE_HANDLER;
+    return RestHandlerEnvironments.forHandler(CreateNoteHandler.class);
   }
 
   @BeforeEach

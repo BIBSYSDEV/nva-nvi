@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.events;
 
-import static java.util.Objects.isNull;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.BATCH_JOB_QUEUE_URL;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.DB_EVENTS_QUEUE_URL;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.EVENT_BUS_NAME;
@@ -16,12 +15,12 @@ import static no.sikt.nva.nvi.common.EnvironmentFixtures.TOPIC_CANDIDATE_INSERT;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.TOPIC_CANDIDATE_NOT_APPLICABLE_UPDATE;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.TOPIC_CANDIDATE_REMOVE;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.TOPIC_REEVALUATE_CANDIDATES;
-import static no.sikt.nva.nvi.common.EnvironmentFixtures.getHandlerEnvironment;
+import static no.sikt.nva.nvi.common.HandlerEnvironments.entry;
 
 import java.util.Map;
 import java.util.function.Supplier;
-import no.sikt.nva.nvi.common.EnvironmentFixtures;
 import no.sikt.nva.nvi.common.FakeEnvironment;
+import no.sikt.nva.nvi.common.HandlerEnvironments;
 import no.sikt.nva.nvi.events.batch.ReEvaluateNviCandidatesHandler;
 import no.sikt.nva.nvi.events.batch.StartBatchJobHandler;
 import no.sikt.nva.nvi.events.cristin.CristinNviReportEventConsumer;
@@ -29,6 +28,10 @@ import no.sikt.nva.nvi.events.db.DataEntryUpdateHandler;
 import no.sikt.nva.nvi.events.db.DynamoDbEventToQueueHandler;
 import no.sikt.nva.nvi.events.evaluator.EvaluateNviCandidateHandler;
 
+/**
+ * Fake environment variables for each handler in this module. Keep this in sync with the actual
+ * environment variables defined in template.yaml.
+ */
 public final class EventHandlerEnvironments {
 
   private static final Map<Class<?>, Supplier<FakeEnvironment>> HANDLER_ENVIRONMENTS =
@@ -60,16 +63,6 @@ public final class EventHandlerEnvironments {
   private EventHandlerEnvironments() {}
 
   public static FakeEnvironment forHandler(Class<?> handlerClass) {
-    var environmentSupplier = HANDLER_ENVIRONMENTS.get(handlerClass);
-    if (isNull(environmentSupplier)) {
-      throw new IllegalArgumentException(
-          "No test environment defined for " + handlerClass.getSimpleName());
-    }
-    return environmentSupplier.get();
-  }
-
-  private static Map.Entry<Class<?>, Supplier<FakeEnvironment>> entry(
-      Class<?> handlerClass, EnvironmentFixtures... environmentVariables) {
-    return Map.entry(handlerClass, () -> getHandlerEnvironment(environmentVariables));
+    return HandlerEnvironments.forHandler(HANDLER_ENVIRONMENTS, handlerClass);
   }
 }

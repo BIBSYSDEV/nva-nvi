@@ -13,7 +13,7 @@ import java.net.HttpURLConnection;
 import java.util.Map;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.rest.EnvironmentFixtures;
+import no.sikt.nva.nvi.rest.RestHandlerEnvironments;
 import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.GatewayResponse;
@@ -42,7 +42,7 @@ class FetchNviCandidateContextHandlerTest {
     output = new ByteArrayOutputStream();
     fetchNviCandidateContextHandler =
         new FetchNviCandidateContextHandler(
-            EnvironmentFixtures.FETCH_NVI_CANDIDATE_CONTEXT_HANDLER);
+            RestHandlerEnvironments.forHandler(FetchNviCandidateContextHandler.class));
   }
 
   @Test
