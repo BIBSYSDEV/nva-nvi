@@ -38,6 +38,7 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.FakeEnvironment;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.index.FakeCachedJwtProvider;
 import no.sikt.nva.nvi.index.OpenSearchContainerContext;
@@ -49,7 +50,6 @@ import no.sikt.nva.nvi.index.model.search.OrderByFields;
 import no.sikt.nva.nvi.index.model.search.SearchResultParameters;
 import no.sikt.nva.nvi.index.query.QueryFilterType;
 import no.sikt.nva.nvi.index.query.SearchAggregation;
-import nva.commons.core.Environment;
 import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UriWrapper;
 import org.apache.hc.core5.http.HttpHost;
@@ -85,9 +85,10 @@ class CandidateSearchClientTest {
       "document_organization_aggregation_dispute.json";
   private static final String DOCUMENT_WITH_CONTRIBUTOR_FROM_NTNU_SUBUNIT_JSON =
       "document_with_contributor_from_ntnu_subunit.json";
-  private static final OpenSearchContainerContext CONTAINER = new OpenSearchContainerContext();
+  private static final FakeEnvironment ENVIRONMENT = getGlobalEnvironment();
+  private static final OpenSearchContainerContext CONTAINER =
+      new OpenSearchContainerContext(ENVIRONMENT);
   private static final int DEFAULT_CANDIDATE_COUNT = 5;
-  private static final Environment ENVIRONMENT = getGlobalEnvironment();
   private static CandidateSearchClient searchClient;
 
   @BeforeAll

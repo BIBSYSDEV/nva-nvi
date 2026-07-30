@@ -27,6 +27,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.FakeEnvironment;
 import no.sikt.nva.nvi.common.model.OrganizationFixtures;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.OpenSearchContainerContext;
@@ -43,7 +44,6 @@ import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
-import nva.commons.core.Environment;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -56,10 +56,11 @@ import org.zalando.problem.StatusType;
 
 class FetchInstitutionStatusAggregationHandlerTest {
 
-  private static final OpenSearchContainerContext CONTAINER = new OpenSearchContainerContext();
-  private static final Context CONTEXT = new FakeContext();
-  private static final Environment ENVIRONMENT =
+  private static final FakeEnvironment ENVIRONMENT =
       forHandler(FetchInstitutionStatusAggregationHandler.class);
+  private static final OpenSearchContainerContext CONTAINER =
+      new OpenSearchContainerContext(ENVIRONMENT);
+  private static final Context CONTEXT = new FakeContext();
   private String username;
   private URI userTopLevelOrg;
   private AccessRight userAccessRight;

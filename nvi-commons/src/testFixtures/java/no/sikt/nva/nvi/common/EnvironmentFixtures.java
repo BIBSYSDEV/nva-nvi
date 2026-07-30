@@ -40,6 +40,7 @@ public enum EnvironmentFixtures {
   EXPANDED_RESOURCES_BUCKET("persisted-resources"),
   INDEX_DLQ("http://localhost:3000/index-dlq"),
   INSTITUTION_REPORT_SEARCH_PAGE_SIZE("4"),
+  NVI_REPORTS_BUCKET("reports-bucket"),
   UPSERT_CANDIDATE_DLQ_QUEUE_URL("http://localhost:3000/upsert-candidate-dlq"),
   EVENT_BUS_NAME("bus-name"),
   BATCH_SCAN_RECOVERY_QUEUE("recover-queue"),

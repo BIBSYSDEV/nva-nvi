@@ -1,13 +1,13 @@
 package no.sikt.nva.nvi.index;
 
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.SEARCH_INFRASTRUCTURE_API_HOST;
-import static no.sikt.nva.nvi.common.EnvironmentFixtures.getDefaultEnvironmentBuilder;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.getSearchIndexName;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.getSearchInfrastructureApiHost;
 
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
+import no.sikt.nva.nvi.common.FakeEnvironment;
 import no.sikt.nva.nvi.index.aws.CandidateSearchClient;
 import no.sikt.nva.nvi.index.aws.OpenSearchClientFactory;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
@@ -31,14 +31,16 @@ public class OpenSearchContainerContext implements Startable {
   private static CandidateSearchClient searchClient;
   private static ReportAggregationClient reportAggregationClient;
   private static ReportDocumentClient reportDocumentClient;
+  private final FakeEnvironment environment;
+
+  public OpenSearchContainerContext(FakeEnvironment environment) {
+    this.environment = environment;
+  }
 
   @Override
   public void start() {
     CONTAINER.start();
-    var environment =
-        getDefaultEnvironmentBuilder()
-            .with(SEARCH_INFRASTRUCTURE_API_HOST.getKey(), CONTAINER.getHttpHostAddress())
-            .build();
+    environment.setEnv(SEARCH_INFRASTRUCTURE_API_HOST.getKey(), CONTAINER.getHttpHostAddress());
     var httpHost = HttpHost.create(getSearchInfrastructureApiHost(environment));
     var fakeJwtProvider = FakeCachedJwtProvider.setup();
     var nativeClient = OpenSearchClientFactory.createClient(httpHost, fakeJwtProvider);

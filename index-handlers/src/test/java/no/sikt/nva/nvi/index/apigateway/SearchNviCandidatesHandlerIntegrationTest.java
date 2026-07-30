@@ -59,7 +59,9 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandlerTestBase {
-  private static final OpenSearchContainerContext CONTAINER = new OpenSearchContainerContext();
+
+  private static final OpenSearchContainerContext CONTAINER =
+      new OpenSearchContainerContext(ENVIRONMENT);
   private static final String OUR_USER = "Current user";
   private static final String OUR_OTHER_USER = "Curator from our organization";
   private static final String THEIR_USER = "Curator from another organization";

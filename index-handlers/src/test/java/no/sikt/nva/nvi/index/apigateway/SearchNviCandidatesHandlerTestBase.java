@@ -14,6 +14,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import no.sikt.nva.nvi.common.FakeEnvironment;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.viewingscope.FakeViewingScopeValidator;
@@ -28,13 +29,12 @@ import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
 import nva.commons.apigateway.exceptions.NotFoundException;
-import nva.commons.core.Environment;
 import org.zalando.problem.Problem;
 
 public class SearchNviCandidatesHandlerTestBase {
 
-  private static final Environment ENVIRONMENT = forHandler(SearchNviCandidatesHandler.class);
   private static final Context CONTEXT = new FakeContext();
+  protected static final FakeEnvironment ENVIRONMENT = forHandler(SearchNviCandidatesHandler.class);
   protected static final IdentityServiceClient MOCK_IDENTITY_SERVICE_CLIENT =
       mock(IdentityServiceClient.class);
   protected ByteArrayOutputStream output;

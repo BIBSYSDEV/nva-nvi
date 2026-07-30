@@ -6,6 +6,7 @@ import static no.sikt.nva.nvi.index.IndexDocumentFixtures.createRandomIndexDocum
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.documentForYear;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.documentWithApprovals;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomApproval;
+import static no.sikt.nva.nvi.index.IndexHandlerEnvironments.forHandler;
 import static no.sikt.nva.nvi.index.report.request.ReportType.AUTHOR_SHARES_CONTROL;
 import static no.sikt.nva.nvi.index.report.request.ReportType.DEFAULT_REPORT;
 import static no.sikt.nva.nvi.report.generators.utils.CsvReader.parseCsvToRows;
@@ -17,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
 import java.util.UUID;
+import no.sikt.nva.nvi.common.FakeEnvironment;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.index.OpenSearchContainerContext;
 import no.sikt.nva.nvi.index.report.request.AllInstitutionsReportRequest;
@@ -39,7 +41,9 @@ import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
 class ReportGeneratorTest {
 
-  private static final OpenSearchContainerContext CONTAINER = new OpenSearchContainerContext();
+  private static final FakeEnvironment ENVIRONMENT = forHandler(GenerateReportHandler.class);
+  private static final OpenSearchContainerContext CONTAINER =
+      new OpenSearchContainerContext(ENVIRONMENT);
   private static final String BUCKET = randomString();
 
   private FakeS3Client s3Client;

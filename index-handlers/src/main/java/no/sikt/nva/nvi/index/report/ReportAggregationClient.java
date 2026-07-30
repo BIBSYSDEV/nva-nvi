@@ -25,9 +25,10 @@ public class ReportAggregationClient {
 
   @JacocoGenerated
   public static ReportAggregationClient defaultClient() {
+    var environment = new Environment();
     return new ReportAggregationClient(
-        OpenSearchClientFactory.createAuthenticatedClient(new Environment()),
-        getSearchIndexName(new Environment()));
+        OpenSearchClientFactory.createAuthenticatedClient(environment),
+        getSearchIndexName(environment));
   }
 
   public <T> T executeQuery(ReportAggregationQuery<T> query) throws IOException {
