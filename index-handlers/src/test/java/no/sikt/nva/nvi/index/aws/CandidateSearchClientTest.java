@@ -748,7 +748,7 @@ class CandidateSearchClientTest {
     var fakeJwtProvider = FakeCachedJwtProvider.setup();
     var nativeClient = OpenSearchClientFactory.createClient(unreachableHost, fakeJwtProvider);
     var indexName = getSearchIndexName(ENVIRONMENT);
-    return new CandidateSearchClient(nativeClient, indexName, indexName);
+    return new CandidateSearchClient(nativeClient, indexName);
   }
 
   private static List<NviCandidateIndexDocument>

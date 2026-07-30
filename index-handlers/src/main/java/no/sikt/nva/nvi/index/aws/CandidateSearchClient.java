@@ -45,14 +45,11 @@ public class CandidateSearchClient implements SearchClient<NviCandidateIndexDocu
   private static final Logger LOGGER = LoggerFactory.getLogger(CandidateSearchClient.class);
   private static final int MAX_QUERY_SIZE = 150;
   private final OpenSearchClient client;
-  private final String readIndexName;
-  private final String writeIndexName;
+  private final String indexName;
 
-  public CandidateSearchClient(
-      OpenSearchClient client, String readIndexName, String writeIndexName) {
+  public CandidateSearchClient(OpenSearchClient client, String indexName) {
     this.client = client;
-    this.readIndexName = readIndexName;
-    this.writeIndexName = writeIndexName;
+    this.indexName = indexName;
   }
 
   @JacocoGenerated
@@ -60,7 +57,7 @@ public class CandidateSearchClient implements SearchClient<NviCandidateIndexDocu
     var environment = new Environment();
     var indexName = getSearchIndexName(environment);
     var authenticatedClient = OpenSearchClientFactory.createAuthenticatedClient(environment);
-    return new CandidateSearchClient(authenticatedClient, indexName, indexName);
+    return new CandidateSearchClient(authenticatedClient, indexName);
   }
 
   @Override
@@ -113,12 +110,12 @@ public class CandidateSearchClient implements SearchClient<NviCandidateIndexDocu
 
   @Override
   public void deleteIndex() throws IOException {
-    client.indices().delete(new DeleteIndexRequest.Builder().index(writeIndexName).build());
+    client.indices().delete(new DeleteIndexRequest.Builder().index(indexName).build());
   }
 
   public boolean indexExists() {
     try {
-      client.indices().get(GetIndexRequest.of(request -> request.index(writeIndexName)));
+      client.indices().get(GetIndexRequest.of(request -> request.index(indexName)));
     } catch (IOException io) {
       throw new RuntimeException(io);
     } catch (OpenSearchException osex) {
@@ -134,8 +131,7 @@ public class CandidateSearchClient implements SearchClient<NviCandidateIndexDocu
     attempt(() -> client.indices().create(getCreateIndexRequest()))
         .orElseThrow(
             failure ->
-                handleFailure(
-                    "Error while creating index: " + writeIndexName, failure.getException()));
+                handleFailure("Error while creating index: " + indexName, failure.getException()));
   }
 
   public void refreshIndex() {
@@ -144,20 +140,20 @@ public class CandidateSearchClient implements SearchClient<NviCandidateIndexDocu
   }
 
   private DeleteRequest contructDeleteRequest(UUID identifier) {
-    return new DeleteRequest.Builder().index(writeIndexName).id(identifier.toString()).build();
+    return new DeleteRequest.Builder().index(indexName).id(identifier.toString()).build();
   }
 
   private IndexRequest<NviCandidateIndexDocument> constructIndexRequest(
       NviCandidateIndexDocument indexDocument) {
     return new IndexRequest.Builder<NviCandidateIndexDocument>()
-        .index(writeIndexName)
+        .index(indexName)
         .id(indexDocument.identifier().toString())
         .document(indexDocument)
         .build();
   }
 
   private CreateIndexRequest getCreateIndexRequest() {
-    return new CreateIndexRequest.Builder().mappings(MAPPINGS).index(writeIndexName).build();
+    return new CreateIndexRequest.Builder().mappings(MAPPINGS).index(indexName).build();
   }
 
   private static SortOptions getSortOptions(CandidateSearchParameters parameters) {
@@ -200,7 +196,7 @@ public class CandidateSearchClient implements SearchClient<NviCandidateIndexDocu
     var sortOptions = getSortOptions(parameters);
     var sourceConfig = getSourceConfigWithExcludedFields(parameters);
     return new SearchRequest.Builder()
-        .index(readIndexName)
+        .index(indexName)
         .query(query)
         .sort(sortOptions)
         .aggregations(generateAggregations(parameters))

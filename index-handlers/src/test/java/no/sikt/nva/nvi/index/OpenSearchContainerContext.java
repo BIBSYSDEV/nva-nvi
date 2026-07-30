@@ -43,7 +43,7 @@ public class OpenSearchContainerContext implements Startable {
     var fakeJwtProvider = FakeCachedJwtProvider.setup();
     var nativeClient = OpenSearchClientFactory.createClient(httpHost, fakeJwtProvider);
     var indexName = getSearchIndexName(environment);
-    searchClient = new CandidateSearchClient(nativeClient, indexName, indexName);
+    searchClient = new CandidateSearchClient(nativeClient, indexName);
     reportAggregationClient = new ReportAggregationClient(nativeClient, indexName);
     reportDocumentClient = new ReportDocumentClient(nativeClient, indexName);
   }
