@@ -113,7 +113,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/NviPeriod"
+              $ref: "#/components/schemas/UpsertNviPeriodRequest"
       security: *authenticated
       x-amazon-apigateway-request-validator: validate_body
       x-amazon-apigateway-integration:
@@ -172,7 +172,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/NviPeriod"
+              $ref: "#/components/schemas/UpsertNviPeriodRequest"
       security: *authenticated
       x-amazon-apigateway-request-validator: validate_body
       x-amazon-apigateway-integration:
@@ -1088,6 +1088,28 @@ components:
           $ref: "#/components/schemas/PeriodStatus"
       required:
         - status
+    UpsertNviPeriodRequest:
+      type: object
+      description: Request body for creating or updating an NVI reporting period.
+      properties:
+        type:
+          type: string
+          enum: [NviPeriod]
+        id:
+          type: string
+          format: uri
+        publishingYear:
+          type: string
+        reportingDate:
+          type: string
+          format: date-time
+        startDate:
+          type: string
+          format: date-time
+      required:
+        - publishingYear
+        - reportingDate
+        - startDate
     PeriodStatus:
       type: string
       description: |
