@@ -29,7 +29,7 @@ import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.rest.BaseCandidateRestHandlerTest;
-import no.sikt.nva.nvi.rest.EnvironmentFixtures;
+import no.sikt.nva.nvi.rest.RestHandlerEnvironments;
 import no.sikt.nva.nvi.rest.model.UpsertAssigneeRequest;
 import no.sikt.nva.nvi.viewingscope.FakeViewingScopeValidator;
 import no.unit.nva.clients.IdentityServiceClient;
@@ -62,7 +62,7 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Override
   protected FakeEnvironment getHandlerEnvironment() {
-    return EnvironmentFixtures.UPSERT_ASSIGNEE_HANDLER;
+    return RestHandlerEnvironments.forHandler(UpsertAssigneeHandler.class);
   }
 
   @BeforeEach

@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.rest.fetch;
 
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupFuturePeriod;
-import static no.sikt.nva.nvi.rest.EnvironmentFixtures.FETCH_NVI_PERIOD_HANDLER;
+import static no.sikt.nva.nvi.rest.RestHandlerEnvironments.forHandler;
 import static no.sikt.nva.nvi.test.TestConstants.THIS_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,9 +37,9 @@ class FetchNviPeriodHandlerTest {
     output = new ByteArrayOutputStream();
     context = new FakeContext();
 
-    var periodService =
-        new NviPeriodService(FETCH_NVI_PERIOD_HANDLER, scenario.getPeriodRepository());
-    handler = new FetchNviPeriodHandler(periodService, FETCH_NVI_PERIOD_HANDLER);
+    var environment = forHandler(FetchNviPeriodHandler.class);
+    var periodService = new NviPeriodService(environment, scenario.getPeriodRepository());
+    handler = new FetchNviPeriodHandler(periodService, environment);
   }
 
   @Test

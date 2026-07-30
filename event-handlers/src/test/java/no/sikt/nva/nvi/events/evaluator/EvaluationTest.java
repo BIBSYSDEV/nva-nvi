@@ -1,10 +1,10 @@
 package no.sikt.nva.nvi.events.evaluator;
 
-import static no.sikt.nva.nvi.common.EnvironmentFixtures.getEvaluateNviCandidateHandlerEnvironment;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.updateRequestFromPeriod;
 import static no.sikt.nva.nvi.common.dto.CustomerDtoFixtures.getDefaultCustomers;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDateInYear;
+import static no.sikt.nva.nvi.events.EventHandlerEnvironments.forHandler;
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.createEvent;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
 import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_JSON_PUBLICATION_DATE;
@@ -64,7 +64,7 @@ class EvaluationTest {
     s3Driver = scenario.getS3DriverForExpandedResourcesBucket();
     identityServiceClient = mock(IdentityServiceClient.class);
 
-    var evaluationEnvironment = getEvaluateNviCandidateHandlerEnvironment();
+    var evaluationEnvironment = forHandler(EvaluateNviCandidateHandler.class);
     candidateService =
         new CandidateService(
             evaluationEnvironment,

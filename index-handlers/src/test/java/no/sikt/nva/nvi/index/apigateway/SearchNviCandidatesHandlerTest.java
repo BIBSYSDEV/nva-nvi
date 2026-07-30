@@ -1,11 +1,11 @@
 package no.sikt.nva.nvi.index.apigateway;
 
 import static java.util.Collections.emptyMap;
-import static no.sikt.nva.nvi.common.EnvironmentFixtures.getSearchNviCandidatesHandlerEnvironment;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationIdentifier;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.getRandomDateInCurrentYearAsDto;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomPages;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomPublicationChannel;
+import static no.sikt.nva.nvi.index.IndexHandlerEnvironments.forHandler;
 import static no.sikt.nva.nvi.index.apigateway.utils.AggregateResponseTestUtil.filterAggregate;
 import static no.sikt.nva.nvi.index.apigateway.utils.AggregateResponseTestUtil.getGlobalAggregate;
 import static no.sikt.nva.nvi.index.apigateway.utils.AggregateResponseTestUtil.organizationApprovalStatusAggregate;
@@ -61,7 +61,7 @@ class SearchNviCandidatesHandlerTest extends SearchNviCandidatesHandlerTestBase 
   private static final URI TOP_LEVEL_CRISTIN_ORG =
       URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
   private static final String QUERY_ENCODED_COMMA = "%2C";
-  private static final Environment ENVIRONMENT = getSearchNviCandidatesHandlerEnvironment();
+  private static final Environment ENVIRONMENT = forHandler(SearchNviCandidatesHandler.class);
   private static final String CANDIDATE_PATH = "candidate";
   private static SearchClient<NviCandidateIndexDocument> searchClient;
 

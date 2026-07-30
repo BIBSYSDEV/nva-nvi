@@ -48,17 +48,19 @@ public class UpdateIndexHandler implements RequestHandler<SQSEvent, Void> {
     this(
         CandidateSearchClient.defaultOpenSearchClient(),
         new S3StorageReader(new Environment().readEnv(EXPANDED_RESOURCES_BUCKET)),
-        new NviQueueClient());
+        new NviQueueClient(),
+        new Environment());
   }
 
   public UpdateIndexHandler(
       CandidateSearchClient searchClient,
       StorageReader<URI> storageReader,
-      QueueClient queueClient) {
+      QueueClient queueClient,
+      Environment environment) {
     this.searchClient = searchClient;
     this.storageReader = storageReader;
     this.queueClient = queueClient;
-    this.dlqUrl = new Environment().readEnv(INDEX_DLQ);
+    this.dlqUrl = environment.readEnv(INDEX_DLQ);
   }
 
   @Override

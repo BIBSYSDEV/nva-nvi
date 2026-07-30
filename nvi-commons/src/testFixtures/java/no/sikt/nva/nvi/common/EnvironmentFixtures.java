@@ -16,6 +16,7 @@ public enum EnvironmentFixtures {
   CUSTOM_DOMAIN_BASE_PATH("scientific-index"),
   LOG_LEVEL("info"), // Log4j cannot read these, so this must also be set in build.gradle
   NVI_TABLE_NAME("nvi-table-name"),
+  NVI_SEARCH_INDEX("nvi-candidates"),
   SEARCH_INFRASTRUCTURE_API_HOST("https://api.fake.sws.aws.sikt.no"),
   SEARCH_INFRASTRUCTURE_AUTH_URI("https://sws-auth.fake.auth.eu-west-1.amazoncognito.com"),
 
@@ -27,6 +28,7 @@ public enum EnvironmentFixtures {
   TOPIC_APPROVAL_INSERT("APPROVAL_INSERT_TOPIC"),
   TOPIC_APPROVAL_UPDATE("APPROVAL_UPDATE_TOPIC"),
   TOPIC_APPROVAL_REMOVE("APPROVAL_REMOVE_TOPIC"),
+  TOPIC_REEVALUATE_CANDIDATES("NviService.ReEvaluate"),
 
   // Other handler-specific environment variables
   ALLOWED_ORIGIN("*"),
@@ -37,6 +39,8 @@ public enum EnvironmentFixtures {
   PERSISTED_INDEX_DOCUMENT_QUEUE_URL("http://localhost:3000/index-document-queue"),
   EXPANDED_RESOURCES_BUCKET("persisted-resources"),
   INDEX_DLQ("http://localhost:3000/index-dlq"),
+  INSTITUTION_REPORT_SEARCH_PAGE_SIZE("4"),
+  NVI_REPORTS_BUCKET("reports-bucket"),
   UPSERT_CANDIDATE_DLQ_QUEUE_URL("http://localhost:3000/upsert-candidate-dlq"),
   EVENT_BUS_NAME("bus-name"),
   BATCH_SCAN_RECOVERY_QUEUE("recover-queue"),
@@ -70,6 +74,7 @@ public enum EnvironmentFixtures {
         .with(CUSTOM_DOMAIN_BASE_PATH)
         .with(LOG_LEVEL)
         .with(NVI_TABLE_NAME)
+        .with(NVI_SEARCH_INDEX)
         .with(SEARCH_INFRASTRUCTURE_API_HOST)
         .with(SEARCH_INFRASTRUCTURE_AUTH_URI);
   }
@@ -80,56 +85,6 @@ public enum EnvironmentFixtures {
       builder.with(variable);
     }
     return builder.build();
-  }
-
-  public static FakeEnvironment getEvaluateNviCandidateHandlerEnvironment() {
-    return getDefaultEnvironmentBuilder().with(EXPANDED_RESOURCES_BUCKET).build();
-  }
-
-  public static FakeEnvironment getStartBatchJobHandlerEnvironment() {
-    return getDefaultEnvironmentBuilder()
-        .with(BATCH_JOB_QUEUE_URL)
-        .with(EVENT_BUS_NAME)
-        .with(PROCESSING_ENABLED)
-        .build();
-  }
-
-  public static FakeEnvironment getCristinNviReportEventConsumerEnvironment() {
-    return getDefaultEnvironmentBuilder().with(EXPANDED_RESOURCES_BUCKET).build();
-  }
-
-  public static FakeEnvironment getDynamoDbEventToQueueHandlerEnvironment() {
-    return getDefaultEnvironmentBuilder().with(DB_EVENTS_QUEUE_URL).with(INDEX_DLQ).build();
-  }
-
-  public static FakeEnvironment getDataEntryUpdateHandlerEnvironment() {
-    return getDefaultEnvironmentBuilder()
-        .with(DB_EVENTS_QUEUE_URL)
-        .with(INDEX_DLQ)
-        .with(TOPIC_CANDIDATE_INSERT)
-        .with(TOPIC_CANDIDATE_APPLICABLE_UPDATE)
-        .with(TOPIC_CANDIDATE_NOT_APPLICABLE_UPDATE)
-        .with(TOPIC_CANDIDATE_REMOVE)
-        .with(TOPIC_APPROVAL_INSERT)
-        .with(TOPIC_APPROVAL_UPDATE)
-        .with(TOPIC_APPROVAL_REMOVE)
-        .build();
-  }
-
-  public static FakeEnvironment getIndexDocumentHandlerEnvironment() {
-    return getDefaultEnvironmentBuilder()
-        .with(EXPANDED_RESOURCES_BUCKET)
-        .with(PERSISTED_INDEX_DOCUMENT_QUEUE_URL)
-        .with(INDEX_DLQ)
-        .build();
-  }
-
-  public static FakeEnvironment getSearchNviCandidatesHandlerEnvironment() {
-    return getDefaultEnvironmentBuilder().with(ALLOWED_ORIGIN).with(COGNITO_HOST).build();
-  }
-
-  public static FakeEnvironment getFetchInstitutionStatusAggregationHandlerEnvironment() {
-    return getDefaultEnvironmentBuilder().with(ALLOWED_ORIGIN).build();
   }
 
   public static URI getCandidateContextUri() {

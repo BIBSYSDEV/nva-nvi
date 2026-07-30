@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.rest;
 
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupFuturePeriod;
-import static no.sikt.nva.nvi.rest.EnvironmentFixtures.CREATE_NVI_PERIOD_HANDLER;
+import static no.sikt.nva.nvi.rest.RestHandlerEnvironments.forHandler;
 import static no.sikt.nva.nvi.test.TestConstants.THIS_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
@@ -44,8 +44,9 @@ class CreateNviPeriodHandlerTest {
     scenario = new TestScenario();
     output = new ByteArrayOutputStream();
 
-    periodService = new NviPeriodService(CREATE_NVI_PERIOD_HANDLER, scenario.getPeriodRepository());
-    handler = new CreateNviPeriodHandler(periodService, CREATE_NVI_PERIOD_HANDLER);
+    var environment = forHandler(CreateNviPeriodHandler.class);
+    periodService = new NviPeriodService(environment, scenario.getPeriodRepository());
+    handler = new CreateNviPeriodHandler(periodService, environment);
   }
 
   @Test
@@ -98,10 +99,11 @@ class CreateNviPeriodHandlerTest {
   }
 
   private CreateNviPeriodHandler setupHandlerThatFailsWithTransactionConflict() {
+    var environment = forHandler(CreateNviPeriodHandler.class);
     return new CreateNviPeriodHandler(
         new NviPeriodServiceThrowingTransactionExceptions(
-            CREATE_NVI_PERIOD_HANDLER, scenario.getPeriodRepository()),
-        CREATE_NVI_PERIOD_HANDLER);
+            environment, scenario.getPeriodRepository()),
+        environment);
   }
 
   private Problem handleRequestExpectingProblem(

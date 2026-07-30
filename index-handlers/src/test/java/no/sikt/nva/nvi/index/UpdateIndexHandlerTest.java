@@ -5,6 +5,8 @@ import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod
 import static no.sikt.nva.nvi.common.model.CandidateFixtures.setupRandomApplicableCandidate;
 import static no.sikt.nva.nvi.common.model.PublicationDtoFixtures.publicationDtoMirroring;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.createPath;
+import static no.sikt.nva.nvi.index.IndexHandlerEnvironments.forHandler;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.getSearchIndexName;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.s3.S3Driver.S3_SCHEME;
 import static nva.commons.core.attempt.Try.attempt;
@@ -49,7 +51,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 class UpdateIndexHandlerTest {
 
   private static final Context CONTEXT = new FakeContext();
-  private static final Environment ENVIRONMENT = new Environment();
+  private static final Environment ENVIRONMENT = forHandler(UpdateIndexHandler.class);
   private static final String INDEX_DLQ = "INDEX_DLQ";
   private static final String INDEX_DLQ_URL = ENVIRONMENT.readEnv(INDEX_DLQ);
   private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
@@ -69,7 +71,7 @@ class UpdateIndexHandlerTest {
     searchClient = mock(CandidateSearchClient.class);
     sqsClient = new FakeSqsClient();
     var storageReader = new S3StorageReader(s3Client, BUCKET_NAME);
-    handler = new UpdateIndexHandler(searchClient, storageReader, sqsClient);
+    handler = new UpdateIndexHandler(searchClient, storageReader, sqsClient, ENVIRONMENT);
     setupOpenPeriod(scenario, CURRENT_YEAR);
   }
 
@@ -111,7 +113,7 @@ class UpdateIndexHandlerTest {
     var event = createUpdateIndexEvent(List.of(candidate));
     var mockedStorageReader = mock(S3StorageReader.class);
     when(mockedStorageReader.read(any())).thenThrow(new RuntimeException());
-    new UpdateIndexHandler(searchClient, mockedStorageReader, sqsClient)
+    new UpdateIndexHandler(searchClient, mockedStorageReader, sqsClient, ENVIRONMENT)
         .handleRequest(event, CONTEXT);
     var dlqMessage = sqsClient.receiveMessage(INDEX_DLQ_URL, 1).messages().getFirst();
 
@@ -134,7 +136,7 @@ class UpdateIndexHandlerTest {
     var candidateToFail = setupRandomApplicableCandidate(scenario);
     var storageReader =
         setupStorageReaderFailingForOneCandidate(candidateToSucceed, candidateToFail);
-    handler = new UpdateIndexHandler(searchClient, storageReader, sqsClient);
+    handler = new UpdateIndexHandler(searchClient, storageReader, sqsClient, ENVIRONMENT);
     var event = createUpdateIndexEvent(List.of(candidateToSucceed, candidateToFail));
     handler.handleRequest(event, CONTEXT);
     verify(searchClient, times(0)).addDocumentToIndex(eq(null));
@@ -201,7 +203,7 @@ class UpdateIndexHandlerTest {
                 candidate, publicationDtoMirroring(candidate), ENVIRONMENT)
             .generate();
     var indexDocumentWithConsumptionAttributes =
-        IndexDocumentWithConsumptionAttributes.from(indexDocument);
+        IndexDocumentWithConsumptionAttributes.from(indexDocument, getSearchIndexName(ENVIRONMENT));
     attempt(
             () ->
                 s3Driver.insertFile(

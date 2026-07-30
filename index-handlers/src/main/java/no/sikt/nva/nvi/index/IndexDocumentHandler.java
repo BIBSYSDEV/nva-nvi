@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.index;
 
 import static no.sikt.nva.nvi.common.utils.ExceptionUtils.getStackTrace;
 import static no.sikt.nva.nvi.index.aws.S3StorageWriter.GZIP_ENDING;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.getSearchIndexName;
 import static nva.commons.core.StringUtils.isBlank;
 import static nva.commons.core.attempt.Try.attempt;
 
@@ -54,6 +55,7 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
   private final QueueClient sqsClient;
   private final String queueUrl;
   private final String dlqUrl;
+  private final String indexName;
 
   @JacocoGenerated
   public IndexDocumentHandler() {
@@ -80,6 +82,7 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
     this.indexDocumentGenerator = indexDocumentGenerator;
     this.queueUrl = environment.readEnv(QUEUE_URL);
     this.dlqUrl = environment.readEnv(INDEX_DLQ);
+    this.indexName = getSearchIndexName(environment);
   }
 
   @Override
@@ -194,7 +197,7 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
   private IndexDocumentWithConsumptionAttributes generateIndexDocumentWithConsumptionAttributes(
       Candidate candidate) {
     var indexDocument = indexDocumentGenerator.generate(candidate);
-    return IndexDocumentWithConsumptionAttributes.from(indexDocument);
+    return IndexDocumentWithConsumptionAttributes.from(indexDocument, indexName);
   }
 
   private void validateErrorMessage(String message) {

@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.index.aws;
 
 import static java.util.Objects.requireNonNull;
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.getGlobalEnvironment;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.createRandomIndexDocumentWithHandle;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomApproval;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomApprovalList;
@@ -11,6 +12,7 @@ import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomNviContributor;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomNviContributorBuilder;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomPages;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomPublicationChannel;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.getSearchIndexName;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -36,6 +38,7 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.FakeEnvironment;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.index.FakeCachedJwtProvider;
 import no.sikt.nva.nvi.index.OpenSearchContainerContext;
@@ -82,7 +85,9 @@ class CandidateSearchClientTest {
       "document_organization_aggregation_dispute.json";
   private static final String DOCUMENT_WITH_CONTRIBUTOR_FROM_NTNU_SUBUNIT_JSON =
       "document_with_contributor_from_ntnu_subunit.json";
-  private static final OpenSearchContainerContext CONTAINER = new OpenSearchContainerContext();
+  private static final FakeEnvironment ENVIRONMENT = getGlobalEnvironment();
+  private static final OpenSearchContainerContext CONTAINER =
+      new OpenSearchContainerContext(ENVIRONMENT);
   private static final int DEFAULT_CANDIDATE_COUNT = 5;
   private static CandidateSearchClient searchClient;
 
@@ -743,7 +748,8 @@ class CandidateSearchClientTest {
     var unreachableHost = new HttpHost("http", "localhost", 1);
     var fakeJwtProvider = FakeCachedJwtProvider.setup();
     var nativeClient = OpenSearchClientFactory.createClient(unreachableHost, fakeJwtProvider);
-    return new CandidateSearchClient(nativeClient);
+    var indexName = getSearchIndexName(ENVIRONMENT);
+    return new CandidateSearchClient(nativeClient, indexName);
   }
 
   private static List<NviCandidateIndexDocument>

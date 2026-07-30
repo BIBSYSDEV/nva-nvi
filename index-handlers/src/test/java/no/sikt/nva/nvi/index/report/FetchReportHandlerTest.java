@@ -12,6 +12,7 @@ import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizati
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.createRandomIndexDocument;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.documentForYear;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomApproval;
+import static no.sikt.nva.nvi.index.IndexHandlerEnvironments.forHandler;
 import static no.sikt.nva.nvi.index.report.ReportConstants.INSTITUTIONS_PATH_SEGMENT;
 import static no.sikt.nva.nvi.index.report.ReportConstants.INSTITUTION_PATH_PARAM;
 import static no.sikt.nva.nvi.index.report.ReportConstants.PERIOD_PATH_PARAM;
@@ -33,6 +34,7 @@ import java.io.InputStream;
 import java.util.Map;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.FakeEnvironment;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.index.IndexDocumentFixtures;
@@ -56,7 +58,9 @@ import org.junit.jupiter.api.Test;
 class FetchReportHandlerTest {
 
   private static final Context CONTEXT = new FakeContext();
-  private static final OpenSearchContainerContext CONTAINER = new OpenSearchContainerContext();
+  private static final FakeEnvironment ENVIRONMENT = forHandler(FetchReportHandler.class);
+  private static final OpenSearchContainerContext CONTAINER =
+      new OpenSearchContainerContext(ENVIRONMENT);
   private FetchReportHandler handler;
   private TestScenario scenario;
 

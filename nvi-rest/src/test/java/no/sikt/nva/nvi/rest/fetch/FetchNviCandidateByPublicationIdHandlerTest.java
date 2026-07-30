@@ -14,7 +14,7 @@ import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.rest.BaseCandidateRestHandlerTest;
-import no.sikt.nva.nvi.rest.EnvironmentFixtures;
+import no.sikt.nva.nvi.rest.RestHandlerEnvironments;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.GatewayResponse;
@@ -34,7 +34,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandl
 
   @Override
   protected FakeEnvironment getHandlerEnvironment() {
-    return EnvironmentFixtures.FETCH_NVI_CANDIDATE_BY_PUBLICATION_ID_HANDLER;
+    return RestHandlerEnvironments.forHandler(FetchNviCandidateByPublicationIdHandler.class);
   }
 
   @BeforeEach

@@ -13,6 +13,7 @@ import static no.sikt.nva.nvi.common.db.DbPointCalculationFixtures.randomPointCa
 import static no.sikt.nva.nvi.common.db.DbPublicationChannelFixtures.randomDbPublicationChannelBuilder;
 import static no.sikt.nva.nvi.common.model.CandidateFixtures.setupRandomApplicableCandidate;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.getSearchIndexName;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.s3.S3Driver.S3_SCHEME;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -96,7 +97,8 @@ class IndexDocumentHandlerTest extends IndexDocumentHandlerTestBase {
     var expectedConsumptionAttributes =
         IndexDocumentWithConsumptionAttributes.from(
                 new CandidateToIndexDocumentMapper(candidate, publicationDto, ENVIRONMENT)
-                    .generate())
+                    .generate(),
+                getSearchIndexName(ENVIRONMENT))
             .consumptionAttributes();
 
     handler.handleRequest(createEvent(candidate.identifier()), CONTEXT);

@@ -23,7 +23,7 @@ import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.rest.EnvironmentFixtures;
+import no.sikt.nva.nvi.rest.RestHandlerEnvironments;
 import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.GatewayResponse;
@@ -49,7 +49,8 @@ class FetchReportStatusByPublicationIdHandlerTest {
     candidateService = scenario.getCandidateService();
     output = new ByteArrayOutputStream();
     context = new FakeContext();
-    var environment = EnvironmentFixtures.FETCH_REPORT_STATUS_BY_PUBLICATION_ID_HANDLER;
+    var environment =
+        RestHandlerEnvironments.forHandler(FetchReportStatusByPublicationIdHandler.class);
     handler = new FetchReportStatusByPublicationIdHandler(candidateService, environment);
   }
 

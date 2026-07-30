@@ -36,6 +36,7 @@ dependencies {
     runtimeOnly(nvaCatalog.aws.apache.client)
     runtimeOnly(nvaCatalog.log4j.api)
     runtimeOnly(nvaCatalog.log4j.slf4j.impl)
+    testFixturesApi(testFixtures(project(':nvi-commons')))
     testImplementation(libs.picocontainer)
     testImplementation(nvaCatalog.assertj.core)
     testImplementation(nvaCatalog.aws.sdk2.aws.core)
@@ -55,14 +56,4 @@ dependencies {
     testImplementation(testFixtures(project(":nvi-commons")))
     testImplementation(testFixtures(project(":nvi-report")))
     testImplementation(testFixtures(project(":viewing-scope")))
-}
-
-test {
-    environment("EXPANDED_RESOURCES_BUCKET", "persisted-resources")
-    environment("ALLOWED_ORIGIN", "*")
-    environment("BACKEND_CLIENT_SECRET_NAME", "My secret name")
-    environment("PERSISTED_INDEX_DOCUMENT_QUEUE_URL", "PersistedIndexDocumentQueue")
-    environment("INDEX_DLQ", "IndexDlq")
-    environment("INSTITUTION_REPORT_SEARCH_PAGE_SIZE", "4")
-    environment("REPORT_QUEUE", "queue")
 }

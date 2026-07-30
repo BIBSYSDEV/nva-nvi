@@ -5,7 +5,7 @@ import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
 import static no.sikt.nva.nvi.common.model.UserInstanceFixtures.createAdminUserInstance;
 import static no.sikt.nva.nvi.common.model.UserInstanceFixtures.createCuratorUserInstance;
-import static no.sikt.nva.nvi.rest.EnvironmentFixtures.UPDATE_NVI_PERIOD_HANDLER;
+import static no.sikt.nva.nvi.rest.RestHandlerEnvironments.forHandler;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -49,8 +49,9 @@ class UpdateNviPeriodHandlerTest {
   void init() {
     scenario = new TestScenario();
     output = new ByteArrayOutputStream();
-    periodService = new NviPeriodService(UPDATE_NVI_PERIOD_HANDLER, scenario.getPeriodRepository());
-    handler = new UpdateNviPeriodHandler(periodService, UPDATE_NVI_PERIOD_HANDLER);
+    var environment = forHandler(UpdateNviPeriodHandler.class);
+    periodService = new NviPeriodService(environment, scenario.getPeriodRepository());
+    handler = new UpdateNviPeriodHandler(periodService, environment);
   }
 
   @Test
@@ -114,10 +115,11 @@ class UpdateNviPeriodHandlerTest {
   }
 
   private UpdateNviPeriodHandler setupHandlerThatFailsWithTransactionConflict() {
+    var environment = forHandler(UpdateNviPeriodHandler.class);
     return new UpdateNviPeriodHandler(
         new NviPeriodServiceThrowingTransactionExceptions(
-            UPDATE_NVI_PERIOD_HANDLER, scenario.getPeriodRepository()),
-        UPDATE_NVI_PERIOD_HANDLER);
+            environment, scenario.getPeriodRepository()),
+        environment);
   }
 
   private UpsertNviPeriodRequest updateRequest(String year, NviPeriod persistedPeriod) {

@@ -29,6 +29,7 @@ dependencies {
     testImplementation(project(":nvi-test"))
     testImplementation(project(":publication-service"))
     testImplementation(testFixtures(project(":event-handlers")))
+    testImplementation(testFixtures(project(":index-handlers")))
     testImplementation(testFixtures(project(":nvi-commons")))
     testRuntimeOnly(nvaCatalog.cucumber.junit.platform.engine)
     testRuntimeOnly(nvaCatalog.cucumber.picocontainer)
@@ -36,8 +37,4 @@ dependencies {
 
 test {
     testDefinitionDirs.from("src/test/resources/features")
-
-    environment("CANDIDATE_DLQ_URL", "http://localhost:3000/candidate-DLQ")
-    environment("EXPANDED_RESOURCES_BUCKET", "testBucket")
-    environment("UPSERT_CANDIDATE_DLQ_QUEUE_URL", "http://localhost:3000/upsert-candidate-DLQ")
 }

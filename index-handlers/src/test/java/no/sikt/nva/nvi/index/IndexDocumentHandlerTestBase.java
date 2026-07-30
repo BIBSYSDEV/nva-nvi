@@ -1,11 +1,11 @@
 package no.sikt.nva.nvi.index;
 
-import static no.sikt.nva.nvi.common.EnvironmentFixtures.getIndexDocumentHandlerEnvironment;
 import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createEvent;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.model.PublicationDtoFixtures.publicationDtoMirroring;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.GZIP_ENDING;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.NVI_CANDIDATES_FOLDER;
+import static no.sikt.nva.nvi.index.IndexHandlerEnvironments.forHandler;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.s3.S3Driver.S3_SCHEME;
@@ -45,7 +45,7 @@ import software.amazon.awssdk.services.s3.S3Client;
  */
 class IndexDocumentHandlerTestBase {
 
-  protected static final Environment ENVIRONMENT = getIndexDocumentHandlerEnvironment();
+  protected static final Environment ENVIRONMENT = forHandler(IndexDocumentHandler.class);
   protected static final String BUCKET_NAME = ENVIRONMENT.readEnv("EXPANDED_RESOURCES_BUCKET");
   protected static final Context CONTEXT = new FakeContext();
 

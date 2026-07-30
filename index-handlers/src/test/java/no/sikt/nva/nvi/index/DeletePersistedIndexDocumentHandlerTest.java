@@ -5,8 +5,10 @@ import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createEventWithOneInv
 import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createEventWithOneRecordMissingIdentifier;
 import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createEventWithOnlyOneRecordMissingIdentifier;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.randomApplicableCandidateDao;
+import static no.sikt.nva.nvi.index.IndexHandlerEnvironments.forHandler;
 import static no.sikt.nva.nvi.index.aws.S3StorageWriter.GZIP_ENDING;
 import static no.sikt.nva.nvi.index.aws.S3StorageWriter.NVI_CANDIDATES_FOLDER;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.getSearchIndexName;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -33,7 +35,8 @@ import software.amazon.awssdk.services.s3.model.S3Exception;
 class DeletePersistedIndexDocumentHandlerTest {
 
   private static final String PERSISTED_NVI_CANDIDATES_FOLDER = "nvi-candidates";
-  private static final Environment ENVIRONMENT = new Environment();
+  private static final Environment ENVIRONMENT =
+      forHandler(DeletePersistedIndexDocumentHandler.class);
   private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
   private static final String BUCKET_NAME = ENVIRONMENT.readEnv(EXPANDED_RESOURCES_BUCKET);
   private DeletePersistedIndexDocumentHandler handler;
@@ -47,7 +50,7 @@ class DeletePersistedIndexDocumentHandlerTest {
     s3Driver = new S3Driver(s3Client, BUCKET_NAME);
     handler =
         new DeletePersistedIndexDocumentHandler(
-            new S3StorageWriter(s3Client, BUCKET_NAME), sqsClient, new Environment());
+            new S3StorageWriter(s3Client, BUCKET_NAME), sqsClient, ENVIRONMENT);
   }
 
   @Test
@@ -68,7 +71,7 @@ class DeletePersistedIndexDocumentHandlerTest {
         new DeletePersistedIndexDocumentHandler(
             new S3StorageWriter(setupFailingS3Client(dao.identifier()), BUCKET_NAME),
             sqsClient,
-            new Environment());
+            ENVIRONMENT);
     handler.handleRequest(event, null);
     assertEquals(1, sqsClient.getSentMessages().size());
   }
@@ -81,7 +84,7 @@ class DeletePersistedIndexDocumentHandlerTest {
         new DeletePersistedIndexDocumentHandler(
             new S3StorageWriter(setupFailingS3Client(daoToFail.identifier()), BUCKET_NAME),
             sqsClient,
-            new Environment());
+            ENVIRONMENT);
     assertDoesNotThrow(() -> handler.handleRequest(event, null));
   }
 
@@ -146,7 +149,8 @@ class DeletePersistedIndexDocumentHandlerTest {
   }
 
   private IndexDocumentWithConsumptionAttributes createIndexDocument(CandidateDao candidate) {
-    return IndexDocumentWithConsumptionAttributes.from(
-        NviCandidateIndexDocument.builder().withIdentifier(candidate.identifier()).build());
+    var document =
+        NviCandidateIndexDocument.builder().withIdentifier(candidate.identifier()).build();
+    return IndexDocumentWithConsumptionAttributes.from(document, getSearchIndexName(ENVIRONMENT));
   }
 }
