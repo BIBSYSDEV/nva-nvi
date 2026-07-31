@@ -8,6 +8,9 @@ import static no.sikt.nva.nvi.index.IndexDocumentFixtures.createRandomIndexDocum
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.documentWithApprovals;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.documentsForAllStatusCombinations;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomApproval;
+import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomIndexDocumentBuilder;
+import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomPublicationDetailsBuilder;
+import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomNviContributor;
 import static no.sikt.nva.nvi.index.IndexHandlerEnvironments.forHandler;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.FAKER;
@@ -113,6 +116,25 @@ class FetchInstitutionStatusAggregationHandlerTest {
           .extracting(Problem::getStatus)
           .extracting(StatusType::getStatusCode)
           .isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
+    }
+
+    @Test
+    void shouldAggregateLegacyDocumentWithNviContributorsInContributorsList() {
+      var approval =
+          new ApprovalFactory(OUR_ORGANIZATION).withCreatorAffiliation(OUR_ORGANIZATION).build();
+      var nviContributors = List.of(randomNviContributor(OUR_ORGANIZATION));
+      var legacyPublicationDetails =
+          randomPublicationDetailsBuilder()
+              .withNviContributors(nviContributors)
+              .withContributors(nviContributors)
+              .build();
+      var legacyDocument =
+          randomIndexDocumentBuilder(legacyPublicationDetails, List.of(approval)).build();
+      CONTAINER.addDocumentsToIndex(legacyDocument);
+
+      var response = handleRequest();
+
+      assertThat(response.totals().candidateCount()).isOne();
     }
 
     @Test

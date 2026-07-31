@@ -21,7 +21,9 @@ public record PublicationDetails(
     @JsonProperty("abstract") String abstractText,
     PublicationDateDto publicationDate,
     List<NviContributor> nviContributors,
-    List<Contributor> contributors,
+    // FIXME: Documents indexed before the generator was replaced (NP-51435) contain NviContributor
+    // entries in this list, so it must stay polymorphic until the index is fully re-indexed
+    List<ContributorType> contributors,
     int contributorsCount,
     PublicationChannel publicationChannel,
     Pages pages,
@@ -45,7 +47,7 @@ public record PublicationDetails(
     private String abstractText;
     private PublicationDateDto publicationDate;
     private List<NviContributor> nviContributors;
-    private List<Contributor> contributors;
+    private List<ContributorType> contributors;
     private int contributorsCount;
     private PublicationChannel publicationChannel;
     private Pages pages;
@@ -80,8 +82,8 @@ public record PublicationDetails(
       return this;
     }
 
-    public Builder withContributors(List<Contributor> contributors) {
-      this.contributors = contributors;
+    public Builder withContributors(List<? extends ContributorType> contributors) {
+      this.contributors = List.copyOf(contributors);
       this.contributorsCount = contributors.size();
       return this;
     }
