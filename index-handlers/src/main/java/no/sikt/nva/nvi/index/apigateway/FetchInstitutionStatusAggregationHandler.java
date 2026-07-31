@@ -12,6 +12,7 @@ import no.sikt.nva.nvi.index.aws.CandidateSearchClient;
 import no.sikt.nva.nvi.index.model.report.InstitutionStatusAggregationReport;
 import no.sikt.nva.nvi.index.model.report.InstitutionStatusAggregationReportMapper;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
+import no.sikt.nva.nvi.index.model.search.SearchResultParameters;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
@@ -67,10 +68,15 @@ public class FetchInstitutionStatusAggregationHandler
             .withAggregation(ORGANIZATION_APPROVAL_STATUS_AGGREGATION)
             .withYear(year)
             .withTopLevelCristinOrg(requestedInstitution)
+            .withSearchResultParameters(aggregationOnlyResultParameters())
             .build();
     var searchResponse = attempt(() -> searchClient.search(searchParameters)).orElseThrow();
     return searchResponse
         .aggregations()
         .get(ORGANIZATION_APPROVAL_STATUS_AGGREGATION.getAggregationName());
+  }
+
+  private static SearchResultParameters aggregationOnlyResultParameters() {
+    return SearchResultParameters.builder().withSize(0).build();
   }
 }
