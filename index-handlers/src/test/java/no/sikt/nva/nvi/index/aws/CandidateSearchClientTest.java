@@ -187,6 +187,24 @@ class CandidateSearchClientTest {
   }
 
   @Test
+  void shouldParseLegacyDocumentWithNviContributorsInContributorsList() throws IOException {
+    var nviContributors = List.of(randomNviContributor(ORGANIZATION));
+    var legacyPublicationDetails =
+        randomPublicationDetailsBuilder()
+            .withNviContributors(nviContributors)
+            .withContributors(nviContributors)
+            .build();
+    var legacyDocument =
+        randomIndexDocumentBuilder(legacyPublicationDetails, randomApprovalList()).build();
+    addDocumentsToIndex(legacyDocument);
+
+    var searchResponse = searchClient.search(defaultSearchParameters().build());
+
+    assertThat(getFirstHit(searchResponse).publicationDetails().contributors())
+        .containsExactlyElementsOf(nviContributors);
+  }
+
+  @Test
   void shouldNotReturnAggregationsWhenNoAggregationIsRequested() throws IOException {
     var searchParameters = defaultSearchParameters().build();
     var searchResponse = searchClient.search(searchParameters);
