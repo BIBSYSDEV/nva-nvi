@@ -162,13 +162,10 @@ public class CandidateService {
   }
 
   public Candidate getCandidateByPublicationId(URI publicationId) {
-    LOGGER.info("Fetching candidate by publication id {}", publicationId);
-    var responseContext = findCandidateAndPeriodsByPublicationId(publicationId);
-    return responseContext.getCandidate().orElseThrow(CandidateNotFoundException::new);
+    return findCandidateByPublicationId(publicationId).orElseThrow(CandidateNotFoundException::new);
   }
 
   public Optional<Candidate> findCandidateByPublicationId(URI publicationId) {
-    LOGGER.info("Fetching candidate by publication id {}", publicationId);
     var responseContext = findCandidateAndPeriodsByPublicationId(publicationId);
     return responseContext.getCandidate();
   }
