@@ -8,8 +8,6 @@ import static nva.commons.core.attempt.Try.attempt;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.URI;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import no.sikt.nva.nvi.common.model.UserInstance;
 import no.sikt.nva.nvi.common.service.CandidateResponseFactory;
 import no.sikt.nva.nvi.common.service.CandidateService;
@@ -17,6 +15,7 @@ import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.ExceptionMapper;
+import no.sikt.nva.nvi.common.utils.RequestUtil;
 import no.sikt.nva.nvi.rest.ViewingScopeHandler;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
@@ -28,7 +27,7 @@ import nva.commons.core.JacocoGenerated;
 public class FetchNviCandidateByPublicationIdHandler extends ApiGatewayHandler<Void, CandidateDto>
     implements ViewingScopeHandler {
 
-  public static final String CANDIDATE_PUBLICATION_ID = "candidatePublicationId";
+  public static final String PATH_PARAM_PUBLICATION_ID = "publicationId";
   private final CandidateService candidateService;
 
   @JacocoGenerated
@@ -65,9 +64,7 @@ public class FetchNviCandidateByPublicationIdHandler extends ApiGatewayHandler<V
   }
 
   private URI getPublicationId(RequestInfo requestInfo) {
-    return URI.create(
-        URLDecoder.decode(
-            requestInfo.getPathParameters().get(CANDIDATE_PUBLICATION_ID), StandardCharsets.UTF_8));
+    return RequestUtil.getPublicationId(requestInfo, PATH_PARAM_PUBLICATION_ID, environment);
   }
 
   private Candidate checkIfApplicable(Candidate candidate) {

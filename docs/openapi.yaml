@@ -450,7 +450,7 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalServerError"
-  /candidate/publication/{candidatePublicationId}:
+  /candidate/publication/{publicationId}:
     get:
       tags:
         - Candidate
@@ -458,12 +458,7 @@ paths:
       summary: Get candidate by publication identifier
       operationId: getNviCandidateByPublicationIdentifier
       parameters:
-        - in: path
-          name: candidatePublicationId
-          description: The publication identifier the candidate, this must be URI UTF-8 encoded
-          required: true
-          schema:
-            type: string
+        - $ref: "#/components/parameters/PublicationIdPathParameter"
       security: *authenticated
       x-amazon-apigateway-integration:
         uri:
@@ -768,12 +763,7 @@ paths:
       summary: Get report status by publication id
       operationId: getReportStatusByPublicationId
       parameters:
-        - in: path
-          name: publicationId
-          description: A UTF-8 encoded URI (publicationId)
-          required: true
-          schema:
-            type: string
+        - $ref: "#/components/parameters/PublicationIdPathParameter"
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchReportStatusByPublicationIdHandler.Arn}:live/invocations
@@ -1065,6 +1055,23 @@ paths:
           $ref: "#/components/responses/InternalServerError"
 
 components:
+  parameters:
+    PublicationIdPathParameter:
+      in: path
+      name: publicationId
+      description: >
+        The publication identifier.
+        A full UTF-8 encoded publication URI is also accepted, but this format is deprecated.
+      required: true
+      schema:
+        type: string
+      examples:
+        publicationIdentifier:
+          summary: Publication identifier (preferred)
+          value: "019facbbf461-5f709279-f824-42bc-a471-61362965632b"
+        publicationUri:
+          summary: URL-encoded publication URI (deprecated)
+          value: "https%3A%2F%2Fapi.dev.nva.aws.unit.no%2Fpublication%2F019facbbf461-5f709279-f824-42bc-a471-61362965632b"
   schemas:
     NviPeriod:
       type: object

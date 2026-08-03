@@ -1,7 +1,8 @@
 package no.sikt.nva.nvi.rest.fetch;
 
 import static no.sikt.nva.nvi.common.dto.AllowedOperationFixtures.CURATOR_CAN_FINALIZE_APPROVAL;
-import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateByPublicationIdHandler.CANDIDATE_PUBLICATION_ID;
+import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateByPublicationIdHandler.PATH_PARAM_PUBLICATION_ID;
+import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -9,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.util.UUID;
 import no.sikt.nva.nvi.common.FakeEnvironment;
 import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
@@ -39,7 +41,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandl
 
   @BeforeEach
   void setUp() {
-    resourcePathParameter = CANDIDATE_PUBLICATION_ID;
+    resourcePathParameter = PATH_PARAM_PUBLICATION_ID;
   }
 
   @Test
@@ -105,6 +107,22 @@ class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandl
     assertThat(responseDto)
         .extracting(CandidateDto::id, CandidateDto::publicationId)
         .containsExactly(expectedCandidateUri(candidate), candidate.getPublicationId());
+  }
+
+  @Test
+  void shouldReturnValidCandidateWhenRequestUsesPublicationIdentifier() throws IOException {
+    var publicationIdentifier = UUID.randomUUID();
+    var publicationId = generatePublicationId(publicationIdentifier);
+    var upsertRequest =
+        upsertRequestWithOneVerifiedCreator().withPublicationId(publicationId).build();
+    var candidate = scenario.upsertCandidate(upsertRequest);
+    var request = createRequestWithCuratorAccess(publicationIdentifier.toString());
+
+    var responseDto = handleRequest(request);
+
+    assertThat(responseDto)
+        .extracting(CandidateDto::id, CandidateDto::publicationId)
+        .containsExactly(expectedCandidateUri(candidate), publicationId);
   }
 
   @Test
