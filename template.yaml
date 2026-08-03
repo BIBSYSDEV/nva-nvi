@@ -67,9 +67,6 @@ Parameters:
   ResourcesBucket:
     Type: AWS::SSM::Parameter::Value<String>
     Default: /NVA/Events/PersistedEntriesBucketName
-  CristinImportNviQueueArn:
-    Type: AWS::SSM::Parameter::Value<String>
-    Default: /NVA/Queues/CristinImportNviQueueArn
   SearchInfrastructureApiHost:
     Type: String
     Description: Host of external search infrastructure API (SWS).
@@ -513,7 +510,6 @@ Resources:
                   - !GetAtt DeletePersistedIndexDocumentDLQ.Arn
                   - !GetAtt DeletePersistedIndexDocumentQueue.Arn
                   - !GetAtt QueuePersistedResourceDLQ.Arn
-                  - !Ref CristinImportNviQueueArn
                   - !GetAtt BatchJobWorkQueue.Arn
                   - !GetAtt BatchJobDLQ.Arn
                   - !GetAtt ReportQueue.Arn
@@ -929,24 +925,6 @@ Resources:
           OnFailure:
             Type: SQS
             Destination: !GetAtt DeletePersistedIndexDocumentDLQ.Arn
-
-  CristinNviEventConsumer:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: event-handlers
-      Handler: no.sikt.nva.nvi.events.cristin.CristinNviReportEventConsumer::handleRequest
-      Role: !GetAtt NvaNviRole.Arn
-      Timeout: !Ref DefaultTimeoutForParsingLambdas
-      MemorySize: 1536
-      Environment:
-        Variables:
-          EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
-      AutoPublishAlias: live
-      Events:
-        SqsEvent:
-          Type: SQS
-          Properties:
-            Queue: !Ref CristinImportNviQueueArn
 
   GenerateReportHandler:
     Type: AWS::Serverless::Function

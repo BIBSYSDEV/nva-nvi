@@ -2,7 +2,6 @@ package no.sikt.nva.nvi.common.db;
 
 import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
-import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.toMap;
 import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.IDENTIFIER_FIELD;
@@ -23,8 +22,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.model.TableScanRequest;
 import no.sikt.nva.nvi.common.db.model.YearQueryRequest;
 import no.sikt.nva.nvi.common.model.ListingResult;
@@ -158,26 +155,6 @@ public class CandidateRepository extends DynamoRepository {
         lastEvaluatedKey,
         items.size(),
         includeReportedCandidates ? items : filterOutReportedCandidates(items));
-  }
-
-  /**
-   * Deprecated method used only for importing historical data via CristinNviReportEventConsumer.
-   * This method will be removed once the historical data import is complete.
-   *
-   * @deprecated This method is only for legacy data import.
-   */
-  @Deprecated(forRemoval = true, since = "2025-11-01")
-  public void create(
-      DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatuses, String year) {
-    var identifier = randomUUID();
-    var candidate =
-        CandidateDao.builder()
-            .identifier(identifier)
-            .candidate(dbCandidate)
-            .periodYear(year)
-            .build();
-    var approvals = approvalStatuses.stream().map(approval -> approval.toDao(identifier)).toList();
-    create(candidate, approvals);
   }
 
   /**
