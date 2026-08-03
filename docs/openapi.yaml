@@ -450,7 +450,7 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalServerError"
-  /candidate/publication/{publicationId}:
+  /candidate/publication/{identifier}:
     get:
       tags:
         - Candidate
@@ -763,7 +763,7 @@ paths:
       summary: Get report status by publication id
       operationId: getReportStatusByPublicationId
       parameters:
-        - $ref: "#/components/parameters/PublicationIdPathParameter"
+        - $ref: "#/components/parameters/PublicationIdentifierPathParameter"
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchReportStatusByPublicationIdHandler.Arn}:live/invocations
@@ -1056,9 +1056,9 @@ paths:
 
 components:
   parameters:
-    PublicationIdPathParameter:
+    PublicationIdentifierPathParameter:
       in: path
-      name: publicationId
+      name: identifier
       description: >
         The publication identifier.
         A full UTF-8 encoded publication URI is also accepted, but this format is deprecated.
