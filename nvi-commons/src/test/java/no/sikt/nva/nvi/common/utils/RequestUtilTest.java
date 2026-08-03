@@ -95,7 +95,14 @@ class RequestUtilTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"not-a-valid-identifier", "not a parseable uri"})
+  @ValueSource(
+      strings = {
+        "not-a-valid-identifier",
+        "not a parseable uri",
+        "gopher://",
+        "file://",
+        "/relative/foo.html"
+      })
   void shouldThrowIllegalArgumentExceptionWhenPathParameterIsNeitherIdentifierNorUri(
       String pathParameterValue) throws JsonProcessingException, ApiIoException {
     var requestInfo = createRequestWithPublicationIdPathParameter(pathParameterValue);
