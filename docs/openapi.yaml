@@ -458,7 +458,7 @@ paths:
       summary: Get candidate by publication identifier
       operationId: getNviCandidateByPublicationIdentifier
       parameters:
-        - $ref: "#/components/parameters/PublicationIdPathParameter"
+        - $ref: "#/components/parameters/PublicationIdentifierPathParameter"
       security: *authenticated
       x-amazon-apigateway-integration:
         uri:
@@ -753,14 +753,14 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "500":
           $ref: "#/components/responses/InternalServerError"
-  /publication/{publicationId}/report-status:
+  /publication/{identifier}/report-status:
     get:
       tags:
         - Report
       description: >
         Get the NVI report status for a publication, indicating whether the publication
         is reported, under review, or not a candidate.
-      summary: Get report status by publication id
+      summary: Get report status for a publication
       operationId: getReportStatusByPublicationId
       parameters:
         - $ref: "#/components/parameters/PublicationIdentifierPathParameter"
