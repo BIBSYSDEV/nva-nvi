@@ -18,6 +18,10 @@ public record ReportStatusDto(
         publishingYear);
   }
 
+  public static ReportStatusDto forNonCandidate(URI publicationId) {
+    return builder().withPublicationId(publicationId).withStatus(StatusDto.NOT_CANDIDATE).build();
+  }
+
   public static Builder builder() {
     return new Builder();
   }

@@ -11,6 +11,7 @@ import static no.sikt.nva.nvi.common.service.model.Candidate.shouldResetCandidat
 import java.net.URI;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.Dao;
@@ -161,9 +162,12 @@ public class CandidateService {
   }
 
   public Candidate getCandidateByPublicationId(URI publicationId) {
-    LOGGER.info("Fetching candidate by publication id {}", publicationId);
+    return findCandidateByPublicationId(publicationId).orElseThrow(CandidateNotFoundException::new);
+  }
+
+  public Optional<Candidate> findCandidateByPublicationId(URI publicationId) {
     var responseContext = findCandidateAndPeriodsByPublicationId(publicationId);
-    return responseContext.getCandidate().orElseThrow(CandidateNotFoundException::new);
+    return responseContext.getCandidate();
   }
 
   public CandidateAndPeriods findCandidateAndPeriodsByPublicationId(URI publicationId) {

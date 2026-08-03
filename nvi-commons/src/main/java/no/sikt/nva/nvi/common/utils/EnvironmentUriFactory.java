@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.common.utils;
 
 import java.net.URI;
 import java.util.UUID;
+import no.unit.nva.identifiers.SortableIdentifier;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
 
@@ -11,6 +12,7 @@ public final class EnvironmentUriFactory {
   private static final String CUSTOM_DOMAIN_BASE_PATH = "CUSTOM_DOMAIN_BASE_PATH";
   private static final String CANDIDATE_PATH = "candidate";
   private static final String CONTEXT_PATH = "context";
+  private static final String PUBLICATION_PATH = "publication";
 
   private EnvironmentUriFactory() {}
 
@@ -18,6 +20,14 @@ public final class EnvironmentUriFactory {
     return baseUrl(environment)
         .addChild(CANDIDATE_PATH)
         .addChild(candidateIdentifier.toString())
+        .getUri();
+  }
+
+  public static URI publicationId(
+      Environment environment, SortableIdentifier publicationIdentifier) {
+    return UriWrapper.fromHost(environment.readEnv(API_HOST))
+        .addChild(PUBLICATION_PATH)
+        .addChild(publicationIdentifier.toString())
         .getUri();
   }
 

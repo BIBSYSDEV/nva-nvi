@@ -5,17 +5,14 @@ import static nva.commons.core.attempt.Try.attempt;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.URI;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import no.sikt.nva.nvi.common.service.CandidateService;
-import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.utils.ExceptionMapper;
+import no.sikt.nva.nvi.common.utils.RequestUtil;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
-import nva.commons.core.attempt.Failure;
 
 public class FetchReportStatusByPublicationIdHandler
     extends ApiGatewayHandler<Void, ReportStatusDto> {
@@ -41,10 +38,7 @@ public class FetchReportStatusByPublicationIdHandler
   @Override
   protected ReportStatusDto processInput(Void unused, RequestInfo requestInfo, Context context)
       throws ApiGatewayException {
-    var publicationId = getPublicationId(requestInfo);
-    return attempt(() -> candidateService.getCandidateByPublicationId(publicationId))
-        .map(ReportStatusDto::fromCandidate)
-        .orElse(failure -> handleNotFoundOrFailure(failure, publicationId));
+    return attempt(() -> getCandidateStatus(requestInfo)).orElseThrow(ExceptionMapper::map);
   }
 
   @Override
@@ -52,22 +46,15 @@ public class FetchReportStatusByPublicationIdHandler
     return HTTP_OK;
   }
 
-  private static ReportStatusDto handleNotFoundOrFailure(
-      Failure<ReportStatusDto> failure, URI publicationId) throws ApiGatewayException {
-    if (failure.getException() instanceof CandidateNotFoundException) {
-      return ReportStatusDto.builder()
-          .withPublicationId(publicationId)
-          .withStatus(StatusDto.NOT_CANDIDATE)
-          .build();
-    } else {
-      throw ExceptionMapper.map(failure);
-    }
+  private ReportStatusDto getCandidateStatus(RequestInfo requestInfo) {
+    var publicationId = getPublicationId(requestInfo);
+    var candidate = candidateService.findCandidateByPublicationId(publicationId);
+    return candidate
+        .map(ReportStatusDto::fromCandidate)
+        .orElseGet(() -> ReportStatusDto.forNonCandidate(publicationId));
   }
 
   private URI getPublicationId(RequestInfo requestInfo) {
-    return URI.create(
-        URLDecoder.decode(
-            requestInfo.getPathParameters().get(PATH_PARAM_PUBLICATION_ID),
-            StandardCharsets.UTF_8));
+    return RequestUtil.getPublicationId(requestInfo, PATH_PARAM_PUBLICATION_ID, environment);
   }
 }

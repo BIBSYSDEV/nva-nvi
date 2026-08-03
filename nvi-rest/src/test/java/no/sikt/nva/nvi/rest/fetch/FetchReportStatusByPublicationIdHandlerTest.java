@@ -6,6 +6,7 @@ import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeri
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomTopLevelOrganization;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
+import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -15,8 +16,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.net.URI;
 import java.util.Map;
+import java.util.UUID;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
@@ -33,6 +36,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.zalando.problem.Problem;
 
 class FetchReportStatusByPublicationIdHandlerTest {
   private static final String PATH_PARAM_PUBLICATION_ID = "publicationId";
@@ -86,6 +90,31 @@ class FetchReportStatusByPublicationIdHandlerTest {
     var expected =
         ReportStatusDto.builder()
             .withPublicationId(pendingCandidate.getPublicationId())
+            .withStatus(StatusDto.PENDING_REVIEW)
+            .withYear(String.valueOf(CURRENT_YEAR))
+            .build();
+    assertEquals(expected, actualResponseBody);
+  }
+
+  @Test
+  void shouldReturnReportStatusWhenRequestUsesPublicationIdentifier() throws IOException {
+    var publicationIdentifier = UUID.randomUUID();
+    var publicationId = generatePublicationId(publicationIdentifier);
+    var upsertRequest =
+        UpsertRequestBuilder.randomUpsertRequestBuilder()
+            .withPublicationId(publicationId)
+            .withPublicationDate(new PublicationDateDto(String.valueOf(CURRENT_YEAR), null, null))
+            .build();
+    scenario.upsertCandidate(upsertRequest);
+
+    handler.handleRequest(createRequest(publicationIdentifier.toString()), output, context);
+
+    var actualResponseBody =
+        GatewayResponse.fromOutputStream(output, ReportStatusDto.class)
+            .getBodyObject(ReportStatusDto.class);
+    var expected =
+        ReportStatusDto.builder()
+            .withPublicationId(publicationId)
             .withStatus(StatusDto.PENDING_REVIEW)
             .withYear(String.valueOf(CURRENT_YEAR))
             .build();
@@ -210,6 +239,14 @@ class FetchReportStatusByPublicationIdHandlerTest {
   }
 
   @Test
+  void shouldReturnBadRequestWhenPathParameterIsNeitherIdentifierNorUri() throws IOException {
+    handler.handleRequest(createRequest("not-a-valid-identifier"), output, context);
+
+    var response = GatewayResponse.fromOutputStream(output, Problem.class);
+    assertEquals(HttpURLConnection.HTTP_BAD_REQUEST, response.getStatusCode());
+  }
+
+  @Test
   void shouldReturnNotCandidateWhenPublicationIsNotFound() throws IOException {
     var notFoundPublicationId = randomUri();
 
@@ -227,9 +264,14 @@ class FetchReportStatusByPublicationIdHandlerTest {
   }
 
   private static InputStream createRequest(URI publicationId) throws JsonProcessingException {
+    return createRequest(publicationId.toString());
+  }
+
+  private static InputStream createRequest(String pathParameterValue)
+      throws JsonProcessingException {
     return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
         .withHeaders(Map.of(HttpHeaders.ACCEPT, ContentType.APPLICATION_JSON.getMimeType()))
-        .withPathParameters(Map.of(PATH_PARAM_PUBLICATION_ID, publicationId.toString()))
+        .withPathParameters(Map.of(PATH_PARAM_PUBLICATION_ID, pathParameterValue))
         .build();
   }
 
