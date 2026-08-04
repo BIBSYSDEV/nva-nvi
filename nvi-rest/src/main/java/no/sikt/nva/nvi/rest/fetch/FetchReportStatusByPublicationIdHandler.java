@@ -17,7 +17,6 @@ import nva.commons.core.JacocoGenerated;
 public class FetchReportStatusByPublicationIdHandler
     extends ApiGatewayHandler<Void, ReportStatusDto> {
 
-  private static final String PATH_PARAM_PUBLICATION_ID = "publicationId";
   private final CandidateService candidateService;
 
   @JacocoGenerated
@@ -55,6 +54,6 @@ public class FetchReportStatusByPublicationIdHandler
   }
 
   private URI getPublicationId(RequestInfo requestInfo) {
-    return RequestUtil.getPublicationId(requestInfo, PATH_PARAM_PUBLICATION_ID, environment);
+    return RequestUtil.getPublicationId(requestInfo, environment);
   }
 }

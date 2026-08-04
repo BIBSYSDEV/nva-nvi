@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.rest.fetch;
 
 import static no.sikt.nva.nvi.common.dto.AllowedOperationFixtures.CURATOR_CAN_FINALIZE_APPROVAL;
-import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateByPublicationIdHandler.PATH_PARAM_PUBLICATION_ID;
+import static no.sikt.nva.nvi.common.utils.RequestUtil.PUBLICATION_IDENTIFIER_PATH_PARAMETER;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -41,7 +41,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandl
 
   @BeforeEach
   void setUp() {
-    resourcePathParameter = PATH_PARAM_PUBLICATION_ID;
+    resourcePathParameter = PUBLICATION_IDENTIFIER_PATH_PARAMETER;
   }
 
   @Test

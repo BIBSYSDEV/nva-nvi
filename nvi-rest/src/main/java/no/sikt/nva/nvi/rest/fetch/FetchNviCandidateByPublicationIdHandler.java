@@ -27,7 +27,6 @@ import nva.commons.core.JacocoGenerated;
 public class FetchNviCandidateByPublicationIdHandler extends ApiGatewayHandler<Void, CandidateDto>
     implements ViewingScopeHandler {
 
-  public static final String PATH_PARAM_PUBLICATION_ID = "publicationId";
   private final CandidateService candidateService;
 
   @JacocoGenerated
@@ -64,7 +63,7 @@ public class FetchNviCandidateByPublicationIdHandler extends ApiGatewayHandler<V
   }
 
   private URI getPublicationId(RequestInfo requestInfo) {
-    return RequestUtil.getPublicationId(requestInfo, PATH_PARAM_PUBLICATION_ID, environment);
+    return RequestUtil.getPublicationId(requestInfo, environment);
   }
 
   private Candidate checkIfApplicable(Candidate candidate) {
