@@ -19,21 +19,24 @@ import org.slf4j.LoggerFactory;
 
 public final class RequestUtil {
 
+  public static final String PUBLICATION_IDENTIFIER_PATH_PARAMETER = "identifier";
   private static final Logger LOGGER = LoggerFactory.getLogger(RequestUtil.class);
 
   private RequestUtil() {}
 
   /**
-   * Resolves a publication ID from a path parameter that contains either a publication identifier
-   * or a full, URL-encoded publication URI. The URI format is deprecated and only supported until
-   * all consumers send the identifier. Throws IllegalArgumentException when the parameter is
-   * neither an absolute URI nor a valid SortableIdentifier.
+   * Resolves a publication ID from the shared "identifier" path parameter, which contains either a
+   * publication identifier or a full, URL-encoded publication URI. The parameter name must match
+   * the PublicationIdentifierPathParameter component in docs/openapi.yaml. The URI format is
+   * deprecated and only supported until all consumers send the identifier. Throws
+   * IllegalArgumentException when the parameter is neither an absolute URI nor a valid
+   * SortableIdentifier.
    */
-  public static URI getPublicationId(
-      RequestInfo requestInfo, String pathParameterName, Environment environment) {
+  public static URI getPublicationId(RequestInfo requestInfo, Environment environment) {
     var decodedParameter =
         URLDecoder.decode(
-            requestInfo.getPathParameters().get(pathParameterName), StandardCharsets.UTF_8);
+            requestInfo.getPathParameters().get(PUBLICATION_IDENTIFIER_PATH_PARAMETER),
+            StandardCharsets.UTF_8);
     if (isAbsoluteUri(decodedParameter)) {
       LOGGER.warn("Publication ID parameter is in deprecated URI format: {}", decodedParameter);
       return URI.create(decodedParameter);

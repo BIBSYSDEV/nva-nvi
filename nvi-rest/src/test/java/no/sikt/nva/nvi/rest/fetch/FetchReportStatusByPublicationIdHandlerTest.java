@@ -39,7 +39,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.zalando.problem.Problem;
 
 class FetchReportStatusByPublicationIdHandlerTest {
-  private static final String PATH_PARAM_PUBLICATION_ID = "publicationId";
+  private static final String PUBLICATION_IDENTIFIER_PATH_PARAMETER = "identifier";
   private Context context;
   private ByteArrayOutputStream output;
   private CandidateService candidateService;
@@ -271,7 +271,7 @@ class FetchReportStatusByPublicationIdHandlerTest {
       throws JsonProcessingException {
     return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
         .withHeaders(Map.of(HttpHeaders.ACCEPT, ContentType.APPLICATION_JSON.getMimeType()))
-        .withPathParameters(Map.of(PATH_PARAM_PUBLICATION_ID, pathParameterValue))
+        .withPathParameters(Map.of(PUBLICATION_IDENTIFIER_PATH_PARAMETER, pathParameterValue))
         .build();
   }
 

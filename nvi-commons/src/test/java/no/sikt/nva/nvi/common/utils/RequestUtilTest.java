@@ -33,7 +33,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 class RequestUtilTest {
 
-  private static final String PATH_PARAM_PUBLICATION_ID = "publicationId";
+  private static final String PUBLICATION_IDENTIFIER_PATH_PARAMETER = "identifier";
 
   @Test
   void shouldGetUsername() throws UnauthorizedException, JsonProcessingException, ApiIoException {
@@ -72,8 +72,7 @@ class RequestUtilTest {
     var publicationIdentifier = SortableIdentifier.next().toString();
     var requestInfo = createRequestWithPublicationIdPathParameter(publicationIdentifier);
     var actualPublicationId =
-        RequestUtil.getPublicationId(
-            requestInfo, PATH_PARAM_PUBLICATION_ID, EnvironmentFixtures.getGlobalEnvironment());
+        RequestUtil.getPublicationId(requestInfo, EnvironmentFixtures.getGlobalEnvironment());
     var expectedPublicationId =
         URI.create(
             "https://%s/publication/%s".formatted(API_HOST.getValue(), publicationIdentifier));
@@ -88,8 +87,7 @@ class RequestUtilTest {
     var encodedPublicationId = URLEncoder.encode(publicationId.toString(), StandardCharsets.UTF_8);
     var requestInfo = createRequestWithPublicationIdPathParameter(encodedPublicationId);
     var actualPublicationId =
-        RequestUtil.getPublicationId(
-            requestInfo, PATH_PARAM_PUBLICATION_ID, EnvironmentFixtures.getGlobalEnvironment());
+        RequestUtil.getPublicationId(requestInfo, EnvironmentFixtures.getGlobalEnvironment());
     assertEquals(publicationId, actualPublicationId);
     assertThat(logRecorder.asString()).contains("deprecated", publicationId.toString());
   }
@@ -109,14 +107,14 @@ class RequestUtilTest {
     var environment = EnvironmentFixtures.getGlobalEnvironment();
     assertThrows(
         IllegalArgumentException.class,
-        () -> RequestUtil.getPublicationId(requestInfo, PATH_PARAM_PUBLICATION_ID, environment));
+        () -> RequestUtil.getPublicationId(requestInfo, environment));
   }
 
   private static RequestInfo createRequestWithPublicationIdPathParameter(String pathParameterValue)
       throws JsonProcessingException, ApiIoException {
     var request =
         new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
-            .withPathParameters(Map.of(PATH_PARAM_PUBLICATION_ID, pathParameterValue))
+            .withPathParameters(Map.of(PUBLICATION_IDENTIFIER_PATH_PARAMETER, pathParameterValue))
             .build();
     return RequestInfo.fromRequest(request);
   }
