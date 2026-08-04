@@ -48,10 +48,6 @@ public final class TestUtils {
     return ID_COUNTER.getAndIncrement();
   }
 
-  public static String generateUniqueIdAsString() {
-    return String.valueOf(generateUniqueId());
-  }
-
   public static URI generatePublicationId(UUID identifier) {
     return UriWrapper.fromHost(API_HOST)
         .addChild(PUBLICATION_API_PATH)

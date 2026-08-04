@@ -84,10 +84,6 @@ public final class Validator {
     return nonNull(collection) && !collection.isEmpty();
   }
 
-  public static boolean isMissing(Object object) {
-    return isNull(object) || (object instanceof Collection<?> collection && collection.isEmpty());
-  }
-
   public static void validateYear(String yearString) {
     try {
       var year = Year.parse(yearString);

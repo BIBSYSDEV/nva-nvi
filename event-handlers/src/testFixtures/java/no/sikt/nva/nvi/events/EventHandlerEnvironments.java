@@ -23,7 +23,6 @@ import no.sikt.nva.nvi.common.FakeEnvironment;
 import no.sikt.nva.nvi.common.HandlerEnvironments;
 import no.sikt.nva.nvi.events.batch.ReEvaluateNviCandidatesHandler;
 import no.sikt.nva.nvi.events.batch.StartBatchJobHandler;
-import no.sikt.nva.nvi.events.cristin.CristinNviReportEventConsumer;
 import no.sikt.nva.nvi.events.db.DataEntryUpdateHandler;
 import no.sikt.nva.nvi.events.db.DynamoDbEventToQueueHandler;
 import no.sikt.nva.nvi.events.evaluator.EvaluateNviCandidateHandler;
@@ -36,7 +35,6 @@ public final class EventHandlerEnvironments {
 
   private static final Map<Class<?>, Supplier<FakeEnvironment>> HANDLER_ENVIRONMENTS =
       Map.ofEntries(
-          entry(CristinNviReportEventConsumer.class, EXPANDED_RESOURCES_BUCKET),
           entry(
               DataEntryUpdateHandler.class,
               DB_EVENTS_QUEUE_URL,
