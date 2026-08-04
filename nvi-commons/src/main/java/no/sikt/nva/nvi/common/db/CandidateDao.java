@@ -258,34 +258,6 @@ public final class CandidateDao extends Dao {
     return isNull(periodYear) && candidate.applicable();
   }
 
-  public enum DbLevel {
-    LEVEL_ONE("LevelOne"),
-    LEVEL_TWO("LevelTwo"),
-    NON_CANDIDATE("NonCandidateLevel");
-    private final String value;
-
-    DbLevel(String value) {
-
-      this.value = value;
-    }
-
-    @Deprecated
-    @JacocoGenerated // This is tested in CristinMapperTest
-    // TODO: Remove after cristin migration
-    public static DbLevel fromDeprecatedValue(String value) {
-      Objects.requireNonNull(value);
-      return switch (value) {
-        case "1" -> LEVEL_ONE;
-        case "2", "2A" -> LEVEL_TWO;
-        default -> throw new IllegalArgumentException("Invalid value. Valid values are 1 and 2");
-      };
-    }
-
-    public String getValue() {
-      return value;
-    }
-  }
-
   public static final class Builder {
 
     private UUID builderIdentifier;
