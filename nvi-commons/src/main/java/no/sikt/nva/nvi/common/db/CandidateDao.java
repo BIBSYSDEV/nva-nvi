@@ -54,7 +54,6 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortK
 
 @DynamoDbImmutable(builder = Builder.class)
 // Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
-@SuppressWarnings("PMD.CouplingBetweenObjects")
 public final class CandidateDao extends Dao {
 
   public static final String TYPE = "CANDIDATE";

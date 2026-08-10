@@ -17,7 +17,7 @@ import no.sikt.nva.nvi.common.dto.ContributorDto;
  * Example models for testing purposes, corresponding to the data in
  * /resources/expandedPublications/
  */
-public class ExampleContributors {
+public final class ExampleContributors {
 
   public static final ContributorDto EXAMPLE_1_CONTRIBUTOR =
       defaultContributorBuilder()
@@ -66,6 +66,8 @@ public class ExampleContributors {
 
   public static final ContributorDto ACADEMIC_CHAPTER_CONTRIBUTOR_1 =
       defaultContributorBuilder().withAffiliations(List.of(SUB_ORGANIZATION_SIKT)).build();
+
+  private ExampleContributors() {}
 
   private static ContributorDto.Builder defaultContributorBuilder() {
     return ContributorDto.builder()

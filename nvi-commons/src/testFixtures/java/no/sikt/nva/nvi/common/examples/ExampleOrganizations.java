@@ -11,7 +11,7 @@ import no.sikt.nva.nvi.common.client.model.Organization;
  * Example models for testing purposes, corresponding to the data in
  * /resources/expandedPublications/
  */
-public class ExampleOrganizations {
+public final class ExampleOrganizations {
 
   public static final URI SIKT_ID =
       URI.create("https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0");
@@ -83,4 +83,6 @@ public class ExampleOrganizations {
           .withCountryCode("ZA")
           .withLabels(Map.of("nb", "University of Cape Town"))
           .build();
+
+  private ExampleOrganizations() {}
 }

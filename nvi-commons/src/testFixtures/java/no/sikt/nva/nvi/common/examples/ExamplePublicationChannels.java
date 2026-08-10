@@ -9,7 +9,7 @@ import no.sikt.nva.nvi.common.model.ScientificValue;
  * Example models for testing purposes, corresponding to the data in
  * /resources/expandedPublications/
  */
-public class ExamplePublicationChannels {
+public final class ExamplePublicationChannels {
 
   public static final PublicationChannelDto JOURNAL_OF_TESTING =
       PublicationChannelDto.builder()
@@ -52,4 +52,6 @@ public class ExamplePublicationChannels {
           .withOnlineIssn("2704-0410")
           .withPrintIssn("0332-5741")
           .build();
+
+  private ExamplePublicationChannels() {}
 }

@@ -26,7 +26,7 @@ import no.sikt.nva.nvi.common.model.InstanceType;
  * Example models for testing purposes, corresponding to the data in
  * /resources/expandedPublications/
  */
-public class ExamplePublications {
+public final class ExamplePublications {
   public static final String EXAMPLE_PUBLICATION_1_PATH =
       "expandedPublications/validNviCandidate1.json";
   public static final String EXAMPLE_PUBLICATION_2_PATH =
@@ -206,4 +206,6 @@ public class ExamplePublications {
           .withIsbnList(List.of(ISBN, ADDITIONAL_IDENTIFIER_ISBN))
           .withParentPublicationType(InstanceType.NON_CANDIDATE)
           .build();
+
+  private ExamplePublications() {}
 }
