@@ -3,7 +3,6 @@ package no.sikt.nva.nvi.common.queue;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -15,7 +14,6 @@ import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.BatchResultErrorEntry;
 import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest;
-import software.amazon.awssdk.services.sqs.model.MessageAttributeValue;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequest;
@@ -27,11 +25,9 @@ import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
 public class NviQueueClient implements QueueClient {
 
-  private static final String CANDIDATE_IDENTIFIER = "candidateIdentifier";
   private static final int MAX_CONNECTIONS = 10_000;
   private static final int IDLE_TIME = 30;
   private static final int TIMEOUT_TIME = 30;
-  private static final String DATA_TYPE_STRING = "String";
   protected final SqsClient sqsClient;
 
   @JacocoGenerated
@@ -51,14 +47,6 @@ public class NviQueueClient implements QueueClient {
   @Override
   public NviSendMessageResponse sendMessage(QueueMessage message, String queueUrl) {
     return createResponse(sqsClient.sendMessage(createSendRequest(message, queueUrl)));
-  }
-
-  @Override
-  public NviSendMessageResponse sendMessage(
-      String message, String queueUrl, UUID candidateIdentifier) {
-    return createResponse(
-        sqsClient.sendMessage(
-            createSendRequest(message, queueUrl, getMessageAttributes(candidateIdentifier))));
   }
 
   @Override
@@ -90,15 +78,6 @@ public class NviQueueClient implements QueueClient {
         .build();
   }
 
-  private static Map<String, MessageAttributeValue> getMessageAttributes(UUID candidateIdentifier) {
-    return Map.of(
-        CANDIDATE_IDENTIFIER,
-        MessageAttributeValue.builder()
-            .stringValue(candidateIdentifier.toString())
-            .dataType(DATA_TYPE_STRING)
-            .build());
-  }
-
   @JacocoGenerated
   private static SdkHttpClient httpClientForConcurrentQueries() {
     return ApacheHttpClient.builder()
@@ -124,17 +103,8 @@ public class NviQueueClient implements QueueClient {
   private SendMessageRequest createSendRequest(QueueMessage message, String queueUrl) {
     return SendMessageRequest.builder()
         .queueUrl(queueUrl)
-        .messageBody(message.body().toJsonString())
+        .messageBody(message.body())
         .messageAttributes(message.attributes())
-        .build();
-  }
-
-  private SendMessageRequest createSendRequest(
-      String body, String queueUrl, Map<String, MessageAttributeValue> messageAttributes) {
-    return SendMessageRequest.builder()
-        .queueUrl(queueUrl)
-        .messageBody(body)
-        .messageAttributes(messageAttributes)
         .build();
   }
 

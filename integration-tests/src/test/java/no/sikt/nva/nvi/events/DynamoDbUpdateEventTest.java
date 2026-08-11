@@ -124,17 +124,17 @@ class DynamoDbUpdateEventTest {
   }
 
   @Test
-  void shouldSendMessageToDlqIfSendingBatchFails() {
+  void shouldSendRedrivableMessageToDlqIfSendingBatchFails() throws JsonProcessingException {
     var candidateIdentifier = randomUUID();
     var dynamoDbEvent = createCandidateEvent(candidateIdentifier, OperationType.MODIFY, true);
     sharedQueueClient.disableDestinationQueue(EnvironmentFixtures.DB_EVENTS_QUEUE_URL.getValue());
 
     assertThrows(RuntimeException.class, () -> processDynamoEvent(dynamoDbEvent));
 
-    assertThat(getDlqMessages())
-        .hasSize(1)
-        .extracting(SQSMessage::getBody)
-        .allMatch(message -> message.contains(candidateIdentifier.toString()));
+    var dlqMessages = getDlqMessages();
+    assertThat(dlqMessages).hasSize(1);
+    var redrivableMessage = DynamoDbChangeMessage.from(dlqMessages.getFirst().getBody());
+    assertThat(redrivableMessage.candidateIdentifier()).isEqualTo(candidateIdentifier);
   }
 
   @Test

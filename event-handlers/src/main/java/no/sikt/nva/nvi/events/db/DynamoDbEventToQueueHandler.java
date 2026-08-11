@@ -2,7 +2,6 @@ package no.sikt.nva.nvi.events.db;
 
 import static no.sikt.nva.nvi.common.utils.DynamoDbUtils.extractIdFromRecord;
 import static no.sikt.nva.nvi.common.utils.DynamoDbUtils.getImage;
-import static no.sikt.nva.nvi.common.utils.ExceptionUtils.getStackTrace;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 
@@ -24,6 +23,7 @@ import no.sikt.nva.nvi.common.queue.DataEntryType;
 import no.sikt.nva.nvi.common.queue.DynamoDbChangeMessage;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
+import no.sikt.nva.nvi.common.queue.QueueMessage;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.attempt.Failure;
@@ -127,14 +127,19 @@ public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent
   }
 
   private void sendToDlq(DynamodbStreamRecord streamRecord, Exception exception) {
-    var message =
-        String.format(
-            "Failed to process record %s. Exception: %s ",
-            streamRecord.toString(), getStackTrace(exception));
-    extractIdFromRecord(streamRecord)
-        .ifPresentOrElse(
-            id -> queueClient.sendMessage(message, dlqUrl, id),
-            () -> queueClient.sendMessage(message, dlqUrl));
+    var dlqMessage =
+        QueueMessage.builder()
+            .withBody(extractRedrivableBody(streamRecord))
+            .withErrorContext(exception);
+    extractIdFromRecord(streamRecord).ifPresent(dlqMessage::withCandidateIdentifier);
+    queueClient.sendMessage(dlqMessage.build(), dlqUrl);
+  }
+
+  private static String extractRedrivableBody(DynamodbStreamRecord streamRecord) {
+    return attempt(() -> mapToUpdateMessage(streamRecord))
+        .toOptional()
+        .map(DynamoDbEventToQueueHandler::writeAsJsonString)
+        .orElseGet(streamRecord::toString);
   }
 
   private void sendBatch(List<String> messages) {

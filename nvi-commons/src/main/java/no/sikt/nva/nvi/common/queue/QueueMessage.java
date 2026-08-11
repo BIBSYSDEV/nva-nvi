@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 import no.unit.nva.commons.json.JsonSerializable;
 import software.amazon.awssdk.services.sqs.model.MessageAttributeValue;
 
-public record QueueMessage(JsonSerializable body, Map<String, MessageAttributeValue> attributes) {
+public record QueueMessage(String body, Map<String, MessageAttributeValue> attributes) {
 
   private static final String CANDIDATE_IDENTIFIER = "candidateIdentifier";
   private static final String PUBLICATION_BUCKET_URI = "publicationBucketUri";
@@ -59,9 +59,14 @@ public record QueueMessage(JsonSerializable body, Map<String, MessageAttributeVa
   public static class Builder {
 
     private final Map<String, String> attributes = new HashMap<>();
-    private JsonSerializable body;
+    private String body;
 
     public Builder withBody(JsonSerializable body) {
+      this.body = body.toJsonString();
+      return this;
+    }
+
+    public Builder withBody(String body) {
       this.body = body;
       return this;
     }

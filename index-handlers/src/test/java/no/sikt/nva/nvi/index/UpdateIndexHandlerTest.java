@@ -10,9 +10,9 @@ import static no.sikt.nva.nvi.index.utils.SearchConstants.getSearchIndexName;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.s3.S3Driver.S3_SCHEME;
 import static nva.commons.core.attempt.Try.attempt;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -37,7 +37,6 @@ import no.sikt.nva.nvi.index.mapper.CandidateToIndexDocumentMapper;
 import no.sikt.nva.nvi.index.model.PersistedIndexDocumentMessage;
 import no.sikt.nva.nvi.index.model.document.IndexDocumentWithConsumptionAttributes;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
-import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.stubs.FakeS3Client;
@@ -56,7 +55,9 @@ class UpdateIndexHandlerTest {
   private static final String INDEX_DLQ_URL = ENVIRONMENT.readEnv(INDEX_DLQ);
   private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
   private static final String BUCKET_NAME = ENVIRONMENT.readEnv(EXPANDED_RESOURCES_BUCKET);
-  private static final String EXCEPTION = "exception";
+  private static final String CANDIDATE_IDENTIFIER_ATTRIBUTE = "candidateIdentifier";
+  private static final String ERROR_TYPE_ATTRIBUTE = "errorType";
+  private static final String STACK_TRACE_ATTRIBUTE = "stackTrace";
   private final S3Client s3Client = new FakeS3Client();
   private S3Driver s3Driver;
   private UpdateIndexHandler handler;
@@ -94,7 +95,7 @@ class UpdateIndexHandlerTest {
   }
 
   @Test
-  void shouldSendMessageContainingExceptionToDlqWhenIndexingFails() throws JsonProcessingException {
+  void shouldSendOriginalMessageWithErrorContextToDlqWhenIndexingFails() {
     var candidate = setupRandomApplicableCandidate(scenario);
     var expectedIndexDocument = setupExistingIndexDocumentInBucket(candidate).indexDocument();
     var event = createUpdateIndexEvent(List.of(candidate));
@@ -102,13 +103,14 @@ class UpdateIndexHandlerTest {
     handler.handleRequest(event, CONTEXT);
     var dlqMessage = sqsClient.receiveMessage(INDEX_DLQ_URL, 1).messages().getFirst();
 
-    assertFalse(
-        JsonUtils.dtoObjectMapper.readTree(dlqMessage.body()).get(EXCEPTION).toString().isEmpty());
+    assertThat(dlqMessage.body()).isEqualTo(event.getRecords().getFirst().getBody());
+    assertThat(dlqMessage.messageAttributes())
+        .containsEntry(CANDIDATE_IDENTIFIER_ATTRIBUTE, candidate.identifier().toString())
+        .containsKeys(ERROR_TYPE_ATTRIBUTE, STACK_TRACE_ATTRIBUTE);
   }
 
   @Test
-  void shouldSendMessageContainingExceptionToDlqWhenFetchingDocumentFromS3Fails()
-      throws JsonProcessingException {
+  void shouldSendOriginalMessageWithErrorContextToDlqWhenFetchingDocumentFromS3Fails() {
     var candidate = setupRandomApplicableCandidate(scenario);
     var event = createUpdateIndexEvent(List.of(candidate));
     var mockedStorageReader = mock(S3StorageReader.class);
@@ -117,8 +119,10 @@ class UpdateIndexHandlerTest {
         .handleRequest(event, CONTEXT);
     var dlqMessage = sqsClient.receiveMessage(INDEX_DLQ_URL, 1).messages().getFirst();
 
-    assertFalse(
-        JsonUtils.dtoObjectMapper.readTree(dlqMessage.body()).get(EXCEPTION).toString().isEmpty());
+    assertThat(dlqMessage.body()).isEqualTo(event.getRecords().getFirst().getBody());
+    assertThat(dlqMessage.messageAttributes())
+        .containsEntry(CANDIDATE_IDENTIFIER_ATTRIBUTE, candidate.identifier().toString())
+        .containsKeys(ERROR_TYPE_ATTRIBUTE, STACK_TRACE_ATTRIBUTE);
   }
 
   @Test

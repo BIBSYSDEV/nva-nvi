@@ -13,6 +13,7 @@ import no.sikt.nva.nvi.common.notification.NviPublishMessageResponse;
 import no.sikt.nva.nvi.common.queue.DynamoDbChangeMessage;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
+import no.sikt.nva.nvi.common.queue.QueueMessage;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
@@ -25,6 +26,8 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
   private static final String PUBLISHED_MESSAGE = "Published message with id: {} to topic {}";
   private static final String SKIPPING_EVENT_MESSAGE =
       "Skipping event with operation type {} for dao type {}";
+  private static final String FAILED_TO_PROCESS_MESSAGE = "Failed to process record: {}";
+  private static final String ERROR_MESSAGE = "Error message: {}";
   private static final String INDEX_DLQ = "INDEX_DLQ";
   private final NotificationClient<NviPublishMessageResponse> snsClient;
   private final Environment environment;
@@ -80,10 +83,9 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
   }
 
   private void sendToDlq(String body, Exception exception) {
-    var message =
-        String.format(
-            "Failed to process record %s. Exception: %s ", body, getStackTrace(exception));
-    LOGGER.error(message, body);
-    queueClient.sendMessage(message, dlqUrl);
+    LOGGER.error(FAILED_TO_PROCESS_MESSAGE, body);
+    LOGGER.error(ERROR_MESSAGE, getStackTrace(exception));
+    var dlqMessage = QueueMessage.builder().withBody(body).withErrorContext(exception).build();
+    queueClient.sendMessage(dlqMessage, dlqUrl);
   }
 }
