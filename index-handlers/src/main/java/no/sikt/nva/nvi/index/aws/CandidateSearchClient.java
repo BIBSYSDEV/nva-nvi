@@ -39,6 +39,7 @@ import org.opensearch.client.util.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@SuppressWarnings("PMD.CouplingBetweenObjects")
 public class CandidateSearchClient implements SearchClient<NviCandidateIndexDocument> {
 
   private static final String INDEX_NOT_FOUND_EXCEPTION = "index_not_found_exception";
@@ -185,9 +186,9 @@ public class CandidateSearchClient implements SearchClient<NviCandidateIndexDocu
     return SortOrder.Asc.jsonValue().equalsIgnoreCase(sortOrder) ? SortOrder.Asc : SortOrder.Desc;
   }
 
-  private RuntimeException handleFailure(String msg, Exception exception) {
+  private SearchClientException handleFailure(String msg, Exception exception) {
     LOGGER.error(msg, exception);
-    return new RuntimeException(exception.getMessage());
+    return new SearchClientException(exception.getMessage());
   }
 
   private SearchRequest constructSearchRequest(CandidateSearchParameters parameters) {

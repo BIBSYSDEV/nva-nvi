@@ -33,6 +33,7 @@ import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.aws.CandidateSearchClient;
+import no.sikt.nva.nvi.index.aws.SearchClientException;
 import no.sikt.nva.nvi.index.mapper.CandidateToIndexDocumentMapper;
 import no.sikt.nva.nvi.index.model.PersistedIndexDocumentMessage;
 import no.sikt.nva.nvi.index.model.document.IndexDocumentWithConsumptionAttributes;
@@ -44,8 +45,8 @@ import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.opensearch.client.opensearch._types.OpenSearchException;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 
 class UpdateIndexHandlerTest {
 
@@ -89,7 +90,8 @@ class UpdateIndexHandlerTest {
     var candidate = setupRandomApplicableCandidate(scenario);
     var expectedIndexDocument = setupExistingIndexDocumentInBucket(candidate).indexDocument();
     var event = createUpdateIndexEvent(List.of(candidate));
-    when(searchClient.addDocumentToIndex(expectedIndexDocument)).thenThrow(new RuntimeException());
+    when(searchClient.addDocumentToIndex(expectedIndexDocument))
+        .thenThrow(new SearchClientException("Failed to add document to index"));
     handler.handleRequest(event, CONTEXT);
     assertEquals(1, sqsClient.receiveMessage(INDEX_DLQ_URL, 1).messages().size());
   }
@@ -99,7 +101,8 @@ class UpdateIndexHandlerTest {
     var candidate = setupRandomApplicableCandidate(scenario);
     var expectedIndexDocument = setupExistingIndexDocumentInBucket(candidate).indexDocument();
     var event = createUpdateIndexEvent(List.of(candidate));
-    when(searchClient.addDocumentToIndex(expectedIndexDocument)).thenThrow(new RuntimeException());
+    when(searchClient.addDocumentToIndex(expectedIndexDocument))
+        .thenThrow(new SearchClientException("Failed to add document to index"));
     handler.handleRequest(event, CONTEXT);
     var dlqMessage = sqsClient.receiveMessage(INDEX_DLQ_URL, 1).messages().getFirst();
 
@@ -114,7 +117,7 @@ class UpdateIndexHandlerTest {
     var candidate = setupRandomApplicableCandidate(scenario);
     var event = createUpdateIndexEvent(List.of(candidate));
     var mockedStorageReader = mock(S3StorageReader.class);
-    when(mockedStorageReader.read(any())).thenThrow(new RuntimeException());
+    when(mockedStorageReader.read(any())).thenThrow(s3SlowDownException());
     new UpdateIndexHandler(searchClient, mockedStorageReader, sqsClient, ENVIRONMENT)
         .handleRequest(event, CONTEXT);
     var dlqMessage = sqsClient.receiveMessage(INDEX_DLQ_URL, 1).messages().getFirst();
@@ -153,7 +156,7 @@ class UpdateIndexHandlerTest {
     var expectedIndexDocument = setupExistingIndexDocumentInBucket(candidate).indexDocument();
     var event = createUpdateIndexEvent(List.of(candidate));
     when(searchClient.addDocumentToIndex(expectedIndexDocument))
-        .thenThrow(OpenSearchException.class);
+        .thenThrow(SearchClientException.class);
     handler.handleRequest(event, CONTEXT);
     assertDoesNotThrow(() -> handler.handleRequest(event, CONTEXT));
   }
@@ -169,8 +172,12 @@ class UpdateIndexHandlerTest {
     var expectedIndexDocument = setupExistingIndexDocumentInBucket(candidateToSucceed);
     when(storageReader.read(generateBucketUri(candidateToSucceed)))
         .thenReturn(expectedIndexDocument.toJsonString());
-    when(storageReader.read(generateBucketUri(candidateToFail))).thenThrow(new RuntimeException());
+    when(storageReader.read(generateBucketUri(candidateToFail))).thenThrow(s3SlowDownException());
     return storageReader;
+  }
+
+  private static S3Exception s3SlowDownException() {
+    return (S3Exception) S3Exception.builder().statusCode(503).message("Slow Down").build();
   }
 
   private SQSEvent createUpdateIndexEventWithOneInvalidMessageBody(Candidate candidateToSucceed) {

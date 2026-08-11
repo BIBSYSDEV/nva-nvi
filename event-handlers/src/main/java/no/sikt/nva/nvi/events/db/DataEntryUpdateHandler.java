@@ -1,7 +1,5 @@
 package no.sikt.nva.nvi.events.db;
 
-import static no.sikt.nva.nvi.common.utils.ExceptionUtils.getStackTrace;
-
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
@@ -27,7 +25,6 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
   private static final String SKIPPING_EVENT_MESSAGE =
       "Skipping event with operation type {} for dao type {}";
   private static final String FAILED_TO_PROCESS_MESSAGE = "Failed to process record: {}";
-  private static final String ERROR_MESSAGE = "Error message: {}";
   private static final String INDEX_DLQ = "INDEX_DLQ";
   private final NotificationClient<NviPublishMessageResponse> snsClient;
   private final Environment environment;
@@ -83,8 +80,7 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
   }
 
   private void sendToDlq(String body, Exception exception) {
-    LOGGER.error(FAILED_TO_PROCESS_MESSAGE, body);
-    LOGGER.error(ERROR_MESSAGE, getStackTrace(exception));
+    LOGGER.error(FAILED_TO_PROCESS_MESSAGE, body, exception);
     var dlqMessage = QueueMessage.builder().withBody(body).withErrorContext(exception).build();
     queueClient.sendMessage(dlqMessage, dlqUrl);
   }

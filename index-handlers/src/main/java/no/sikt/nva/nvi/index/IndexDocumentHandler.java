@@ -1,24 +1,26 @@
 package no.sikt.nva.nvi.index;
 
-import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
-import static no.sikt.nva.nvi.common.utils.ExceptionUtils.getStackTrace;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.getSearchIndexName;
-import static nva.commons.core.attempt.Try.attempt;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import java.io.IOException;
 import java.net.URI;
+import java.util.Optional;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.StorageWriter;
+import no.sikt.nva.nvi.common.exceptions.ValidationException;
 import no.sikt.nva.nvi.common.queue.DynamoDbChangeMessage;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.queue.QueueMessage;
 import no.sikt.nva.nvi.common.service.CandidateService;
+import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.aws.S3StorageWriter;
 import no.sikt.nva.nvi.index.mapper.IndexDocumentGenerator;
@@ -27,9 +29,9 @@ import no.sikt.nva.nvi.index.model.document.IndexDocumentWithConsumptionAttribut
 import no.sikt.nva.nvi.publication.PublicationLoaderService;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
-import nva.commons.core.attempt.Failure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.core.exception.SdkException;
 
 public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
 
@@ -37,7 +39,6 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
   private static final String INDEX_DLQ = "INDEX_DLQ";
   private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
   private static final String QUEUE_URL = "PERSISTED_INDEX_DOCUMENT_QUEUE_URL";
-  private static final String ERROR_MESSAGE = "Error message: {}";
   private static final String FAILED_SENDING_EVENT_MESSAGE = "Failed to send message to queue: {}";
   private static final String FAILED_TO_PERSIST_MESSAGE = "Failed to save {} in bucket";
   private static final String FAILED_TO_PARSE_EVENT_MESSAGE =
@@ -90,124 +91,98 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
     return null;
   }
 
-  private static void logFailure(String message, String messageArgument, Exception exception) {
-    LOGGER.error(message, messageArgument);
-    LOGGER.error(ERROR_MESSAGE, getStackTrace(exception));
-  }
-
   private void processMessage(String body) {
-    var changeMessage = mapToDbChangeMessage(body);
-    if (isNull(changeMessage)) {
-      return;
+    mapToDbChangeMessage(body)
+        .flatMap(changeMessage -> fetchCandidate(changeMessage.candidateIdentifier(), body))
+        .filter(IndexDocumentHandler::isApplicable)
+        .flatMap(candidate -> generateIndexDocument(candidate, body))
+        .flatMap(document -> persistDocument(document, body))
+        .ifPresent(documentUri -> sendEvent(documentUri, body));
+  }
+
+  private static boolean isApplicable(Candidate candidate) {
+    if (candidate.isApplicable()) {
+      return true;
     }
-    var document = generateIndexDocument(changeMessage, body);
-    if (isNull(document)) {
-      return;
+    LOGGER.info("Candidate is not applicable, skipping index document generation");
+    return false;
+  }
+
+  private Optional<DynamoDbChangeMessage> mapToDbChangeMessage(String body) {
+    try {
+      return Optional.of(DynamoDbChangeMessage.from(body));
+    } catch (JsonProcessingException | ValidationException exception) {
+      handleFailure(exception, FAILED_TO_PARSE_EVENT_MESSAGE, body, body, null);
+      return Optional.empty();
     }
-    var documentUri = persistDocument(document, body);
-    if (nonNull(documentUri)) {
-      sendEvent(documentUri, body);
+  }
+
+  private Optional<Candidate> fetchCandidate(UUID candidateIdentifier, String body) {
+    try {
+      return Optional.of(candidateService.getCandidateByIdentifier(candidateIdentifier));
+    } catch (CandidateNotFoundException exception) {
+      handleFailure(
+          exception,
+          FAILED_TO_FETCH_CANDIDATE_MESSAGE,
+          candidateIdentifier.toString(),
+          body,
+          candidateIdentifier);
+      return Optional.empty();
     }
   }
 
-  private void sendEvent(URI documentUri, String originalBody) {
-    attempt(
-            () ->
-                sqsClient.sendMessage(
-                    new PersistedIndexDocumentMessage(documentUri).toJsonString(), queueUrl))
-        .orElse(
-            failure -> {
-              handleFailure(
-                  failure,
-                  FAILED_SENDING_EVENT_MESSAGE,
-                  documentUri.toString(),
-                  originalBody,
-                  PersistedIndexDocumentMessage.candidateIdentifierFrom(documentUri));
-              return null;
-            });
-  }
-
-  private URI persistDocument(IndexDocumentWithConsumptionAttributes document, String body) {
-    return attempt(() -> document.persist(storageWriter))
-        .orElse(
-            failure -> {
-              var identifier = document.indexDocument().identifier();
-              handleFailure(
-                  failure, FAILED_TO_PERSIST_MESSAGE, identifier.toString(), body, identifier);
-              return null;
-            });
-  }
-
-  private DynamoDbChangeMessage mapToDbChangeMessage(String body) {
-    return attempt(() -> DynamoDbChangeMessage.from(body))
-        .orElse(
-            failure -> {
-              handleFailure(failure, FAILED_TO_PARSE_EVENT_MESSAGE, body, body, null);
-              return null;
-            });
-  }
-
-  private Candidate fetchCandidate(UUID candidateIdentifier, String body) {
-    return attempt(() -> candidateService.getCandidateByIdentifier(candidateIdentifier))
-        .orElse(
-            failure -> {
-              handleFailure(
-                  failure,
-                  FAILED_TO_FETCH_CANDIDATE_MESSAGE,
-                  candidateIdentifier.toString(),
-                  body,
-                  candidateIdentifier);
-              return null;
-            });
-  }
-
-  private IndexDocumentWithConsumptionAttributes generateIndexDocument(
-      DynamoDbChangeMessage message, String body) {
-    var identifier = message.candidateIdentifier();
-    return attempt(() -> generateIndexDocumentWithConsumptionAttributes(identifier, body))
-        .orElse(
-            failure -> {
-              handleFailure(
-                  failure,
-                  FAILED_TO_GENERATE_INDEX_DOCUMENT_MESSAGE,
-                  message.toString(),
-                  body,
-                  identifier);
-              return null;
-            });
-  }
-
-  private IndexDocumentWithConsumptionAttributes generateIndexDocumentWithConsumptionAttributes(
-      UUID candidateIdentifier, String body) {
-    var candidate = fetchCandidate(candidateIdentifier, body);
-    if (isNull(candidate)) {
-      LOGGER.info("Candidate is null, skipping index document generation");
-      return null;
+  private Optional<IndexDocumentWithConsumptionAttributes> generateIndexDocument(
+      Candidate candidate, String body) {
+    try {
+      var indexDocument = indexDocumentGenerator.generate(candidate);
+      LOGGER.info(
+          "Generated index document for applicable candidate with publication ID: {}",
+          candidate.getPublicationId());
+      return Optional.of(IndexDocumentWithConsumptionAttributes.from(indexDocument, indexName));
+    } catch (SdkException exception) {
+      handleFailure(
+          exception,
+          FAILED_TO_GENERATE_INDEX_DOCUMENT_MESSAGE,
+          candidate.identifier().toString(),
+          body,
+          candidate.identifier());
+      return Optional.empty();
     }
-    if (!candidate.isApplicable()) {
-      LOGGER.info("Candidate is not applicable, skipping index document generation");
-      return null;
-    }
-    var id = candidate.getPublicationId();
-    LOGGER.info("Generated index document for applicable candidate with publication ID: {}", id);
-    return generateIndexDocumentWithConsumptionAttributes(candidate);
   }
 
-  private IndexDocumentWithConsumptionAttributes generateIndexDocumentWithConsumptionAttributes(
-      Candidate candidate) {
-    var indexDocument = indexDocumentGenerator.generate(candidate);
-    return IndexDocumentWithConsumptionAttributes.from(indexDocument, indexName);
+  private Optional<URI> persistDocument(
+      IndexDocumentWithConsumptionAttributes document, String body) {
+    try {
+      return Optional.of(document.persist(storageWriter));
+    } catch (IOException | SdkException exception) {
+      var identifier = document.indexDocument().identifier();
+      handleFailure(exception, FAILED_TO_PERSIST_MESSAGE, identifier.toString(), body, identifier);
+      return Optional.empty();
+    }
+  }
+
+  private void sendEvent(URI documentUri, String body) {
+    try {
+      var message = new PersistedIndexDocumentMessage(documentUri).toJsonString();
+      sqsClient.sendMessage(message, queueUrl);
+    } catch (SdkException exception) {
+      handleFailure(
+          exception,
+          FAILED_SENDING_EVENT_MESSAGE,
+          documentUri.toString(),
+          body,
+          PersistedIndexDocumentMessage.candidateIdentifierFrom(documentUri));
+    }
   }
 
   private void handleFailure(
-      Failure<?> failure,
+      Exception exception,
       String errorMessage,
       String messageArgument,
       String originalBody,
       UUID candidateIdentifier) {
-    logFailure(errorMessage, messageArgument, failure.getException());
-    var dlqMessage =
-        QueueMessage.builder().withBody(originalBody).withErrorContext(failure.getException());
+    LOGGER.error(errorMessage, messageArgument, exception);
+    var dlqMessage = QueueMessage.builder().withBody(originalBody).withErrorContext(exception);
     if (nonNull(candidateIdentifier)) {
       dlqMessage.withCandidateIdentifier(candidateIdentifier);
     }

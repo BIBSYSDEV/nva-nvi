@@ -254,7 +254,10 @@ class IndexDocumentHandlerTest extends IndexDocumentHandlerTestBase {
   private void stubPublicationReadFailure(Candidate candidate) {
     when(publicationLoaderService.tryExtractAndTransform(
             candidate.publicationDetails().publicationBucketUri()))
-        .thenThrow(new RuntimeException("Failed to read publication from storage"));
+        .thenThrow(
+            NoSuchKeyException.builder()
+                .message("Failed to read publication from storage")
+                .build());
   }
 
   private NviCandidateIndexDocument stubbedDocument(Candidate candidate) {
