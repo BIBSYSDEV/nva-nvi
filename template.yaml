@@ -827,6 +827,7 @@ Resources:
           Type: SQS
           Properties:
             Queue: !GetAtt DbEventQueue.Arn
+            # No-op until the handler returns SQSBatchResponse (NP-51562); enabled early to avoid mid-deploy message loss
             FunctionResponseTypes:
               - ReportBatchItemFailures
       EventInvokeConfig:
@@ -855,6 +856,7 @@ Resources:
           Type: SQS
           Properties:
             Queue: !GetAtt GenerateIndexDocumentQueue.Arn
+            # No-op until the handler returns SQSBatchResponse (NP-51562); enabled early to avoid mid-deploy message loss
             FunctionResponseTypes:
               - ReportBatchItemFailures
       EventInvokeConfig:
@@ -882,6 +884,7 @@ Resources:
           Type: SQS
           Properties:
             Queue: !GetAtt PersistedIndexDocumentQueue.Arn
+            # No-op until the handler returns SQSBatchResponse (NP-51562); enabled early to avoid mid-deploy message loss
             FunctionResponseTypes:
               - ReportBatchItemFailures
       EventInvokeConfig:
@@ -905,6 +908,7 @@ Resources:
           Type: SQS
           Properties:
             Queue: !GetAtt RemoveDocumentFromIndexQueue.Arn
+            # No-op until the handler returns SQSBatchResponse (NP-51562); enabled early to avoid mid-deploy message loss
             FunctionResponseTypes:
               - ReportBatchItemFailures
       EventInvokeConfig:
@@ -932,6 +936,7 @@ Resources:
           Type: SQS
           Properties:
             Queue: !GetAtt DeletePersistedIndexDocumentQueue.Arn
+            # No-op until the handler returns SQSBatchResponse (NP-51562); enabled early to avoid mid-deploy message loss
             FunctionResponseTypes:
               - ReportBatchItemFailures
       EventInvokeConfig:

@@ -188,7 +188,7 @@ public class CandidateSearchClient implements SearchClient<NviCandidateIndexDocu
 
   private SearchClientException handleFailure(String msg, Exception exception) {
     LOGGER.error(msg, exception);
-    return new SearchClientException(exception.getMessage());
+    return new SearchClientException(exception.getMessage(), exception);
   }
 
   private SearchRequest constructSearchRequest(CandidateSearchParameters parameters) {

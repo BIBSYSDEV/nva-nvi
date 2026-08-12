@@ -5,6 +5,7 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import no.sikt.nva.nvi.common.exceptions.ValidationException;
 import no.sikt.nva.nvi.common.notification.NotificationClient;
 import no.sikt.nva.nvi.common.notification.NviNotificationClient;
 import no.sikt.nva.nvi.common.notification.NviPublishMessageResponse;
@@ -57,7 +58,7 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
     try {
       var dbChangeMessage = DynamoDbChangeMessage.from(body);
       publishUpdateMessage(dbChangeMessage);
-    } catch (JsonProcessingException exception) {
+    } catch (JsonProcessingException | ValidationException exception) {
       sendToDlq(body, exception);
     }
   }

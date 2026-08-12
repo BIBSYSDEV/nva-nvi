@@ -24,6 +24,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 import no.sikt.nva.nvi.common.S3StorageReader;
@@ -90,8 +91,7 @@ class UpdateIndexHandlerTest {
     var candidate = setupRandomApplicableCandidate(scenario);
     var expectedIndexDocument = setupExistingIndexDocumentInBucket(candidate).indexDocument();
     var event = createUpdateIndexEvent(List.of(candidate));
-    when(searchClient.addDocumentToIndex(expectedIndexDocument))
-        .thenThrow(new SearchClientException("Failed to add document to index"));
+    when(searchClient.addDocumentToIndex(expectedIndexDocument)).thenThrow(searchClientException());
     handler.handleRequest(event, CONTEXT);
     assertEquals(1, sqsClient.receiveMessage(INDEX_DLQ_URL, 1).messages().size());
   }
@@ -101,8 +101,7 @@ class UpdateIndexHandlerTest {
     var candidate = setupRandomApplicableCandidate(scenario);
     var expectedIndexDocument = setupExistingIndexDocumentInBucket(candidate).indexDocument();
     var event = createUpdateIndexEvent(List.of(candidate));
-    when(searchClient.addDocumentToIndex(expectedIndexDocument))
-        .thenThrow(new SearchClientException("Failed to add document to index"));
+    when(searchClient.addDocumentToIndex(expectedIndexDocument)).thenThrow(searchClientException());
     handler.handleRequest(event, CONTEXT);
     var dlqMessage = sqsClient.receiveMessage(INDEX_DLQ_URL, 1).messages().getFirst();
 
@@ -110,6 +109,10 @@ class UpdateIndexHandlerTest {
     assertThat(dlqMessage.messageAttributes())
         .containsEntry(CANDIDATE_IDENTIFIER_ATTRIBUTE, candidate.identifier().toString())
         .containsKeys(ERROR_TYPE_ATTRIBUTE, STACK_TRACE_ATTRIBUTE);
+  }
+
+  private static SearchClientException searchClientException() {
+    return new SearchClientException("Failed to add document to index", new IOException());
   }
 
   @Test
