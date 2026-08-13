@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.common.queue;
 
-import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 import static nva.commons.core.StringUtils.isNotBlank;
 
@@ -80,7 +79,7 @@ public record QueueMessage(String body, Map<String, MessageAttributeValue> attri
     }
 
     public Builder withErrorContext(Exception cause) {
-      putIfNotNull(ERROR_MESSAGE, cause.getMessage());
+      putIfNotBlank(ERROR_MESSAGE, cause.getMessage());
       attributes.put(ERROR_TYPE, cause.getClass().getSimpleName());
       attributes.put(FAILED_AT, Instant.now().toString());
       attributes.put(STACK_TRACE, truncatedStackTrace(cause));
@@ -95,12 +94,6 @@ public record QueueMessage(String body, Map<String, MessageAttributeValue> attri
     public QueueMessage build() {
       requireNonNull(body, "Message body is required");
       return new QueueMessage(body, toMessageAttributeValues(attributes));
-    }
-
-    private void putIfNotNull(String key, Object value) {
-      if (nonNull(value)) {
-        attributes.put(key, value.toString());
-      }
     }
 
     private void putIfNotBlank(String key, String value) {
