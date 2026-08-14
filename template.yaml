@@ -796,11 +796,14 @@ Resources:
             StartingPosition: TRIM_HORIZON
             BatchSize: 1
             Enabled: true
-      EventInvokeConfig:
-        DestinationConfig:
-          OnFailure:
-            Type: SQS
-            Destination: !GetAtt DynamoDbEventToQueueDLQ.Arn
+            # Bounds retries of a poison record, which would otherwise block the shard until the
+            # record expires. The failure record holds shard/sequence metadata, not the event body:
+            # recover by refreshing the candidate identifier found in the error logs.
+            MaximumRetryAttempts: 10
+            MaximumRecordAgeInSeconds: 21600
+            DestinationConfig:
+              OnFailure:
+                Destination: !GetAtt DynamoDbEventToQueueDLQ.Arn
 
   DataEntryUpdateHandler:
     Type: AWS::Serverless::Function
