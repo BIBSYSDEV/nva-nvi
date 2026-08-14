@@ -35,8 +35,7 @@ x-amazon-apigateway-gateway-responses:
           "detail": "$context.error.validationErrorString",
           "status": 400,
           "requestId": "$context.requestId",
-          "instance": "$context.path",
-          "type": "about:blank"
+          "instance": "$context.path"
         }
 tags:
   - name: Context
