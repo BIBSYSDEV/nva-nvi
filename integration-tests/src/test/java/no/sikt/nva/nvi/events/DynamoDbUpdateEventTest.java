@@ -138,11 +138,11 @@ class DynamoDbUpdateEventTest {
   }
 
   @Test
-  void shouldSendMessageToDlqWhenFailingToExtractIdentifier() {
+  void shouldFailWithoutSendingToDlqWhenFailingToExtractIdentifier() {
     var dynamoDbEvent = createDynamoDbEventWithMissingIdentifier();
 
     assertThrows(RuntimeException.class, () -> processDynamoEvent(dynamoDbEvent));
-    assertThat(getDlqMessages()).hasSize(1);
+    assertThat(getDlqMessages()).isEmpty();
   }
 
   @Test
