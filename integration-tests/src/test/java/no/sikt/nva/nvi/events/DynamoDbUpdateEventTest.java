@@ -137,6 +137,11 @@ class DynamoDbUpdateEventTest {
     assertThat(redrivableMessage.candidateIdentifier()).isEqualTo(candidateIdentifier);
   }
 
+  /**
+   * An unmappable stream record has no redrivable representation, so it must not be sent to
+   * IndexDLQ. Failing the invocation lets the stream retry it, and the event source mapping sends
+   * the exhausted record to DynamoDbEventToQueueDLQ.
+   */
   @Test
   void shouldFailWithoutSendingToDlqWhenFailingToExtractIdentifier() {
     var dynamoDbEvent = createDynamoDbEventWithMissingIdentifier();
