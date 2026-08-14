@@ -124,25 +124,30 @@ class DynamoDbUpdateEventTest {
   }
 
   @Test
-  void shouldSendMessageToDlqIfSendingBatchFails() {
+  void shouldSendRedrivableMessageToDlqIfSendingBatchFails() throws JsonProcessingException {
     var candidateIdentifier = randomUUID();
     var dynamoDbEvent = createCandidateEvent(candidateIdentifier, OperationType.MODIFY, true);
     sharedQueueClient.disableDestinationQueue(EnvironmentFixtures.DB_EVENTS_QUEUE_URL.getValue());
 
     assertThrows(RuntimeException.class, () -> processDynamoEvent(dynamoDbEvent));
 
-    assertThat(getDlqMessages())
-        .hasSize(1)
-        .extracting(SQSMessage::getBody)
-        .allMatch(message -> message.contains(candidateIdentifier.toString()));
+    var dlqMessages = getDlqMessages();
+    assertThat(dlqMessages).hasSize(1);
+    var redrivableMessage = DynamoDbChangeMessage.from(dlqMessages.getFirst().getBody());
+    assertThat(redrivableMessage.candidateIdentifier()).isEqualTo(candidateIdentifier);
   }
 
+  /**
+   * An unmappable stream record has no redrivable representation, so it must not be sent to
+   * IndexDLQ. Failing the invocation lets the stream retry it, and the event source mapping sends
+   * the exhausted record to DynamoDbEventToQueueDLQ.
+   */
   @Test
-  void shouldSendMessageToDlqWhenFailingToExtractIdentifier() {
+  void shouldFailWithoutSendingToDlqWhenFailingToExtractIdentifier() {
     var dynamoDbEvent = createDynamoDbEventWithMissingIdentifier();
 
     assertThrows(RuntimeException.class, () -> processDynamoEvent(dynamoDbEvent));
-    assertThat(getDlqMessages()).hasSize(1);
+    assertThat(getDlqMessages()).isEmpty();
   }
 
   @Test

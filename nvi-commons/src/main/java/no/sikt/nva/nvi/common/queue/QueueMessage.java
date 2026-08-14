@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.common.queue;
 
-import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 import static nva.commons.core.StringUtils.isNotBlank;
 
@@ -16,7 +15,7 @@ import java.util.stream.Collectors;
 import no.unit.nva.commons.json.JsonSerializable;
 import software.amazon.awssdk.services.sqs.model.MessageAttributeValue;
 
-public record QueueMessage(JsonSerializable body, Map<String, MessageAttributeValue> attributes) {
+public record QueueMessage(String body, Map<String, MessageAttributeValue> attributes) {
 
   private static final String CANDIDATE_IDENTIFIER = "candidateIdentifier";
   private static final String PUBLICATION_BUCKET_URI = "publicationBucketUri";
@@ -59,9 +58,14 @@ public record QueueMessage(JsonSerializable body, Map<String, MessageAttributeVa
   public static class Builder {
 
     private final Map<String, String> attributes = new HashMap<>();
-    private JsonSerializable body;
+    private String body;
 
     public Builder withBody(JsonSerializable body) {
+      this.body = body.toJsonString();
+      return this;
+    }
+
+    public Builder withBody(String body) {
       this.body = body;
       return this;
     }
@@ -75,7 +79,7 @@ public record QueueMessage(JsonSerializable body, Map<String, MessageAttributeVa
     }
 
     public Builder withErrorContext(Exception cause) {
-      putIfNotNull(ERROR_MESSAGE, cause.getMessage());
+      putIfNotBlank(ERROR_MESSAGE, cause.getMessage());
       attributes.put(ERROR_TYPE, cause.getClass().getSimpleName());
       attributes.put(FAILED_AT, Instant.now().toString());
       attributes.put(STACK_TRACE, truncatedStackTrace(cause));
@@ -90,12 +94,6 @@ public record QueueMessage(JsonSerializable body, Map<String, MessageAttributeVa
     public QueueMessage build() {
       requireNonNull(body, "Message body is required");
       return new QueueMessage(body, toMessageAttributeValues(attributes));
-    }
-
-    private void putIfNotNull(String key, Object value) {
-      if (nonNull(value)) {
-        attributes.put(key, value.toString());
-      }
     }
 
     private void putIfNotBlank(String key, String value) {

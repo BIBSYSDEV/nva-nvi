@@ -1,8 +1,6 @@
 package no.sikt.nva.nvi.events.db;
 
-import static no.sikt.nva.nvi.common.utils.DynamoDbUtils.extractIdFromRecord;
 import static no.sikt.nva.nvi.common.utils.DynamoDbUtils.getImage;
-import static no.sikt.nva.nvi.common.utils.ExceptionUtils.getStackTrace;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 
@@ -24,11 +22,12 @@ import no.sikt.nva.nvi.common.queue.DataEntryType;
 import no.sikt.nva.nvi.common.queue.DynamoDbChangeMessage;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
+import no.sikt.nva.nvi.common.queue.QueueMessage;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
-import nva.commons.core.attempt.Failure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.services.dynamodb.model.OperationType;
 
 public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent, Void> {
@@ -38,7 +37,7 @@ public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent
   private static final String DB_EVENTS_QUEUE_URL = "DB_EVENTS_QUEUE_URL";
   private static final String DLQ_URL = "INDEX_DLQ";
   private static final String FAILURE_MESSAGE = "Failure while sending database events to queue";
-  private static final String FAILED_RECORDS_MESSAGE = "Failed records: {}";
+  private static final String FAILED_MESSAGES_MESSAGE = "Failed messages: {}";
   private static final String SKIPPING_EVENT_MESSAGE =
       "Skipping event with operation type {} for dao type {}";
   private static final String INFO_MESSAGE = "Sent {} messages to queue. Failures: {}";
@@ -61,13 +60,17 @@ public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent
 
   @Override
   public Void handleRequest(DynamodbEvent input, Context context) {
-    attempt(
-            () -> {
-              splitIntoBatchesAndSend(input);
-              return null;
-            })
-        .orElseThrow(failure -> handleFailure(failure, input.getRecords()));
+    var messages = mapToUpdateMessages(input);
+    splitIntoBatches(messages).forEach(this::sendBatch);
     return null;
+  }
+
+  private static List<DynamoDbChangeMessage> mapToUpdateMessages(DynamodbEvent input) {
+    return input.getRecords().stream()
+        .map(DynamoDbEventToQueueHandler::mapToUpdateMessage)
+        .filter(Objects::nonNull)
+        .distinct()
+        .toList();
   }
 
   private static DynamoDbChangeMessage mapToUpdateMessage(DynamodbStreamRecord streamRecord) {
@@ -106,45 +109,34 @@ public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent
     return attempt(() -> dtoObjectMapper.writeValueAsString(updateMessage)).orElseThrow();
   }
 
-  private void splitIntoBatchesAndSend(DynamodbEvent input) {
-    var messages =
-        input.getRecords().stream()
-            .map(DynamoDbEventToQueueHandler::mapToUpdateMessage)
-            .filter(Objects::nonNull)
-            .distinct()
-            .map(DynamoDbEventToQueueHandler::writeAsJsonString)
-            .toList();
-    splitIntoBatches(messages).forEach(this::sendBatch);
+  private void sendToDlq(DynamoDbChangeMessage message, Exception exception) {
+    var dlqMessage =
+        QueueMessage.builder()
+            .withBody(writeAsJsonString(message))
+            .withErrorContext(exception)
+            .withCandidateIdentifier(message.candidateIdentifier())
+            .build();
+    queueClient.sendMessage(dlqMessage, dlqUrl);
   }
 
-  private RuntimeException handleFailure(
-      Failure<Object> failure, List<DynamodbStreamRecord> records) {
-    LOGGER.error(FAILURE_MESSAGE, failure.getException());
-    LOGGER.error(
-        FAILED_RECORDS_MESSAGE, records.stream().map(DynamodbStreamRecord::toString).toList());
-    records.forEach(streamRecord -> sendToDlq(streamRecord, failure.getException()));
-    return new RuntimeException(failure.getException());
+  private void sendBatch(List<DynamoDbChangeMessage> messages) {
+    var messageBodies =
+        messages.stream().map(DynamoDbEventToQueueHandler::writeAsJsonString).toList();
+    try {
+      var response = queueClient.sendMessageBatch(messageBodies, queueUrl);
+      LOGGER.info(INFO_MESSAGE, messages.size(), response.failed().size());
+    } catch (SdkException exception) {
+      LOGGER.error(FAILURE_MESSAGE, exception);
+      LOGGER.error(FAILED_MESSAGES_MESSAGE, messages);
+      messages.forEach(message -> sendToDlq(message, exception));
+      throw exception;
+    }
   }
 
-  private void sendToDlq(DynamodbStreamRecord streamRecord, Exception exception) {
-    var message =
-        String.format(
-            "Failed to process record %s. Exception: %s ",
-            streamRecord.toString(), getStackTrace(exception));
-    extractIdFromRecord(streamRecord)
-        .ifPresentOrElse(
-            id -> queueClient.sendMessage(message, dlqUrl, id),
-            () -> queueClient.sendMessage(message, dlqUrl));
-  }
-
-  private void sendBatch(List<String> messages) {
-    var response = queueClient.sendMessageBatch(messages, queueUrl);
-    LOGGER.info(INFO_MESSAGE, messages.size(), response.failed().size());
-  }
-
-  private Stream<List<String>> splitIntoBatches(List<String> records) {
-    var count = records.size();
+  private Stream<List<DynamoDbChangeMessage>> splitIntoBatches(
+      List<DynamoDbChangeMessage> messages) {
+    var count = messages.size();
     return IntStream.range(0, (count + BATCH_SIZE - 1) / BATCH_SIZE)
-        .mapToObj(i -> records.subList(i * BATCH_SIZE, Math.min((i + 1) * BATCH_SIZE, count)));
+        .mapToObj(i -> messages.subList(i * BATCH_SIZE, Math.min((i + 1) * BATCH_SIZE, count)));
   }
 }

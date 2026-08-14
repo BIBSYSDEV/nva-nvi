@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
@@ -15,7 +14,6 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.QueueServiceTestUtils;
 import software.amazon.awssdk.services.sqs.model.BatchResultErrorEntry;
 import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest;
-import software.amazon.awssdk.services.sqs.model.MessageAttributeValue;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequest;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequestEntry;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchResponse;
@@ -25,9 +23,6 @@ import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 import software.amazon.awssdk.services.sqs.model.SqsException;
 
 public class FakeSqsClient implements QueueClient {
-
-  private static final String CANDIDATE_IDENTIFIER = "candidateIdentifier";
-  private static final String DATA_TYPE_STRING = "String";
 
   private final Set<String> destinationQueuesThatShouldFail = new HashSet<>();
 
@@ -73,16 +68,6 @@ public class FakeSqsClient implements QueueClient {
   public NviSendMessageResponse sendMessage(QueueMessage message, String queueUrl) {
     validateQueueUrl(queueUrl);
     var request = createRequest(message, queueUrl);
-    sentMessages.add(request);
-    return createResponse(
-        SendMessageResponse.builder().messageId(UUID.randomUUID().toString()).build());
-  }
-
-  @Override
-  public NviSendMessageResponse sendMessage(
-      String message, String queueUrl, UUID candidateIdentifier) {
-    validateQueueUrl(queueUrl);
-    var request = createRequest(message, queueUrl, candidateIdentifier);
     sentMessages.add(request);
     return createResponse(
         SendMessageResponse.builder().messageId(UUID.randomUUID().toString()).build());
@@ -170,22 +155,8 @@ public class FakeSqsClient implements QueueClient {
   private SendMessageRequest createRequest(QueueMessage message, String queueUrl) {
     return SendMessageRequest.builder()
         .queueUrl(queueUrl)
-        .messageBody(message.body().toJsonString())
+        .messageBody(message.body())
         .messageAttributes(message.attributes())
-        .build();
-  }
-
-  private SendMessageRequest createRequest(String body, String queueUrl, UUID candidateIdentifier) {
-    return SendMessageRequest.builder()
-        .queueUrl(queueUrl)
-        .messageAttributes(
-            Map.of(
-                CANDIDATE_IDENTIFIER,
-                MessageAttributeValue.builder()
-                    .stringValue(candidateIdentifier.toString())
-                    .dataType(DATA_TYPE_STRING)
-                    .build()))
-        .messageBody(body)
         .build();
   }
 

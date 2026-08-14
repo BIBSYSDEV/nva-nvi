@@ -195,13 +195,21 @@ class IndexDocumentHandlerTest extends IndexDocumentHandlerTestBase {
   }
 
   @Test
-  void shouldSendMessageToDlqWhenPublicationCannotBeRead() {
+  void shouldSendOriginalMessageWithErrorContextToDlqWhenPublicationCannotBeRead() {
     var candidate = setupRandomApplicableCandidate(scenario);
     stubPublicationReadFailure(candidate);
+    var event = createEvent(candidate.identifier());
 
-    handler.handleRequest(createEvent(candidate.identifier()), CONTEXT);
+    handler.handleRequest(event, CONTEXT);
 
-    assertThat(sqsClient.getAllSentSqsEvents(INDEX_DLQ_URL)).hasSize(1);
+    var dlqMessages = sqsClient.getAllSentSqsEvents(INDEX_DLQ_URL);
+    assertThat(dlqMessages).hasSize(1);
+    var dlqMessage = dlqMessages.getFirst();
+    assertThat(dlqMessage.getBody()).isEqualTo(event.getRecords().getFirst().getBody());
+    assertThat(dlqMessage.getMessageAttributes())
+        .containsKeys("candidateIdentifier", "errorMessage", "errorType", "stackTrace");
+    assertThat(dlqMessage.getMessageAttributes().get("candidateIdentifier").getStringValue())
+        .isEqualTo(candidate.identifier().toString());
   }
 
   @Test
@@ -246,7 +254,10 @@ class IndexDocumentHandlerTest extends IndexDocumentHandlerTestBase {
   private void stubPublicationReadFailure(Candidate candidate) {
     when(publicationLoaderService.tryExtractAndTransform(
             candidate.publicationDetails().publicationBucketUri()))
-        .thenThrow(new RuntimeException("Failed to read publication from storage"));
+        .thenThrow(
+            NoSuchKeyException.builder()
+                .message("Failed to read publication from storage")
+                .build());
   }
 
   private NviCandidateIndexDocument stubbedDocument(Candidate candidate) {

@@ -1,29 +1,30 @@
 package no.sikt.nva.nvi.index;
 
-import static no.sikt.nva.nvi.common.utils.ExceptionUtils.getStackTrace;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
-import static nva.commons.core.attempt.Try.attempt;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import java.net.URI;
-import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
+import no.sikt.nva.nvi.common.queue.QueueMessage;
 import no.sikt.nva.nvi.index.aws.CandidateSearchClient;
+import no.sikt.nva.nvi.index.aws.SearchClientException;
 import no.sikt.nva.nvi.index.model.PersistedIndexDocumentMessage;
 import no.sikt.nva.nvi.index.model.document.IndexDocumentWithConsumptionAttributes;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
-import nva.commons.core.attempt.Failure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.core.exception.SdkException;
 
 public class UpdateIndexHandler implements RequestHandler<SQSEvent, Void> {
 
@@ -35,9 +36,7 @@ public class UpdateIndexHandler implements RequestHandler<SQSEvent, Void> {
       "Failed to map body to PersistedIndexDocumentMessage: {}";
   private static final String FAILED_TO_FETCH_DOCUMENT_MESSAGE =
       "Failed to fetch document from S3: {}";
-  private static final String ERROR_MESSAGE = "Error message: {}";
   private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
-  public static final String EXCEPTION_FIELD = "exception";
   private final CandidateSearchClient searchClient;
   private final StorageReader<URI> storageReader;
   private final QueueClient queueClient;
@@ -65,74 +64,59 @@ public class UpdateIndexHandler implements RequestHandler<SQSEvent, Void> {
 
   @Override
   public Void handleRequest(SQSEvent input, Context context) {
-    input.getRecords().stream()
-        .map(SQSMessage::getBody)
-        .map(this::extractDocumentUriFromBody)
-        .filter(Objects::nonNull)
-        .map(this::fetchDocument)
-        .filter(Objects::nonNull)
-        .forEach(this::addDocumentToIndex);
+    input.getRecords().stream().map(SQSMessage::getBody).forEach(this::processMessage);
     return null;
   }
 
-  private static IndexDocumentWithConsumptionAttributes parseBlob(String blob) {
-    return attempt(
-            () -> dtoObjectMapper.readValue(blob, IndexDocumentWithConsumptionAttributes.class))
-        .orElseThrow();
+  private void processMessage(String body) {
+    extractDocumentUri(body)
+        .flatMap(documentUri -> fetchDocument(documentUri, body))
+        .ifPresent(document -> addDocumentToIndex(document, body));
   }
 
-  private static void logFailure(String message, String messageArgument, Exception exception) {
-    LOGGER.error(message, messageArgument);
-    LOGGER.error(ERROR_MESSAGE, getStackTrace(exception));
+  private Optional<URI> extractDocumentUri(String body) {
+    try {
+      var message = dtoObjectMapper.readValue(body, PersistedIndexDocumentMessage.class);
+      return Optional.ofNullable(message.documentUri());
+    } catch (JsonProcessingException exception) {
+      handleFailure(exception, body, FAILED_TO_MAP_BODY_MESSAGE);
+      return Optional.empty();
+    }
   }
 
-  private URI extractDocumentUriFromBody(String body) {
-    return attempt(
-            () ->
-                dtoObjectMapper.readValue(body, PersistedIndexDocumentMessage.class).documentUri())
-        .orElse(
-            failure -> {
-              handleFailure(failure, body, FAILED_TO_MAP_BODY_MESSAGE);
-              return null;
-            });
+  private Optional<NviCandidateIndexDocument> fetchDocument(URI documentUri, String body) {
+    try {
+      var blob = storageReader.read(documentUri);
+      var document = dtoObjectMapper.readValue(blob, IndexDocumentWithConsumptionAttributes.class);
+      return Optional.of(document.indexDocument());
+    } catch (SdkException | JsonProcessingException exception) {
+      handleFailure(exception, body, FAILED_TO_FETCH_DOCUMENT_MESSAGE);
+      return Optional.empty();
+    }
   }
 
-  private void handleFailure(Failure<?> failure, String body, String logMessage) {
-    var exception = failure.getException();
-    logFailure(logMessage, body, exception);
-    var messageWithError = injectExceptionIntoJson(body, exception);
-    queueClient.sendMessage(messageWithError, dlqUrl);
+  private void addDocumentToIndex(NviCandidateIndexDocument document, String body) {
+    try {
+      searchClient.addDocumentToIndex(document);
+    } catch (SearchClientException exception) {
+      handleFailure(exception, body, FAILED_TO_ADD_DOCUMENT_TO_INDEX);
+    }
   }
 
-  private String injectExceptionIntoJson(String jsonMessage, Exception exception) {
-    return attempt(() -> dtoObjectMapper.readTree(jsonMessage))
-        .map(ObjectNode.class::cast)
-        .map(tree -> tree.put(EXCEPTION_FIELD, getStackTrace(exception)))
-        .map(ObjectNode::toString)
-        .orElse(failure -> jsonMessage);
+  private void handleFailure(Exception exception, String originalBody, String logMessage) {
+    LOGGER.error(logMessage, originalBody, exception);
+    var dlqMessage = QueueMessage.builder().withBody(originalBody).withErrorContext(exception);
+    extractCandidateIdentifier(originalBody).ifPresent(dlqMessage::withCandidateIdentifier);
+    queueClient.sendMessage(dlqMessage.build(), dlqUrl);
   }
 
-  private void addDocumentToIndex(NviCandidateIndexDocument document) {
-    attempt(() -> searchClient.addDocumentToIndex(document))
-        .orElse(
-            failure -> {
-              handleFailure(
-                  failure,
-                  new PersistedIndexDocumentMessage(document.id()).toJsonString(),
-                  FAILED_TO_ADD_DOCUMENT_TO_INDEX);
-              return null;
-            });
-  }
-
-  private NviCandidateIndexDocument fetchDocument(URI documentUri) {
-    return attempt(() -> parseBlob(storageReader.read(documentUri)).indexDocument())
-        .orElse(
-            failure -> {
-              handleFailure(
-                  failure,
-                  new PersistedIndexDocumentMessage(documentUri).toJsonString(),
-                  FAILED_TO_FETCH_DOCUMENT_MESSAGE);
-              return null;
-            });
+  private static Optional<UUID> extractCandidateIdentifier(String body) {
+    try {
+      var message = dtoObjectMapper.readValue(body, PersistedIndexDocumentMessage.class);
+      return Optional.ofNullable(message.documentUri())
+          .map(PersistedIndexDocumentMessage::candidateIdentifierFrom);
+    } catch (JsonProcessingException | IllegalArgumentException exception) {
+      return Optional.empty();
+    }
   }
 }

@@ -10,6 +10,7 @@ import static no.sikt.nva.nvi.index.aws.S3StorageWriter.GZIP_ENDING;
 import static no.sikt.nva.nvi.index.aws.S3StorageWriter.NVI_CANDIDATES_FOLDER;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.getSearchIndexName;
 import static nva.commons.core.attempt.Try.attempt;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -64,7 +65,7 @@ class DeletePersistedIndexDocumentHandlerTest {
   }
 
   @Test
-  void shouldSendMessageToDlqWhenFailingToDeletePersistedIndexDocument() {
+  void shouldSendOriginalMessageWithErrorContextToDlqWhenFailingToDeletePersistedIndexDocument() {
     var dao = randomApplicableCandidateDao();
     var event = createEvent(dao, dao, OperationType.REMOVE);
     handler =
@@ -74,6 +75,10 @@ class DeletePersistedIndexDocumentHandlerTest {
             ENVIRONMENT);
     handler.handleRequest(event, null);
     assertEquals(1, sqsClient.getSentMessages().size());
+    var dlqMessage = sqsClient.getSentMessages().getFirst();
+    assertThat(dlqMessage.messageBody()).isEqualTo(event.getRecords().getFirst().getBody());
+    assertThat(dlqMessage.messageAttributes().keySet())
+        .contains("candidateIdentifier", "errorType", "stackTrace");
   }
 
   @Test

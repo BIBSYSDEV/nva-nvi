@@ -9,7 +9,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -47,9 +46,7 @@ class NviQueueClientTest {
   private static final String TEST_MESSAGE_ID = "some_test_id";
   private static final String MESSAGE_FAILED_ID = "some_failed_id";
   private static final String TEST_RECEIPT_HANDLE = "some_test_receipt_handle";
-  private static final String MESSAGE_ATTRIBUTE_CANDIDATE_IDENTIFIER = "candidateIdentifier";
   private static final int MAX_NUMBER_OF_MESSAGES = 10;
-  private static final String DATA_TYPE_STRING = "String";
   private SqsClient sqsClient;
 
   @BeforeEach
@@ -68,18 +65,6 @@ class NviQueueClientTest {
     assertEquals(TEST_MESSAGE_ID, result.messageId());
   }
 
-  @Test
-  void shouldSendSqsMessageWithCandidateIdentifierAsMessageAttribute() {
-    var candidateIdentifier = UUID.randomUUID();
-    when(sqsClient.sendMessage(eq(expectedSendMessageRequest(candidateIdentifier))))
-        .thenReturn(SendMessageResponse.builder().messageId(TEST_MESSAGE_ID).build());
-    var client = new NviQueueClient(sqsClient);
-
-    var result = client.sendMessage(TEST_PAYLOAD, TEST_QUEUE_URL, candidateIdentifier);
-
-    assertEquals(TEST_MESSAGE_ID, result.messageId());
-  }
-
   private static Stream<Arguments> queueMessageProvider() {
     var messageWithIdentifier =
         QueueMessage.builder()
@@ -91,9 +76,15 @@ class NviQueueClientTest {
             .withBody(randomOrganization().build())
             .withErrorContext(new CandidateNotFoundException())
             .build();
+    var messageWithRawStringBody =
+        QueueMessage.builder()
+            .withBody("this is not valid json {")
+            .withErrorContext(new CandidateNotFoundException())
+            .build();
     return Stream.of(
         argumentSet("With candidateIdentifier", messageWithIdentifier),
-        argumentSet("With error context", messageWithErrorContext));
+        argumentSet("With error context", messageWithErrorContext),
+        argumentSet("With raw string body", messageWithRawStringBody));
   }
 
   @ParameterizedTest
@@ -113,7 +104,7 @@ class NviQueueClientTest {
     return request ->
         nonNull(request)
             && request.queueUrl().equals(expectedQueueUrl)
-            && request.messageBody().equals(expectedMessage.body().toJsonString())
+            && request.messageBody().equals(expectedMessage.body())
             && request.messageAttributes().equals(expectedMessage.attributes());
   }
 
@@ -200,19 +191,5 @@ class NviQueueClientTest {
     var client = new NviQueueClient(sqsClient);
 
     assertThrows(Exception.class, () -> client.deleteMessage(TEST_QUEUE_URL, TEST_RECEIPT_HANDLE));
-  }
-
-  private static SendMessageRequest expectedSendMessageRequest(UUID candidateIdentifier) {
-    return SendMessageRequest.builder()
-        .messageBody(TEST_PAYLOAD)
-        .messageAttributes(
-            Map.of(
-                MESSAGE_ATTRIBUTE_CANDIDATE_IDENTIFIER,
-                MessageAttributeValue.builder()
-                    .stringValue(candidateIdentifier.toString())
-                    .dataType(DATA_TYPE_STRING)
-                    .build()))
-        .queueUrl(TEST_QUEUE_URL)
-        .build();
   }
 }

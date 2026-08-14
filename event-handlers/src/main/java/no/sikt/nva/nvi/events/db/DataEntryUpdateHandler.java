@@ -1,18 +1,18 @@
 package no.sikt.nva.nvi.events.db;
 
-import static no.sikt.nva.nvi.common.utils.ExceptionUtils.getStackTrace;
-
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import no.sikt.nva.nvi.common.exceptions.ValidationException;
 import no.sikt.nva.nvi.common.notification.NotificationClient;
 import no.sikt.nva.nvi.common.notification.NviNotificationClient;
 import no.sikt.nva.nvi.common.notification.NviPublishMessageResponse;
 import no.sikt.nva.nvi.common.queue.DynamoDbChangeMessage;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
+import no.sikt.nva.nvi.common.queue.QueueMessage;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
@@ -57,7 +57,7 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
     try {
       var dbChangeMessage = DynamoDbChangeMessage.from(body);
       publishUpdateMessage(dbChangeMessage);
-    } catch (JsonProcessingException exception) {
+    } catch (JsonProcessingException | ValidationException exception) {
       sendToDlq(body, exception);
     }
   }
@@ -80,10 +80,8 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
   }
 
   private void sendToDlq(String body, Exception exception) {
-    var message =
-        String.format(
-            "Failed to process record %s. Exception: %s ", body, getStackTrace(exception));
-    LOGGER.error(message, body);
-    queueClient.sendMessage(message, dlqUrl);
+    LOGGER.error("Failed to process record: {}", body, exception);
+    var dlqMessage = QueueMessage.builder().withBody(body).withErrorContext(exception).build();
+    queueClient.sendMessage(dlqMessage, dlqUrl);
   }
 }
