@@ -23,6 +23,20 @@ x-amazon-apigateway-request-validators:
   validate_body:
     validateRequestBody: true
     validateRequestParameters: false
+x-amazon-apigateway-gateway-responses:
+  BAD_REQUEST_BODY:
+    statusCode: 400
+    responseParameters:
+      gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+    responseTemplates:
+      application/json: |-
+        {
+          "title": $context.error.messageString,
+          "detail": "$context.error.validationErrorString",
+          "status": 400,
+          "requestId": "$context.requestId",
+          "instance": "$context.path"
+        }
 tags:
   - name: Context
     description: JSON-LD context operations
