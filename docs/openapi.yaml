@@ -23,6 +23,11 @@ x-amazon-apigateway-request-validators:
   validate_body:
     validateRequestBody: true
     validateRequestParameters: false
+x-amazon-apigateway-gateway-responses:
+  BAD_REQUEST_BODY:
+    statusCode: 400
+    responseTemplates:
+      application/json: '{"message": $context.error.messageString, "validationErrors": "$context.error.validationErrorString"}'
 tags:
   - name: Context
     description: JSON-LD context operations
