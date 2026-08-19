@@ -56,7 +56,7 @@ public final class PaginatedResultConverter {
             AggregationFormatter.format(searchResponse.aggregations()));
 
     LOGGER.info(
-        "Returning search result ({} hits) with ID: {}",
+        "Returning search result (hits: {}) with ID: {}",
         paginatedSearchResult.getTotalHits(),
         paginatedSearchResult.getId());
     return paginatedSearchResult;
