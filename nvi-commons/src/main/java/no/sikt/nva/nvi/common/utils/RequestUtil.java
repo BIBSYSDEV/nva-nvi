@@ -69,6 +69,10 @@ public final class RequestUtil {
     return requestInfo.userIsAuthorized(AccessRight.MANAGE_NVI_CANDIDATES);
   }
 
+  public static boolean isEditor(RequestInfo requestInfo) {
+    return requestInfo.userIsAuthorized(AccessRight.MANAGE_RESOURCES_ALL);
+  }
+
   public static List<String> parseStringAsCommaSeparatedList(String commaSeparatedValues) {
     return Arrays.stream(commaSeparatedValues.split(COMMA))
         .map(String::trim)

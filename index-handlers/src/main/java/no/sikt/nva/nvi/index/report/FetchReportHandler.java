@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.index.report;
 
 import static java.net.HttpURLConnection.HTTP_OK;
+import static no.sikt.nva.nvi.common.utils.RequestUtil.isEditor;
 import static no.sikt.nva.nvi.common.utils.RequestUtil.isNviAdmin;
 import static no.sikt.nva.nvi.common.utils.RequestUtil.isNviCurator;
 import static nva.commons.apigateway.MediaType.CSV_UTF_8;
@@ -76,9 +77,7 @@ public class FetchReportHandler extends ApiGatewayHandler<Void, ReportResponse> 
   @Override
   protected void validateRequest(Void unused, RequestInfo requestInfo, Context context)
       throws ApiGatewayException {
-    if (!(isNviAdmin(requestInfo)
-        || isNviCurator(requestInfo)
-        || requestInfo.clientIsInternalBackend())) {
+    if (!hasAccess(requestInfo)) {
       throw new ForbiddenException();
     }
   }
@@ -99,6 +98,13 @@ public class FetchReportHandler extends ApiGatewayHandler<Void, ReportResponse> 
       LOGGER.error("Failed to execute query request: {}", reportRequest, exception);
       throw new BadGatewayException("Something went wrong! Contact application administrator.");
     }
+  }
+
+  private static boolean hasAccess(RequestInfo requestInfo) {
+    return isNviAdmin(requestInfo)
+        || isNviCurator(requestInfo)
+        || isEditor(requestInfo)
+        || requestInfo.clientIsInternalBackend();
   }
 
   private void addAdditionalHeaders(ReportRequest reportRequest) throws BadRequestException {

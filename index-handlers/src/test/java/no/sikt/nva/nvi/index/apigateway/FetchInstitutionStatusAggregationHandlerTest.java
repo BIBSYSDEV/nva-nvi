@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.index.apigateway;
 import static java.util.Collections.emptyMap;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.organizationIdFromIdentifier;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationIdentifier;
 import static no.sikt.nva.nvi.common.utils.CollectionUtils.mergeCollections;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.createRandomIndexDocument;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.documentWithApprovals;
@@ -15,6 +16,7 @@ import static no.sikt.nva.nvi.index.IndexHandlerEnvironments.forHandler;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.FAKER;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
+import static nva.commons.apigateway.RequestInfoConstants.BACKEND_SCOPE_AS_DEFINED_IN_IDENTITY_SERVICE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.amazonaws.services.lambda.runtime.Context;
@@ -47,6 +49,7 @@ import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
+import nva.commons.core.paths.UriWrapper;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -54,6 +57,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.zalando.problem.Problem;
 import org.zalando.problem.StatusType;
 
@@ -68,10 +73,12 @@ class FetchInstitutionStatusAggregationHandlerTest {
   private URI userTopLevelOrg;
   private AccessRight userAccessRight;
   private String queryYear;
+  private Map<String, String> queryParameters;
   private FetchInstitutionStatusAggregationHandler handler;
   private ByteArrayOutputStream output;
 
   private static final String YEAR = "year";
+  private static final String INSTITUTION_ID = "institutionId";
   private static final URI OUR_ORGANIZATION = organizationIdFromIdentifier("123.0.0.0");
   private static final URI OUR_SUB_ORGANIZATION =
       organizationIdFromIdentifier(FAKER.numerify("123.###.###.###"));
@@ -94,6 +101,7 @@ class FetchInstitutionStatusAggregationHandlerTest {
     userTopLevelOrg = OUR_ORGANIZATION;
     userAccessRight = AccessRight.MANAGE_NVI_CANDIDATES;
     queryYear = String.valueOf(CURRENT_YEAR);
+    queryParameters = emptyMap();
 
     handler =
         new FetchInstitutionStatusAggregationHandler(CONTAINER.getOpenSearchClient(), ENVIRONMENT);
@@ -116,6 +124,82 @@ class FetchInstitutionStatusAggregationHandlerTest {
           .extracting(Problem::getStatus)
           .extracting(StatusType::getStatusCode)
           .isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+        value = AccessRight.class,
+        names = {"MANAGE_NVI_CANDIDATES", "MANAGE_RESOURCES_ALL", "MANAGE_NVI"})
+    void shouldAllowAccessForCuratorsEditorsAndAdmins(AccessRight accessRight) {
+      userAccessRight = accessRight;
+      var approval =
+          new ApprovalFactory(OUR_ORGANIZATION).withCreatorAffiliation(OUR_ORGANIZATION).build();
+      CONTAINER.addDocumentsToIndex(documentWithApprovals(approval));
+
+      var response = handleRequest();
+
+      assertThat(response.totals().candidateCount()).isOne();
+    }
+
+    @Test
+    void shouldAllowAccessForInternalBackendClient() {
+      var approval =
+          new ApprovalFactory(OUR_ORGANIZATION).withCreatorAffiliation(OUR_ORGANIZATION).build();
+      CONTAINER.addDocumentsToIndex(documentWithApprovals(approval));
+
+      var response = handleRequest(backendClientRequestForInstitution(OUR_ORGANIZATION));
+
+      assertThat(response.totals().candidateCount()).isOne();
+    }
+
+    @Test
+    void shouldReturnUnauthorizedWhenCuratorRequestsOtherInstitution() {
+      queryParameters = Map.of(INSTITUTION_ID, randomOrganizationIdentifier());
+
+      var response = handleRequestExpectingProblem();
+
+      assertThat(response)
+          .extracting(Problem::getStatus)
+          .extracting(StatusType::getStatusCode)
+          .isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
+    }
+
+    @Test
+    void shouldReturnUnauthorizedWhenEditorRequestsOtherInstitution() {
+      userAccessRight = AccessRight.MANAGE_RESOURCES_ALL;
+      queryParameters = Map.of(INSTITUTION_ID, randomOrganizationIdentifier());
+
+      var response = handleRequestExpectingProblem();
+
+      assertThat(response)
+          .extracting(Problem::getStatus)
+          .extracting(StatusType::getStatusCode)
+          .isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
+    }
+
+    @Test
+    void shouldReturnAggregationForRequestedInstitutionWhenUserIsAdmin() {
+      var otherOrganization = randomOrganizationId();
+      var approval =
+          new ApprovalFactory(otherOrganization).withCreatorAffiliation(otherOrganization).build();
+      CONTAINER.addDocumentsToIndex(documentWithApprovals(approval));
+
+      userAccessRight = AccessRight.MANAGE_NVI;
+      queryParameters = Map.of(INSTITUTION_ID, getIdentifier(otherOrganization));
+
+      var response = handleRequest();
+
+      assertThat(response.topLevelOrganizationId()).isEqualTo(otherOrganization);
+      assertThat(response.totals().candidateCount()).isOne();
+    }
+
+    @Test
+    void shouldFallBackToOwnInstitutionWhenAdminOmitsRequestedInstitution() {
+      userAccessRight = AccessRight.MANAGE_NVI;
+
+      var response = handleRequest();
+
+      assertThat(response.topLevelOrganizationId()).isEqualTo(OUR_ORGANIZATION);
     }
 
     @Test
@@ -366,8 +450,11 @@ class FetchInstitutionStatusAggregationHandlerTest {
   }
 
   private InstitutionStatusAggregationReport handleRequest() {
+    return handleRequest(createRequest());
+  }
+
+  private InstitutionStatusAggregationReport handleRequest(InputStream request) {
     try {
-      var request = createRequest();
       handler.handleRequest(request, output, CONTEXT);
       var response = GatewayResponse.fromOutputStream(output, String.class);
       assertThat(response.getStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
@@ -395,10 +482,28 @@ class FetchInstitutionStatusAggregationHandlerTest {
           .withAccessRights(userTopLevelOrg, userAccessRight)
           .withUserName(username)
           .withPathParameters(Map.of(YEAR, queryYear))
+          .withQueryParameters(queryParameters)
           .build();
     } catch (JsonProcessingException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  private InputStream backendClientRequestForInstitution(URI institution) {
+    try {
+      return new HandlerRequestBuilder<InputStream>(JsonUtils.dtoObjectMapper)
+          .withScope(BACKEND_SCOPE_AS_DEFINED_IN_IDENTITY_SERVICE)
+          .withUserName(username)
+          .withPathParameters(Map.of(YEAR, queryYear))
+          .withQueryParameters(Map.of(INSTITUTION_ID, getIdentifier(institution)))
+          .build();
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private static String getIdentifier(URI organizationId) {
+    return UriWrapper.fromUri(organizationId).getLastPathElement();
   }
 
   private DirectAffiliationAggregation getExpectedDirectAffiliationAggregation(
