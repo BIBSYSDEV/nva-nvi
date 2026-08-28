@@ -681,7 +681,8 @@ paths:
         Get organization approval aggregations for a given year. Available to NVI curators,
         editors, admins and backend clients. Admins and backend clients can specify an
         institutionId query parameter to get aggregations for a specific institution;
-        other users are rejected with 401 Unauthorized if they specify it.
+        other users are rejected with 401 Unauthorized if they specify it. Clients without
+        a top level organization must specify it, and are otherwise rejected with 400 Bad Request.
       summary: Get requesting users organization approval aggregations for a given year
       operationId: getNviOrganizationAggregationsByYear
       parameters:
@@ -711,6 +712,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/NviInstitutionReportResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "500":
@@ -722,7 +725,8 @@ paths:
       description: >
         Get NVI report for a given year. Admins and backend clients can specify an
         institutionId query parameter to get a report for a specific institution;
-        other users are rejected with 401 Unauthorized if they specify it.
+        other users are rejected with 401 Unauthorized if they specify it. Clients without
+        a top level organization must specify it, and are otherwise rejected with 400 Bad Request.
       summary: Get NVI institution report with points per contributor for a given year
       operationId: getNviReportByYear
       parameters:

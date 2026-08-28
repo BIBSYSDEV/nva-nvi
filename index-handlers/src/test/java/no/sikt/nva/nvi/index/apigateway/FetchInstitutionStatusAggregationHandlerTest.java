@@ -153,6 +153,16 @@ class FetchInstitutionStatusAggregationHandlerTest {
     }
 
     @Test
+    void shouldReturnBadRequestWhenBackendClientOmitsRequestedInstitution() {
+      var response = handleRequestExpectingProblem(backendClientRequestWithoutInstitution());
+
+      assertThat(response)
+          .extracting(Problem::getStatus)
+          .extracting(StatusType::getStatusCode)
+          .isEqualTo(HttpURLConnection.HTTP_BAD_REQUEST);
+    }
+
+    @Test
     void shouldReturnUnauthorizedWhenCuratorRequestsOtherInstitution() {
       queryParameters = Map.of(INSTITUTION_ID, randomOrganizationIdentifier());
 
@@ -465,8 +475,11 @@ class FetchInstitutionStatusAggregationHandlerTest {
   }
 
   private Problem handleRequestExpectingProblem() {
+    return handleRequestExpectingProblem(createRequest());
+  }
+
+  private Problem handleRequestExpectingProblem(InputStream request) {
     try {
-      var request = createRequest();
       handler.handleRequest(request, output, CONTEXT);
       var response = GatewayResponse.fromOutputStream(output, Problem.class);
       return objectMapper.readValue(response.getBody(), Problem.class);
@@ -490,12 +503,20 @@ class FetchInstitutionStatusAggregationHandlerTest {
   }
 
   private InputStream backendClientRequestForInstitution(URI institution) {
+    return backendClientRequest(Map.of(INSTITUTION_ID, getIdentifier(institution)));
+  }
+
+  private InputStream backendClientRequestWithoutInstitution() {
+    return backendClientRequest(emptyMap());
+  }
+
+  private InputStream backendClientRequest(Map<String, String> requestQueryParameters) {
     try {
       return new HandlerRequestBuilder<InputStream>(JsonUtils.dtoObjectMapper)
           .withScope(BACKEND_SCOPE_AS_DEFINED_IN_IDENTITY_SERVICE)
           .withUserName(username)
           .withPathParameters(Map.of(YEAR, queryYear))
-          .withQueryParameters(Map.of(INSTITUTION_ID, getIdentifier(institution)))
+          .withQueryParameters(requestQueryParameters)
           .build();
     } catch (JsonProcessingException e) {
       throw new RuntimeException(e);

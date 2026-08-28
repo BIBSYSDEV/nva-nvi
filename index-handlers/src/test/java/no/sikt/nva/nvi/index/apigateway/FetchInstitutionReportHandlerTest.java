@@ -432,6 +432,21 @@ class FetchInstitutionReportHandlerTest {
   }
 
   @Test
+  void shouldReturnBadRequestWhenBackendTokenOmitsInstitutionId() throws IOException {
+    var request =
+        new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
+            .withScope(BACKEND_SCOPE_AS_DEFINED_IN_IDENTITY_SERVICE)
+            .withUserName(randomString())
+            .withPathParameters(Map.of(YEAR, THIS_YEAR))
+            .build();
+
+    handler.handleRequest(request, output, CONTEXT);
+
+    var response = fromOutputStream(output, Problem.class);
+    assertEquals(HttpURLConnection.HTTP_BAD_REQUEST, response.getStatusCode());
+  }
+
+  @Test
   void shouldReturnUnauthorizedWhenCuratorQueriesOtherInstitution() throws IOException {
     var ownInstitution = randomCristinOrgUri();
     var otherIdentifier = "185.90.0.0";
