@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.index.apigateway;
 
 import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.organizationIdFromIdentifier;
 import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.indexDocumentMissingApprovals;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.indexDocumentMissingVerifiedCreators;
@@ -122,6 +123,7 @@ import org.zalando.problem.Problem;
 class FetchInstitutionReportHandlerTest {
 
   private static final String YEAR = "year";
+  private static final String QUERY_PARAM_INSTITUTION_ID = "institutionId";
   private static final Context CONTEXT = new FakeContext();
   protected static final Environment ENVIRONMENT = forHandler(FetchInstitutionReportHandler.class);
   private static final int PAGE_SIZE =
@@ -403,7 +405,7 @@ class FetchInstitutionReportHandlerTest {
     var ownInstitution = randomCristinOrgUri();
     var request =
         createRequest(ownInstitution, MANAGE_NVI, Map.of(YEAR, THIS_YEAR))
-            .withQueryParameters(Map.of("institutionId", identifier))
+            .withQueryParameters(Map.of(QUERY_PARAM_INSTITUTION_ID, identifier))
             .build();
 
     handler.handleRequest(request, output, CONTEXT);
@@ -422,7 +424,7 @@ class FetchInstitutionReportHandlerTest {
             .withScope(BACKEND_SCOPE_AS_DEFINED_IN_IDENTITY_SERVICE)
             .withUserName(randomString())
             .withPathParameters(Map.of(YEAR, THIS_YEAR))
-            .withQueryParameters(Map.of("institutionId", identifier))
+            .withQueryParameters(Map.of(QUERY_PARAM_INSTITUTION_ID, identifier))
             .build();
 
     handler.handleRequest(request, output, CONTEXT);
@@ -447,12 +449,28 @@ class FetchInstitutionReportHandlerTest {
   }
 
   @Test
+  void shouldReturnOkWhenCuratorQueriesOwnInstitution() throws IOException {
+    var identifier = "185.90.0.0";
+    var ownInstitution = organizationIdFromIdentifier(identifier);
+    mockCandidatesInOpenSearch(ownInstitution);
+    var request =
+        createRequest(ownInstitution, MANAGE_NVI_CANDIDATES, Map.of(YEAR, THIS_YEAR))
+            .withQueryParameters(Map.of(QUERY_PARAM_INSTITUTION_ID, identifier))
+            .build();
+
+    handler.handleRequest(request, output, CONTEXT);
+
+    var response = fromOutputStream(output, String.class);
+    assertEquals(HttpURLConnection.HTTP_OK, response.getStatusCode());
+  }
+
+  @Test
   void shouldReturnUnauthorizedWhenCuratorQueriesOtherInstitution() throws IOException {
     var ownInstitution = randomCristinOrgUri();
     var otherIdentifier = "185.90.0.0";
     var request =
         createRequest(ownInstitution, MANAGE_NVI_CANDIDATES, Map.of(YEAR, THIS_YEAR))
-            .withQueryParameters(Map.of("institutionId", otherIdentifier))
+            .withQueryParameters(Map.of(QUERY_PARAM_INSTITUTION_ID, otherIdentifier))
             .build();
 
     handler.handleRequest(request, output, CONTEXT);

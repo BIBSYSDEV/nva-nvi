@@ -679,10 +679,11 @@ paths:
         - Report
       description: >
         Get organization approval aggregations for a given year. Available to NVI curators,
-        editors, admins and backend clients. Admins and backend clients can specify an
-        institutionId query parameter to get aggregations for a specific institution;
-        other users are rejected with 401 Unauthorized if they specify it. Clients without
-        a top level organization must specify it, and are otherwise rejected with 400 Bad Request.
+        editors, admins and backend clients. The institutionId query parameter selects which
+        institution to aggregate; admins and backend clients can specify any institution, while
+        other users can only specify their own and are otherwise rejected with 401 Unauthorized.
+        Clients without a top level organization must specify it, and are otherwise rejected
+        with 400 Bad Request.
       summary: Get requesting users organization approval aggregations for a given year
       operationId: getNviOrganizationAggregationsByYear
       parameters:
@@ -694,7 +695,7 @@ paths:
             type: string
         - in: query
           name: institutionId
-          description: Top level Cristin organization identifier (e.g. 185.90.0.0). Only allowed for admins and backend clients.
+          description: Top level Cristin organization identifier (e.g. 185.90.0.0). Other users than admins and backend clients may only specify their own institution.
           required: false
           schema:
             type: string
@@ -723,10 +724,11 @@ paths:
       tags:
         - Report
       description: >
-        Get NVI report for a given year. Admins and backend clients can specify an
-        institutionId query parameter to get a report for a specific institution;
-        other users are rejected with 401 Unauthorized if they specify it. Clients without
-        a top level organization must specify it, and are otherwise rejected with 400 Bad Request.
+        Get NVI report for a given year. The institutionId query parameter selects which
+        institution to report on; admins and backend clients can specify any institution, while
+        other users can only specify their own and are otherwise rejected with 401 Unauthorized.
+        Clients without a top level organization must specify it, and are otherwise rejected
+        with 400 Bad Request.
       summary: Get NVI institution report with points per contributor for a given year
       operationId: getNviReportByYear
       parameters:
@@ -752,7 +754,7 @@ paths:
             default: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
         - in: query
           name: institutionId
-          description: Top level Cristin organization identifier (e.g. 185.90.0.0). Only allowed for admins and backend clients.
+          description: Top level Cristin organization identifier (e.g. 185.90.0.0). Other users than admins and backend clients may only specify their own institution.
           required: false
           schema:
             type: string

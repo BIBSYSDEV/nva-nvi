@@ -46,7 +46,7 @@ public class FetchInstitutionStatusAggregationHandler
   protected void validateRequest(Void unused, RequestInfo requestInfo, Context context)
       throws ApiGatewayException {
     validateAccessRight(requestInfo);
-    RequestedInstitution.validate(requestInfo);
+    RequestedInstitution.validate(requestInfo, apiHost);
   }
 
   @Override

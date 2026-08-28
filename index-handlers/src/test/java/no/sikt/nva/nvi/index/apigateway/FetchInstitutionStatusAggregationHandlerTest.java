@@ -162,6 +162,23 @@ class FetchInstitutionStatusAggregationHandlerTest {
           .isEqualTo(HttpURLConnection.HTTP_BAD_REQUEST);
     }
 
+    @ParameterizedTest
+    @EnumSource(
+        value = AccessRight.class,
+        names = {"MANAGE_NVI_CANDIDATES", "MANAGE_RESOURCES_ALL"})
+    void shouldAllowCuratorsAndEditorsToRequestTheirOwnInstitution(AccessRight accessRight) {
+      userAccessRight = accessRight;
+      var approval =
+          new ApprovalFactory(OUR_ORGANIZATION).withCreatorAffiliation(OUR_ORGANIZATION).build();
+      CONTAINER.addDocumentsToIndex(documentWithApprovals(approval));
+      queryParameters = Map.of(INSTITUTION_ID, getIdentifier(OUR_ORGANIZATION));
+
+      var response = handleRequest();
+
+      assertThat(response.topLevelOrganizationId()).isEqualTo(OUR_ORGANIZATION);
+      assertThat(response.totals().candidateCount()).isOne();
+    }
+
     @Test
     void shouldReturnUnauthorizedWhenCuratorRequestsOtherInstitution() {
       queryParameters = Map.of(INSTITUTION_ID, randomOrganizationIdentifier());

@@ -65,7 +65,7 @@ public class FetchInstitutionReportHandler extends ApiGatewayHandler<Void, Strin
     if (isInvalidPathParameterYear(requestInfo)) {
       throw new BadRequestException("Invalid path parameter 'year'");
     }
-    RequestedInstitution.validate(requestInfo);
+    RequestedInstitution.validate(requestInfo, apiHost);
   }
 
   @Override
