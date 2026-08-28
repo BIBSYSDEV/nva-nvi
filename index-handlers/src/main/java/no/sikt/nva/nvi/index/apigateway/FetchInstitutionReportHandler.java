@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.index.apigateway;
 
 import static java.lang.Integer.parseInt;
+import static no.sikt.nva.nvi.common.utils.RequestUtil.isEditor;
 import static no.sikt.nva.nvi.common.utils.RequestUtil.isNviAdmin;
 import static no.sikt.nva.nvi.common.utils.RequestUtil.isNviCurator;
 import static nva.commons.core.attempt.Try.attempt;
@@ -89,6 +90,7 @@ public class FetchInstitutionReportHandler extends ApiGatewayHandler<Void, Strin
 
   private static boolean hasAccess(RequestInfo requestInfo) {
     return isNviCurator(requestInfo)
+        || isEditor(requestInfo)
         || isNviAdmin(requestInfo)
         || requestInfo.clientIsInternalBackend();
   }

@@ -725,7 +725,8 @@ paths:
       tags:
         - Report
       description: >
-        Get NVI report for a given year. The institutionId query parameter selects which
+        Get NVI report for a given year. Available to NVI curators, editors, admins and backend
+        clients. The institutionId query parameter selects which
         institution to report on; admins and backend clients can specify any institution, while
         other users can only specify their own and are otherwise rejected with 401 Unauthorized.
         Clients without a top level organization must specify it, and are otherwise rejected

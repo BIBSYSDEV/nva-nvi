@@ -110,6 +110,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opensearch.client.opensearch._types.ErrorCause;
 import org.opensearch.client.opensearch._types.ErrorResponse;
@@ -448,13 +449,17 @@ class FetchInstitutionReportHandlerTest {
     assertEquals(HttpURLConnection.HTTP_BAD_REQUEST, response.getStatusCode());
   }
 
-  @Test
-  void shouldReturnOkWhenCuratorQueriesOwnInstitution() throws IOException {
+  @ParameterizedTest
+  @EnumSource(
+      value = AccessRight.class,
+      names = {"MANAGE_NVI_CANDIDATES", "MANAGE_RESOURCES_ALL"})
+  void shouldReturnOkWhenCuratorOrEditorQueriesOwnInstitution(AccessRight accessRight)
+      throws IOException {
     var identifier = "185.90.0.0";
     var ownInstitution = organizationIdFromIdentifier(identifier);
     mockCandidatesInOpenSearch(ownInstitution);
     var request =
-        createRequest(ownInstitution, MANAGE_NVI_CANDIDATES, Map.of(YEAR, THIS_YEAR))
+        createRequest(ownInstitution, accessRight, Map.of(YEAR, THIS_YEAR))
             .withQueryParameters(Map.of(QUERY_PARAM_INSTITUTION_ID, identifier))
             .build();
 
