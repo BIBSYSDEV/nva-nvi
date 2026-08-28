@@ -699,6 +699,7 @@ paths:
           required: false
           schema:
             type: string
+            pattern: '^\d+\.\d+\.\d+\.\d+$'
       security: *authenticated
       x-amazon-apigateway-integration:
         uri:
@@ -758,6 +759,7 @@ paths:
           required: false
           schema:
             type: string
+            pattern: '^\d+\.\d+\.\d+\.\d+$'
       security: *authenticated
       x-amazon-apigateway-integration:
         uri:

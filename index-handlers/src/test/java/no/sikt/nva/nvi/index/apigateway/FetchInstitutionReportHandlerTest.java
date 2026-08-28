@@ -465,6 +465,19 @@ class FetchInstitutionReportHandlerTest {
   }
 
   @Test
+  void shouldReturnBadRequestWhenInstitutionIdIsNotACristinIdentifier() throws IOException {
+    var request =
+        createRequest(randomCristinOrgUri(), MANAGE_NVI, Map.of(YEAR, THIS_YEAR))
+            .withQueryParameters(Map.of(QUERY_PARAM_INSTITUTION_ID, "foo"))
+            .build();
+
+    handler.handleRequest(request, output, CONTEXT);
+
+    var response = fromOutputStream(output, Problem.class);
+    assertEquals(HttpURLConnection.HTTP_BAD_REQUEST, response.getStatusCode());
+  }
+
+  @Test
   void shouldReturnUnauthorizedWhenCuratorQueriesOtherInstitution() throws IOException {
     var ownInstitution = randomCristinOrgUri();
     var otherIdentifier = "185.90.0.0";

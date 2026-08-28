@@ -59,6 +59,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.zalando.problem.Problem;
 import org.zalando.problem.StatusType;
 
@@ -79,6 +80,7 @@ class FetchInstitutionStatusAggregationHandlerTest {
 
   private static final String YEAR = "year";
   private static final String INSTITUTION_ID = "institutionId";
+  private static final String MALFORMED_IDENTIFIER = "not-a-cristin-identifier";
   private static final URI OUR_ORGANIZATION = organizationIdFromIdentifier("123.0.0.0");
   private static final URI OUR_SUB_ORGANIZATION =
       organizationIdFromIdentifier(FAKER.numerify("123.###.###.###"));
@@ -177,6 +179,22 @@ class FetchInstitutionStatusAggregationHandlerTest {
 
       assertThat(response.topLevelOrganizationId()).isEqualTo(OUR_ORGANIZATION);
       assertThat(response.totals().candidateCount()).isOne();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"185.90.0", "185.90.0.0/../..", "1850000", "185.90.0.0.0"})
+    void shouldReturnBadRequestWhenRequestedInstitutionIsNotACristinIdentifier(String identifier) {
+      userAccessRight = AccessRight.MANAGE_NVI;
+      queryParameters = Map.of(INSTITUTION_ID, identifier);
+
+      assertThat(handleRequestReturningStatusCode()).isEqualTo(HttpURLConnection.HTTP_BAD_REQUEST);
+    }
+
+    @Test
+    void shouldRejectMalformedInstitutionBeforeCheckingAccessToIt() {
+      queryParameters = Map.of(INSTITUTION_ID, MALFORMED_IDENTIFIER);
+
+      assertThat(handleRequestReturningStatusCode()).isEqualTo(HttpURLConnection.HTTP_BAD_REQUEST);
     }
 
     @Test
@@ -486,6 +504,15 @@ class FetchInstitutionStatusAggregationHandlerTest {
       var response = GatewayResponse.fromOutputStream(output, String.class);
       assertThat(response.getStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
       return objectMapper.readValue(response.getBody(), InstitutionStatusAggregationReport.class);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private int handleRequestReturningStatusCode() {
+    try {
+      handler.handleRequest(createRequest(), output, CONTEXT);
+      return GatewayResponse.fromOutputStream(output, String.class).getStatusCode();
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
