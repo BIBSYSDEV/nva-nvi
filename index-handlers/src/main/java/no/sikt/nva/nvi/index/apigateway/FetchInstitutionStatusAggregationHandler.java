@@ -1,8 +1,9 @@
 package no.sikt.nva.nvi.index.apigateway;
 
-import static no.sikt.nva.nvi.common.utils.RequestUtil.hasAccessRight;
+import static no.sikt.nva.nvi.common.utils.RequestUtil.isEditor;
+import static no.sikt.nva.nvi.common.utils.RequestUtil.isNviAdmin;
+import static no.sikt.nva.nvi.common.utils.RequestUtil.isNviCurator;
 import static no.sikt.nva.nvi.index.query.SearchAggregation.ORGANIZATION_APPROVAL_STATUS_AGGREGATION;
-import static nva.commons.apigateway.AccessRight.MANAGE_NVI_CANDIDATES;
 import static nva.commons.core.attempt.Try.attempt;
 
 import com.amazonaws.services.lambda.runtime.Context;
@@ -25,7 +26,9 @@ public class FetchInstitutionStatusAggregationHandler
     extends ApiGatewayHandler<Void, InstitutionStatusAggregationReport> {
 
   private static final String PATH_PARAM_YEAR = "year";
+  private static final String ENV_VAR_API_HOST = "API_HOST";
   private final CandidateSearchClient searchClient;
+  private final String apiHost;
 
   @JacocoGenerated
   public FetchInstitutionStatusAggregationHandler() {
@@ -36,18 +39,20 @@ public class FetchInstitutionStatusAggregationHandler
       CandidateSearchClient searchClient, Environment environment) {
     super(Void.class, environment);
     this.searchClient = searchClient;
+    this.apiHost = environment.readEnv(ENV_VAR_API_HOST);
   }
 
   @Override
   protected void validateRequest(Void unused, RequestInfo requestInfo, Context context)
       throws ApiGatewayException {
     validateAccessRight(requestInfo);
+    RequestedInstitution.validate(requestInfo, apiHost);
   }
 
   @Override
   protected InstitutionStatusAggregationReport processInput(
       Void input, RequestInfo requestInfo, Context context) {
-    var topLevelOrg = requestInfo.getTopLevelOrgCristinId().orElseThrow();
+    var topLevelOrg = RequestedInstitution.resolve(requestInfo, apiHost);
     var year = requestInfo.getPathParameter(PATH_PARAM_YEAR);
     var aggregate = getAggregate(year, topLevelOrg);
     return InstitutionStatusAggregationReportMapper.fromAggregation(aggregate, year, topLevelOrg);
@@ -59,7 +64,16 @@ public class FetchInstitutionStatusAggregationHandler
   }
 
   private static void validateAccessRight(RequestInfo requestInfo) throws UnauthorizedException {
-    hasAccessRight(requestInfo, MANAGE_NVI_CANDIDATES);
+    if (!hasAccess(requestInfo)) {
+      throw new UnauthorizedException();
+    }
+  }
+
+  private static boolean hasAccess(RequestInfo requestInfo) {
+    return isNviCurator(requestInfo)
+        || isEditor(requestInfo)
+        || isNviAdmin(requestInfo)
+        || requestInfo.clientIsInternalBackend();
   }
 
   private Aggregate getAggregate(String year, URI requestedInstitution) {

@@ -1,14 +1,13 @@
 package no.sikt.nva.nvi.index.apigateway;
 
 import static java.lang.Integer.parseInt;
+import static no.sikt.nva.nvi.common.utils.RequestUtil.isEditor;
 import static no.sikt.nva.nvi.common.utils.RequestUtil.isNviAdmin;
 import static no.sikt.nva.nvi.common.utils.RequestUtil.isNviCurator;
-import static no.sikt.nva.nvi.index.apigateway.CristinOrgUriUtil.toCristinOrgUri;
 import static nva.commons.core.attempt.Try.attempt;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
-import java.net.URI;
 import java.time.Year;
 import java.util.List;
 import no.sikt.nva.nvi.index.aws.CandidateSearchClient;
@@ -30,7 +29,6 @@ public class FetchInstitutionReportHandler extends ApiGatewayHandler<Void, Strin
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FetchInstitutionReportHandler.class);
   private static final String PATH_PARAMETER_YEAR = "year";
-  private static final String QUERY_PARAMETER_INSTITUTION_ID = "institutionId";
   private static final String ENV_VAR_INSTITUTION_REPORT_SEARCH_PAGE_SIZE =
       "INSTITUTION_REPORT_SEARCH_PAGE_SIZE";
   private static final String ENV_VAR_API_HOST = "API_HOST";
@@ -68,7 +66,7 @@ public class FetchInstitutionReportHandler extends ApiGatewayHandler<Void, Strin
     if (isInvalidPathParameterYear(requestInfo)) {
       throw new BadRequestException("Invalid path parameter 'year'");
     }
-    validateInstitutionIdAccess(requestInfo);
+    RequestedInstitution.validate(requestInfo, apiHost);
   }
 
   @Override
@@ -76,7 +74,7 @@ public class FetchInstitutionReportHandler extends ApiGatewayHandler<Void, Strin
       throws ApiGatewayException {
     setIsBase64Encoded(true);
     var year = requestInfo.getPathParameter(PATH_PARAMETER_YEAR);
-    var institutionId = resolveInstitutionId(requestInfo);
+    var institutionId = RequestedInstitution.resolve(requestInfo, apiHost);
     LOGGER.info("Generating report for institution {} for year {}", institutionId, year);
     var report =
         new InstitutionReportGenerator(searchClient, pageSize, year, institutionId)
@@ -92,27 +90,9 @@ public class FetchInstitutionReportHandler extends ApiGatewayHandler<Void, Strin
 
   private static boolean hasAccess(RequestInfo requestInfo) {
     return isNviCurator(requestInfo)
+        || isEditor(requestInfo)
         || isNviAdmin(requestInfo)
         || requestInfo.clientIsInternalBackend();
-  }
-
-  private static boolean isPrivilegedClient(RequestInfo requestInfo) {
-    return isNviAdmin(requestInfo) || requestInfo.clientIsInternalBackend();
-  }
-
-  private static void validateInstitutionIdAccess(RequestInfo requestInfo)
-      throws UnauthorizedException {
-    var institutionIdParam = requestInfo.getQueryParameterOpt(QUERY_PARAMETER_INSTITUTION_ID);
-    if (institutionIdParam.isPresent() && !isPrivilegedClient(requestInfo)) {
-      throw new UnauthorizedException();
-    }
-  }
-
-  private URI resolveInstitutionId(RequestInfo requestInfo) {
-    return requestInfo
-        .getQueryParameterOpt(QUERY_PARAMETER_INSTITUTION_ID)
-        .map(identifier -> toCristinOrgUri(apiHost, identifier))
-        .orElseGet(() -> requestInfo.getTopLevelOrgCristinId().orElseThrow());
   }
 
   private static boolean isInvalidPathParameterYear(RequestInfo requestInfo) {

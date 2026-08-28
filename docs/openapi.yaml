@@ -677,7 +677,13 @@ paths:
     get:
       tags:
         - Report
-      description: Get organization approval aggregations for a given year
+      description: >
+        Get organization approval aggregations for a given year. Available to NVI curators,
+        editors, admins and backend clients. The institutionId query parameter selects which
+        institution to aggregate; admins and backend clients can specify any institution, while
+        other users can only specify their own and are otherwise rejected with 401 Unauthorized.
+        Clients without a top level organization must specify it, and are otherwise rejected
+        with 400 Bad Request.
       summary: Get requesting users organization approval aggregations for a given year
       operationId: getNviOrganizationAggregationsByYear
       parameters:
@@ -687,6 +693,13 @@ paths:
           required: true
           schema:
             type: string
+        - in: query
+          name: institutionId
+          description: Top level Cristin organization identifier (e.g. 185.90.0.0). Other users than admins and backend clients may only specify their own institution.
+          required: false
+          schema:
+            type: string
+            pattern: '^\d+\.\d+\.\d+\.\d+$'
       security: *authenticated
       x-amazon-apigateway-integration:
         uri:
@@ -701,6 +714,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/NviInstitutionReportResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "500":
@@ -710,9 +725,12 @@ paths:
       tags:
         - Report
       description: >
-        Get NVI report for a given year. Admins and backend clients can specify an
-        institutionId query parameter to get a report for a specific institution;
-        other users are rejected with 401 Unauthorized if they specify it.
+        Get NVI report for a given year. Available to NVI curators, editors, admins and backend
+        clients. The institutionId query parameter selects which
+        institution to report on; admins and backend clients can specify any institution, while
+        other users can only specify their own and are otherwise rejected with 401 Unauthorized.
+        Clients without a top level organization must specify it, and are otherwise rejected
+        with 400 Bad Request.
       summary: Get NVI institution report with points per contributor for a given year
       operationId: getNviReportByYear
       parameters:
@@ -738,10 +756,11 @@ paths:
             default: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
         - in: query
           name: institutionId
-          description: Top level Cristin organization identifier (e.g. 185.90.0.0). Only allowed for admins and backend clients.
+          description: Top level Cristin organization identifier (e.g. 185.90.0.0). Other users than admins and backend clients may only specify their own institution.
           required: false
           schema:
             type: string
+            pattern: '^\d+\.\d+\.\d+\.\d+$'
       security: *authenticated
       x-amazon-apigateway-integration:
         uri:
@@ -813,7 +832,7 @@ paths:
         - Report
       description: >
         Get report for all periods.
-        Requires an NVI administrator or curator role, or an internal backend client.
+        Requires an NVI administrator, curator or editor role, or an internal backend client.
       summary: Get all periods report
       operationId: getAllPeriodsReport
       security: *authenticated
@@ -843,7 +862,7 @@ paths:
         - Report
       description: >
         Get report for a specific period.
-        Requires an NVI administrator or curator role, or an internal backend client.
+        Requires an NVI administrator, curator or editor role, or an internal backend client.
       summary: Get period report
       operationId: getPeriodReport
       parameters:
@@ -885,7 +904,7 @@ paths:
         - Report
       description: >
         Get all institutions report for a specific period.
-        Requires an NVI administrator or curator role, or an internal backend client.
+        Requires an NVI administrator, curator or editor role, or an internal backend client.
       summary: Get all institutions report for a period
       operationId: getAllInstitutionsReport
       parameters:
@@ -948,7 +967,7 @@ paths:
         - Report (partially implemented)
       description: >
         Get specific institution report for a specific period.
-        Requires an NVI administrator or curator role, or an internal backend client.
+        Requires an NVI administrator, curator or editor role, or an internal backend client.
       summary: Get institution report for a period
       operationId: getInstitutionReport
       parameters:

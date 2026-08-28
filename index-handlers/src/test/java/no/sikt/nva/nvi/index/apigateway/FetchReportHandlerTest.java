@@ -80,9 +80,9 @@ class FetchReportHandlerTest {
   @ParameterizedTest
   @EnumSource(
       value = AccessRight.class,
-      names = {"MANAGE_NVI_CANDIDATES", "MANAGE_NVI"},
+      names = {"MANAGE_NVI_CANDIDATES", "MANAGE_NVI", "MANAGE_RESOURCES_ALL"},
       mode = EnumSource.Mode.INCLUDE)
-  void shouldReturnOkWhenUserHasNviAccessRight(AccessRight accessRight) throws IOException {
+  void shouldReturnOkWhenUserHasRequiredAccessRight(AccessRight accessRight) throws IOException {
     handler.handleRequest(
         createRequest(emptyMap(), REPORTS_PATH_SEGMENT, emptyMap(), accessRight), output, CONTEXT);
 
@@ -94,9 +94,9 @@ class FetchReportHandlerTest {
   @ParameterizedTest
   @EnumSource(
       value = AccessRight.class,
-      names = {"MANAGE_NVI_CANDIDATES", "MANAGE_NVI"},
+      names = {"MANAGE_NVI_CANDIDATES", "MANAGE_NVI", "MANAGE_RESOURCES_ALL"},
       mode = EnumSource.Mode.EXCLUDE)
-  void shouldReturnForbiddenWhenUserDoesNotHaveNviAccessRight(AccessRight accessRight)
+  void shouldReturnForbiddenWhenUserDoesNotHaveRequiredAccessRight(AccessRight accessRight)
       throws IOException {
     handler.handleRequest(createRequestWithAccessRight(accessRight), output, CONTEXT);
 
