@@ -41,6 +41,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
+import java.time.Instant;
 import java.util.List;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
@@ -845,6 +846,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
           randomUpsertRequestBuilder()
               .withPublicationDate(getPublicationDateDto(sampleExpandedPublication))
               .withPublicationId(sampleExpandedPublication.id())
+              .withModifiedDate(Instant.parse(sampleExpandedPublication.modifiedDate()))
               .build();
       candidateService.upsertCandidate(upsertCandidateRequest);
     }

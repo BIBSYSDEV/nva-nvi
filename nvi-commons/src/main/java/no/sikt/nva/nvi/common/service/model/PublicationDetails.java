@@ -147,6 +147,16 @@ public record PublicationDetails(
         .build();
   }
 
+  /**
+   * Compares this publication data against a snapshot of the same publication, to detect snapshots
+   * that are outdated and should not be applied.
+   */
+  public boolean isNewerThan(Instant snapshotModifiedDate) {
+    return nonNull(modifiedDate)
+        && nonNull(snapshotModifiedDate)
+        && snapshotModifiedDate.isBefore(modifiedDate);
+  }
+
   public Set<URI> getNviCreatorAffiliations() {
     return nviCreators.stream()
         .map(NviCreator::getAffiliationIds)
