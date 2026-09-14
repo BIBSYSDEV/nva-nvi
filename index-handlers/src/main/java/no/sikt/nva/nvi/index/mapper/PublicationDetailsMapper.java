@@ -48,11 +48,11 @@ final class PublicationDetailsMapper {
 
   private PublicationChannel buildPublicationChannel() {
     var persistedChannel = candidate.getPublicationChannel();
-    return findMatchingPublicationChannelDto(persistedChannel)
-        .map(currentChannel -> PublicationChannel.from(persistedChannel, currentChannel))
-        .orElseGet(() -> PublicationChannel.from(persistedChannel));
+    var currentChannel = findMatchingPublicationChannelDto(persistedChannel).orElse(null);
+    return PublicationChannel.from(persistedChannel, currentChannel);
   }
 
+  // TODO: NP-51402 - Remove this lookup and its helpers when channel data is migrated
   /**
    * The by-type fallback covers candidates without a channel ID (Cristin imports) and candidates
    * whose channel ID no longer matches the Publication (channel merged or superseded)

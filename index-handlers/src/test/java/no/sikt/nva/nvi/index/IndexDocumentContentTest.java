@@ -156,6 +156,29 @@ class IndexDocumentContentTest extends IndexDocumentHandlerTestBase {
   }
 
   @Test
+  void shouldIndexChannelMetadataFromPersistedCandidateWhenChannelIsChangedInPublication() {
+    var persistedChannel =
+        DbPublicationChannel.builder()
+            .id(randomUri())
+            .channelType(ChannelType.JOURNAL.getValue())
+            .scientificValue(ScientificValue.LEVEL_ONE.getValue())
+            .name("Journal of Testing")
+            .printIssn("2159-4848")
+            .build();
+    var candidate = candidateWithChannel(persistedChannel);
+    var channelInPublication =
+        publicationChannel("Journal of Something Else", ChannelType.JOURNAL, "0934-2575");
+    stubPublication(candidate, publicationDtoWithChannel(candidate, channelInPublication));
+
+    var document = generateIndexDocument(candidate);
+
+    var indexedChannel = document.publicationDetails().publicationChannel();
+    assertThat(indexedChannel.id()).isEqualTo(persistedChannel.id());
+    assertThat(indexedChannel.name()).isEqualTo("Journal of Testing");
+    assertThat(indexedChannel.printIssn()).isEqualTo("2159-4848");
+  }
+
+  @Test
   void shouldMatchChannelByTypeWhenCandidateChannelHasNoId() {
     var channel = publicationChannel(randomString(), ChannelType.SERIES);
     var candidate = candidateWithChannelTypeButNoId(channel.channelType());
@@ -451,11 +474,17 @@ class IndexDocumentContentTest extends IndexDocumentHandlerTestBase {
   }
 
   private static PublicationChannelDto publicationChannel(String name, ChannelType channelType) {
+    return publicationChannel(name, channelType, null);
+  }
+
+  private static PublicationChannelDto publicationChannel(
+      String name, ChannelType channelType, String printIssn) {
     return PublicationChannelDto.builder()
         .withId(randomUri())
         .withChannelType(channelType)
         .withScientificValue(ScientificValue.LEVEL_ONE)
         .withName(name)
+        .withPrintIssn(printIssn)
         .build();
   }
 
@@ -482,10 +511,17 @@ class IndexDocumentContentTest extends IndexDocumentHandlerTestBase {
   }
 
   private Candidate candidateWithChannel(URI channelId, ChannelType channelType) {
-    var institutionId = randomOrganizationId();
     var channelTypeValue = nonNull(channelType) ? channelType.getValue() : null;
-    var channel =
-        new DbPublicationChannel(channelId, channelTypeValue, ScientificValue.LEVEL_ONE.getValue());
+    return candidateWithChannel(
+        DbPublicationChannel.builder()
+            .id(channelId)
+            .channelType(channelTypeValue)
+            .scientificValue(ScientificValue.LEVEL_ONE.getValue())
+            .build());
+  }
+
+  private Candidate candidateWithChannel(DbPublicationChannel channel) {
+    var institutionId = randomOrganizationId();
     var publicationDetails = randomPublicationBuilder(institutionId).build();
     var pointCalculation =
         randomPointCalculationBuilder(randomOrganizationId(), institutionId)

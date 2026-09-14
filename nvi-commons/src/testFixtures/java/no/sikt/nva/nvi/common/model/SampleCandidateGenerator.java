@@ -7,6 +7,7 @@ import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInstant;
+import static no.unit.nva.testutils.RandomDataGenerator.randomIssn;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 
@@ -122,7 +123,8 @@ public final class SampleCandidateGenerator {
   }
 
   private PublicationChannel randomPublicationChannel() {
-    return new PublicationChannel(randomUri(), randomChannelType(), randomScientificValue());
+    return new PublicationChannel(
+        randomUri(), randomChannelType(), randomScientificValue(), randomString(), randomIssn());
   }
 
   private PublicationDetails randomPublicationDetails() {

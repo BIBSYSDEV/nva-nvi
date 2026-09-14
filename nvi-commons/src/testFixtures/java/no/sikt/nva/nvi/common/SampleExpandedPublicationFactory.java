@@ -276,6 +276,27 @@ public class SampleExpandedPublicationFactory {
     return this;
   }
 
+  public SampleExpandedPublicationFactory withRenamedPublicationChannel(
+      String channelType, String name, String printIssn) {
+    var currentChannel = getPublicationChannel(channelType);
+    var renamedChannel =
+        SampleExpandedPublicationChannel.builder()
+            .withId(currentChannel.id())
+            .withType(currentChannel.type())
+            .withLevel(currentChannel.level())
+            .withName(name)
+            .withPrintIssn(printIssn)
+            .build();
+    this.publicationChannels.remove(currentChannel);
+    this.publicationChannels.add(renamedChannel);
+    this.channels.put(channelType, renamedChannel);
+    return this;
+  }
+
+  public SampleExpandedPublicationChannel getPublicationChannel(String channelType) {
+    return channels.get(channelType);
+  }
+
   private void addPublicationChannel(String channelType, String scientificLevel) {
     var channel =
         SampleExpandedPublicationChannel.builder()
