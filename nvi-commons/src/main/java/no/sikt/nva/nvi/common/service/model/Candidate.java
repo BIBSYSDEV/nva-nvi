@@ -8,6 +8,7 @@ import static no.sikt.nva.nvi.common.db.ReportStatus.REPORTED;
 import static no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException.CANDIDATE_IN_CLOSED_PERIOD;
 import static no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException.CANDIDATE_IS_REPORTED;
 import static no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException.CANNOT_MOVE_CANDIDATE_TO_CLOSED_PERIOD;
+import static no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException.CANNOT_UPDATE_CANDIDATE_IN_CLOSED_PERIOD;
 import static no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException.NO_APPROVAL_FOUND;
 import static no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException.NO_NOTE_FOUND;
 import static no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException.PERIOD_IS_CLOSED;
@@ -135,6 +136,9 @@ public record Candidate(
   public Candidate apply(UpsertNviCandidateRequest request, NviPeriod targetPeriod) {
     if (isReported()) {
       throw new IllegalCandidateUpdateException(CANDIDATE_IS_REPORTED);
+    }
+    if (isInClosedPeriod()) {
+      throw new IllegalCandidateUpdateException(CANNOT_UPDATE_CANDIDATE_IN_CLOSED_PERIOD);
     }
     if (targetPeriod.isClosed()) {
       throw new IllegalCandidateUpdateException(CANNOT_MOVE_CANDIDATE_TO_CLOSED_PERIOD);
@@ -404,7 +408,15 @@ public record Candidate(
   private static boolean publicationChannelIsUpdated(
       UpsertNviCandidateRequest request, Candidate candidate) {
     var requestChannel = PublicationChannel.from(request.pointCalculation().channel());
-    return !requestChannel.equals(candidate.getPublicationChannel());
+    return channelDataIsUpdated(candidate.getPublicationChannel(), requestChannel);
+  }
+
+  private static boolean channelDataIsUpdated(
+      PublicationChannel currentChannel, PublicationChannel requestChannel) {
+    return isNull(currentChannel)
+        || !Objects.equals(currentChannel.id(), requestChannel.id())
+        || currentChannel.channelType() != requestChannel.channelType()
+        || currentChannel.scientificValue() != requestChannel.scientificValue();
   }
 
   private static boolean publicationYearIsUpdated(

@@ -4,7 +4,8 @@ import java.net.URI;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmutable;
 
 @DynamoDbImmutable(builder = DbPublicationChannel.Builder.class)
-public record DbPublicationChannel(URI id, String channelType, String scientificValue) {
+public record DbPublicationChannel(
+    URI id, String channelType, String scientificValue, String name, String printIssn) {
 
   public static Builder builder() {
     return new Builder();
@@ -15,6 +16,8 @@ public record DbPublicationChannel(URI id, String channelType, String scientific
     private URI id;
     private String channelType;
     private String scientificValue;
+    private String name;
+    private String printIssn;
 
     private Builder() {}
 
@@ -33,8 +36,18 @@ public record DbPublicationChannel(URI id, String channelType, String scientific
       return this;
     }
 
+    public Builder name(String name) {
+      this.name = name;
+      return this;
+    }
+
+    public Builder printIssn(String printIssn) {
+      this.printIssn = printIssn;
+      return this;
+    }
+
     public DbPublicationChannel build() {
-      return new DbPublicationChannel(id, channelType, scientificValue);
+      return new DbPublicationChannel(id, channelType, scientificValue, name, printIssn);
     }
   }
 }

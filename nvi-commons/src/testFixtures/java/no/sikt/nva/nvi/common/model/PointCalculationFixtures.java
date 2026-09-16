@@ -9,6 +9,8 @@ import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
+import static no.unit.nva.testutils.RandomDataGenerator.randomIssn;
+import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 
 import java.net.URI;
@@ -60,6 +62,7 @@ public final class PointCalculationFixtures {
   }
 
   private static PublicationChannel createLevelOneJournal() {
-    return new PublicationChannel(randomUri(), ChannelType.JOURNAL, ScientificValue.LEVEL_ONE);
+    return new PublicationChannel(
+        randomUri(), ChannelType.JOURNAL, ScientificValue.LEVEL_ONE, randomString(), randomIssn());
   }
 }

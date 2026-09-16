@@ -81,6 +81,10 @@ class CandidateApprovalTest extends CandidateTestSetup {
   private static final URI HARDCODED_CHANNEL_ID =
       URI.create("https://example.org/publication-channels-v2/journal/123/2018");
   private static final ScientificValue HARDCODED_LEVEL = ScientificValue.LEVEL_ONE;
+  private static final String HARDCODED_CHANNEL_NAME = "Journal of Sample Studies";
+  private static final String HARDCODED_PRINT_ISSN = "1234-5678";
+  private static final String UPDATED_CHANNEL_NAME = "Journal of Updated Sample Studies";
+  private static final String UPDATED_PRINT_ISSN = "8765-4321";
   private static final URI HARDCODED_CREATOR_ID = URI.create("https://example.org/someCreator");
   private static final InstanceType HARDCODED_INSTANCE_TYPE = InstanceType.ACADEMIC_ARTICLE;
   private static final BigDecimal HARDCODED_POINTS =
@@ -321,6 +325,39 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var updatedApproval = updatedCandidate.approvals().get(HARDCODED_INSTITUTION_ID);
 
     assertThat(updatedApproval).isEqualTo(approval);
+  }
+
+  @Test
+  void shouldNotResetApprovalsWhenChannelNameAndPrintIssnAreUpdated() {
+    var persistedChannel =
+        updateChannelAndAssertApprovalIsUnchanged(
+            channelWithNameAndPrintIssn(HARDCODED_CHANNEL_NAME, HARDCODED_PRINT_ISSN),
+            channelWithNameAndPrintIssn(UPDATED_CHANNEL_NAME, UPDATED_PRINT_ISSN));
+
+    assertThat(persistedChannel.name()).isEqualTo(UPDATED_CHANNEL_NAME);
+    assertThat(persistedChannel.printIssn()).isEqualTo(UPDATED_PRINT_ISSN);
+  }
+
+  @Test
+  void shouldNotResetApprovalsWhenChannelNameIsUpdated() {
+    var persistedChannel =
+        updateChannelAndAssertApprovalIsUnchanged(
+            channelWithNameAndPrintIssn(HARDCODED_CHANNEL_NAME, HARDCODED_PRINT_ISSN),
+            channelWithNameAndPrintIssn(UPDATED_CHANNEL_NAME, HARDCODED_PRINT_ISSN));
+
+    assertThat(persistedChannel.name()).isEqualTo(UPDATED_CHANNEL_NAME);
+    assertThat(persistedChannel.printIssn()).isEqualTo(HARDCODED_PRINT_ISSN);
+  }
+
+  @Test
+  void shouldNotResetApprovalsWhenChannelPrintIssnIsUpdated() {
+    var persistedChannel =
+        updateChannelAndAssertApprovalIsUnchanged(
+            channelWithNameAndPrintIssn(HARDCODED_CHANNEL_NAME, HARDCODED_PRINT_ISSN),
+            channelWithNameAndPrintIssn(HARDCODED_CHANNEL_NAME, UPDATED_PRINT_ISSN));
+
+    assertThat(persistedChannel.name()).isEqualTo(HARDCODED_CHANNEL_NAME);
+    assertThat(persistedChannel.printIssn()).isEqualTo(UPDATED_PRINT_ISSN);
   }
 
   @Test
@@ -653,6 +690,36 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var username = user.userName().toString();
     var updateRequest = createUpdateStatusRequest(status, HARDCODED_INSTITUTION_ID, username);
     return scenario.updateApprovalStatus(candidateIdentifier, updateRequest, user);
+  }
+
+  private PublicationChannel updateChannelAndAssertApprovalIsUnchanged(
+      PublicationChannelDto initialChannel, PublicationChannelDto updatedChannel) {
+    var initialRequest =
+        fromRequest(getUpsertCandidateRequestWithHardcodedValues())
+            .withPublicationChannel(initialChannel)
+            .build();
+    var candidate = scenario.upsertCandidate(initialRequest);
+    var approvedCandidate = updateApprovalStatus(candidate.identifier(), ApprovalStatus.APPROVED);
+    var approvalBeforeUpdate = approvedCandidate.approvals().get(HARDCODED_INSTITUTION_ID);
+
+    var updateRequest = fromRequest(initialRequest).withPublicationChannel(updatedChannel).build();
+    scenario.upsertCandidate(updateRequest);
+
+    var persistedCandidate = candidateService.getCandidateByIdentifier(candidate.identifier());
+    assertThat(persistedCandidate.approvals())
+        .extractingByKey(HARDCODED_INSTITUTION_ID)
+        .isEqualTo(approvalBeforeUpdate);
+    return persistedCandidate.getPublicationChannel();
+  }
+
+  private static PublicationChannelDto channelWithNameAndPrintIssn(String name, String printIssn) {
+    return PublicationChannelDto.builder()
+        .withId(HARDCODED_CHANNEL_ID)
+        .withChannelType(ChannelType.JOURNAL)
+        .withScientificValue(HARDCODED_LEVEL)
+        .withName(name)
+        .withPrintIssn(printIssn)
+        .build();
   }
 
   private UpsertNviCandidateRequest getUpsertCandidateRequestWithHardcodedValues() {

@@ -12,12 +12,14 @@ import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.createCandidateInRe
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.getExpectedUpdatedDbCandidate;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidate;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.dto.AllowedOperationFixtures.CURATOR_CAN_FINALIZE_APPROVAL;
 import static no.sikt.nva.nvi.common.dto.PointCalculationDtoBuilder.randomPointCalculationDtoBuilder;
 import static no.sikt.nva.nvi.common.model.CandidateFixtures.setupRandomApplicableCandidate;
 import static no.sikt.nva.nvi.common.model.NviCreatorFixtures.unverifiedNviCreatorFrom;
 import static no.sikt.nva.nvi.common.model.NviCreatorFixtures.verifiedNviCreatorFrom;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomTopLevelOrganization;
+import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDateDtoInYear;
 import static no.sikt.nva.nvi.common.model.UserInstanceFixtures.createCuratorUserInstance;
 import static no.sikt.nva.nvi.common.utils.EnvironmentUriFactory.candidateId;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
@@ -475,6 +477,39 @@ class CandidateTest extends CandidateTestSetup {
     setupClosedPeriod(scenario, CURRENT_YEAR);
     var refetchedCandidate = candidateService.getCandidateByIdentifier(candidate.identifier());
     assertFalse(refetchedCandidate.isNotReportedInClosedPeriod());
+  }
+
+  @Test
+  void shouldNotUpdateUnreportedCandidateInClosedPeriod() {
+    var candidate = setupRandomApplicableCandidate(scenario, CURRENT_YEAR);
+    setupClosedPeriod(scenario, CURRENT_YEAR);
+
+    var updateRequest =
+        randomUpsertRequestBuilder().withPublicationId(candidate.getPublicationId()).build();
+    assertThrows(
+        IllegalCandidateUpdateException.class,
+        () -> candidateService.upsertCandidate(updateRequest));
+  }
+
+  @Test
+  void shouldNotMoveCandidateOutOfClosedPeriodWhenPublicationYearIsChanged() {
+    var candidate = setupRandomApplicableCandidate(scenario, CURRENT_YEAR);
+    setupClosedPeriod(scenario, CURRENT_YEAR);
+    var nextYear = CURRENT_YEAR + 1;
+    setupOpenPeriod(scenario, nextYear);
+
+    var updateRequest =
+        randomUpsertRequestBuilder()
+            .withPublicationId(candidate.getPublicationId())
+            .withPublicationDate(randomPublicationDateDtoInYear(nextYear))
+            .build();
+    assertThrows(
+        IllegalCandidateUpdateException.class,
+        () -> candidateService.upsertCandidate(updateRequest));
+
+    var persistedCandidate = candidateService.getCandidateByIdentifier(candidate.identifier());
+    assertEquals(
+        CURRENT_YEAR, persistedCandidate.getPeriod().orElseThrow().publishingYear().intValue());
   }
 
   @Test

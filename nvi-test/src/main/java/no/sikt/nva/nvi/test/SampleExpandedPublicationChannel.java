@@ -4,13 +4,15 @@ import static no.sikt.nva.nvi.test.TestConstants.ID_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.NAME_FIELD;
 import static no.sikt.nva.nvi.test.TestUtils.createNodeWithType;
 import static no.sikt.nva.nvi.test.TestUtils.putIfNotBlank;
+import static no.unit.nva.testutils.RandomDataGenerator.randomIssn;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.net.URI;
 
-public record SampleExpandedPublicationChannel(String type, URI id, String name, String level) {
+public record SampleExpandedPublicationChannel(
+    String type, URI id, String name, String level, String printIssn) {
 
   public static Builder builder() {
     return new Builder();
@@ -21,6 +23,7 @@ public record SampleExpandedPublicationChannel(String type, URI id, String name,
     TestUtils.putIfNotNull(node, ID_FIELD, id);
     putIfNotBlank(node, NAME_FIELD, name);
     putIfNotBlank(node, "scientificValue", level);
+    putIfNotBlank(node, "printIssn", printIssn);
     return node;
   }
 
@@ -28,8 +31,9 @@ public record SampleExpandedPublicationChannel(String type, URI id, String name,
 
     private String type;
     private URI id = randomUri();
-    private final String name = randomString();
+    private String name = randomString();
     private String level = "Unassigned";
+    private String printIssn = randomIssn();
 
     private Builder() {}
 
@@ -43,13 +47,23 @@ public record SampleExpandedPublicationChannel(String type, URI id, String name,
       return this;
     }
 
+    public Builder withName(String name) {
+      this.name = name;
+      return this;
+    }
+
+    public Builder withPrintIssn(String printIssn) {
+      this.printIssn = printIssn;
+      return this;
+    }
+
     public Builder withLevel(String level) {
       this.level = level;
       return this;
     }
 
     public SampleExpandedPublicationChannel build() {
-      return new SampleExpandedPublicationChannel(type, id, name, level);
+      return new SampleExpandedPublicationChannel(type, id, name, level, printIssn);
     }
   }
 }

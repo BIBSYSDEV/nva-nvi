@@ -247,7 +247,11 @@ class RequeueDlqHandlerTest {
 
   private static CandidateDao.DbCandidate candidateMissingChannelType() {
     var organizationId = randomUri();
-    var channel = new DbPublicationChannel(randomUri(), null, ScientificValue.LEVEL_ONE.getValue());
+    var channel =
+        DbPublicationChannel.builder()
+            .id(randomUri())
+            .scientificValue(ScientificValue.LEVEL_ONE.getValue())
+            .build();
     var publicationDetails = randomPublicationBuilder(organizationId).build();
     var pointCalculation =
         randomPointCalculationBuilder(randomUri(), organizationId)

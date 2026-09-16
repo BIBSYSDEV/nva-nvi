@@ -11,6 +11,8 @@ import static no.sikt.nva.nvi.test.TestConstants.JOURNAL_TYPE;
 import static no.sikt.nva.nvi.test.TestConstants.LEVEL_ONE;
 import static no.sikt.nva.nvi.test.TestConstants.LEVEL_TWO;
 import static no.sikt.nva.nvi.test.TestConstants.THIS_YEAR;
+import static no.unit.nva.testutils.RandomDataGenerator.randomIssn;
+import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -61,6 +63,8 @@ public class IndexingSteps {
   private SampleExpandedPublicationFactory publicationFactory;
   private Candidate candidate;
   private NviCandidateIndexDocument updatedDocument;
+  private String channelNameInPublication;
+  private String channelIssnInPublication;
 
   public IndexingSteps(TestScenario scenario) {
     this.scenario = scenario;
@@ -161,6 +165,15 @@ public class IndexingSteps {
     indexingContext.overwriteSource(candidate, publication);
   }
 
+  @Given("the channel name and ISSN are changed in the Publication")
+  public void theChannelNameAndIssnAreChangedInThePublication() {
+    channelNameInPublication = randomString();
+    channelIssnInPublication = randomIssn();
+    publicationFactory.withRenamedPublicationChannel(
+        JOURNAL_TYPE, channelNameInPublication, channelIssnInPublication);
+    indexingContext.overwriteSource(candidate, publicationFactory.getExpandedPublication());
+  }
+
   @Given("the channel level in the Publication is changed from level 1 to level 2")
   public void theChannelLevelInThePublicationIsChangedFromLevel1ToLevel2() {
     publicationFactory.withPublicationChannel(JOURNAL_TYPE, LEVEL_TWO);
@@ -172,6 +185,8 @@ public class IndexingSteps {
     theIndexDocumentHasTheSameNviPointsAsTheCandidate();
     theIndexDocumentHasTheSameChannelLevelAsTheCandidate();
     theIndexDocumentHasTheSameChannelIdAsTheCandidate();
+    theIndexDocumentHasTheSameChannelNameAsTheCandidate();
+    theIndexDocumentHasTheSameChannelIssnAsTheCandidate();
     theIndexDocumentHasTheSameNviAffiliationsAsTheCandidate();
     theIndexDocumentHasTheSameNviCreatorsAsTheCandidate();
     theIndexDocumentHasTheSameApprovalStatusesAsTheCandidate();
@@ -262,9 +277,32 @@ public class IndexingSteps {
         .isEqualTo(candidate.getPublicationChannel().id());
   }
 
-  @Then("the indexed channel has a name")
-  public void theIndexedChannelHasAName() {
-    assertThat(updatedDocument.publicationDetails().publicationChannel().name()).isNotBlank();
+  @Then("the index document has the same channel name as the Candidate")
+  public void theIndexDocumentHasTheSameChannelNameAsTheCandidate() {
+    assertThat(updatedDocument.publicationDetails().publicationChannel().name())
+        .isNotBlank()
+        .isEqualTo(candidate.getPublicationChannel().name());
+  }
+
+  @Then("the index document has the same channel ISSN as the Candidate")
+  public void theIndexDocumentHasTheSameChannelIssnAsTheCandidate() {
+    assertThat(updatedDocument.publicationDetails().publicationChannel().printIssn())
+        .isNotBlank()
+        .isEqualTo(candidate.getPublicationChannel().printIssn());
+  }
+
+  @Then("the indexed channel name is the one from the Candidate, not the Publication")
+  public void theIndexedChannelNameIsTheOneFromTheCandidate() {
+    assertThat(updatedDocument.publicationDetails().publicationChannel().name())
+        .isEqualTo(candidate.getPublicationChannel().name())
+        .isNotEqualTo(channelNameInPublication);
+  }
+
+  @Then("the indexed channel ISSN is the one from the Candidate, not the Publication")
+  public void theIndexedChannelIssnIsTheOneFromTheCandidate() {
+    assertThat(updatedDocument.publicationDetails().publicationChannel().printIssn())
+        .isEqualTo(candidate.getPublicationChannel().printIssn())
+        .isNotEqualTo(channelIssnInPublication);
   }
 
   @Then("the indexed channel is level 1, not level 2")

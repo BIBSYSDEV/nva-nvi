@@ -431,7 +431,11 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var candidate = candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID);
     var expectedChannel =
         new PublicationChannel(
-            HARDCODED_PUBLICATION_CHANNEL_ID, JOURNAL, ScientificValue.LEVEL_ONE);
+            HARDCODED_PUBLICATION_CHANNEL_ID,
+            JOURNAL,
+            ScientificValue.LEVEL_ONE,
+            "Methods in molecular biology",
+            "1064-3745");
     assertThat(candidate)
         .extracting(
             Candidate::getPublicationType,

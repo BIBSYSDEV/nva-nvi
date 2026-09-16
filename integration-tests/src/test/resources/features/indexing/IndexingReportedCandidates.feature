@@ -24,6 +24,8 @@ Feature: Indexing of reported NVI Candidates
       Then the index document has the same NVI points as the Candidate
       And the index document has the same channel level as the Candidate
       And the index document has the same channel ID as the Candidate
+      And the index document has the same channel name as the Candidate
+      And the index document has the same channel ISSN as the Candidate
       And the index document has the same NVI affiliations as the Candidate
       And the index document has the same NVI creators as the Candidate
       And the index document has the same approval statuses as the Candidate
@@ -50,11 +52,17 @@ Feature: Indexing of reported NVI Candidates
       Then the index document has the same NVI data as the Candidate
       And the creator is indexed as affiliated with section A1, not section A2
 
-    @Disabled # FIXME: NP-51402 - Channel metadata isn't persisted
     Scenario: Channel name differs between Candidate and Publication, index uses the Candidate
+      Given the channel name and ISSN are changed in the Publication
+      When the Candidate is indexed
+      Then the index document has the same NVI data as the Candidate
+      And the indexed channel name is the one from the Candidate, not the Publication
 
-    @Disabled # FIXME: NP-51402 - Channel metadata isn't persisted
     Scenario: Channel ISSN differs between Candidate and Publication, index uses the Candidate
+      Given the channel name and ISSN are changed in the Publication
+      When the Candidate is indexed
+      Then the index document has the same NVI data as the Candidate
+      And the indexed channel ISSN is the one from the Candidate, not the Publication
 
     Scenario: Channel level differs between Candidate and Publication, index uses the Candidate
       Given the channel level in the Publication is changed from level 1 to level 2
@@ -73,11 +81,6 @@ Feature: Indexing of reported NVI Candidates
       Given a creator is added to the Publication
       When the Candidate is indexed
       Then the added creator is indexed as a searchable contributor
-
-    # FIXME NP-51402: channel name isn't persisted on the Candidate, so the index falls back to the Publication
-    Scenario: Channel name is indexed for search
-      When the Candidate is indexed
-      Then the indexed channel has a name
 
     # FIXME NP-51414: verified creator names aren't persisted, so the index falls back to the Publication
     Scenario: Creator names are indexed for search
