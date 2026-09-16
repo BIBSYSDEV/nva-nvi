@@ -35,7 +35,8 @@ public final class PublicationChannelMigrationService implements MigrationServic
   private static final String MESSAGE_MIGRATING_CANDIDATE =
       "Migrating candidate with identifier {}";
   private static final String MESSAGE_CHANNEL_NOT_IN_PUBLICATION =
-      "Channel {} of candidate {} is not in the current publication, fetching channel metadata";
+      "Channel {} of candidate {} is not in the current publication, fetching channel metadata."
+          + " Channels in the publication {}";
   private static final String MESSAGE_NO_CHANNEL_METADATA_FOUND =
       "Found no metadata for channel {} of candidate {}";
   private final CandidateService candidateService;
@@ -104,14 +105,27 @@ public final class PublicationChannelMigrationService implements MigrationServic
   private PublicationChannel addMissingChannelMetadata(
       PublicationChannel channel, PublicationDto publication, UUID identifier) {
     return findChannelInPublication(publication, channel.id())
-        .map(current -> withMetadata(channel, current.name(), current.printIssn()))
-        .or(() -> fetchChannelMetadata(channel, identifier))
+        .map(
+            publicationChannelDto ->
+                withMetadata(
+                    channel, publicationChannelDto.name(), publicationChannelDto.printIssn()))
+        .or(() -> fetchChannelMetadata(channel, identifier, publication))
         .orElseGet(() -> logMissingMetadata(channel, identifier));
   }
 
   private Optional<PublicationChannel> fetchChannelMetadata(
-      PublicationChannel channel, UUID identifier) {
-    LOGGER.info(MESSAGE_CHANNEL_NOT_IN_PUBLICATION, channel.id(), identifier);
+      PublicationChannel channel, UUID identifier, PublicationDto publication) {
+    LOGGER.info(
+        MESSAGE_CHANNEL_NOT_IN_PUBLICATION,
+        channel.id(),
+        identifier,
+        publication.publicationChannels().stream()
+            .map(
+                channelDto ->
+                    String.format(
+                        "Channel: %s %s %s",
+                        channelDto.id(), channelDto.name(), channelDto.printIssn()))
+            .toList());
     return channelRetriever
         .fetchChannel(channel.id())
         .filter(fetchedChannel -> !isBlank(fetchedChannel.name()))
