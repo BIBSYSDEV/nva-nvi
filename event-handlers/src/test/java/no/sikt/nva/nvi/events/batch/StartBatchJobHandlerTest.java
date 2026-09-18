@@ -139,12 +139,12 @@ class StartBatchJobHandlerTest {
               .copy()
               .withMaxBatchSize(3)
               .withMaxParallelSegments(3)
-              .withMaxItems(15)
+              .withMaxItems(6)
               .build();
 
       runToCompletion(request);
 
-      assertThat(getQueuedMessageCount()).isEqualTo(15);
+      assertThat(getQueuedMessageCount()).isEqualTo(6);
     }
 
     @Test
