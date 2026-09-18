@@ -1,0 +1,226 @@
+# nva-nvi indexing: candidate table to OpenSearch.
+# Mirrors ../indexing.md.
+# Render: ./render.sh (from docs/architecture)
+# This file has scenarios, so the output is the folder diagrams/indexing/: index.svg is the base board
+# and <scenario>.svg highlights the path taken for one kind of table write.
+...@styles
+direction: down
+
+writers: "Triggers: anything that writes candidates or approvals" {
+  class: group
+  evaluation: "Evaluation pipeline\n(publication change or re-evaluation)" {class: svc}
+  curators: "Curator REST actions\nstatus, assignee" {class: svc}
+  batch: "ProcessBatchJobHandler\nREFRESH_CANDIDATES, MIGRATE_CANDIDATES,\nREPORT_APPROVED_CANDIDATES" {class: svc}
+  requeue: NviRequeueDlqHandler {class: svc}
+  operator: @models.operator
+}
+
+table: @models.table
+table.label: "DynamoDB nva-nvi table\nstream NEW_AND_OLD_IMAGES"
+fanout: "DynamoDbEventToQueueHandler\nbatch size 1\nkeeps CANDIDATE, NON_CANDIDATE and APPROVAL_STATUS rows,\ndrops notes, periods and uniqueness entries" {class: svc}
+db_queue: SQS DbEventQueue {class: queue}
+router: "DataEntryUpdateHandler\ntopic = entry type x operation" {class: svc}
+
+topics: SNS topics nvi-data-entry-update-* {
+  class: group
+  cand_insert: candidate-insert {class: topic}
+  cand_update: candidate-applicable-update {class: topic}
+  cand_not_applicable: candidate-not-applicable-update {class: topic}
+  cand_remove: candidate-remove {class: topic}
+  appr_insert: approval-insert {class: topic}
+  appr_update: approval-update {class: topic}
+  appr_remove: approval-remove {class: topic}
+}
+
+gen_queue: SQS GenerateIndexDocumentQueue {class: queue}
+remove_queue: SQS RemoveDocumentFromIndexQueue {class: queue}
+delete_queue: SQS DeletePersistedIndexDocumentQueue {class: queue}
+
+generate: "IndexDocumentHandler\ncandidate from DynamoDB\n+ expanded publication from S3\nskips candidates that are not applicable" {class: svc}
+s3_in: @models.resources_bucket
+s3_out: @models.nvi_candidates_bucket
+persisted_queue: SQS PersistedIndexDocumentQueue {class: queue}
+update: UpdateIndexHandler {class: svc}
+remove: RemoveIndexDocumentHandler {class: svc}
+delete_persisted: DeletePersistedIndexDocumentHandler {class: svc}
+sws: @models.sws
+datareport: @models.datareport
+datareport.label: "nva-data-report-api\nS3 Object Created on nvi-candidates/"
+
+writers.operator -> writers.batch: "StartBatchJobHandler\nand BatchJobWorkQueue" {class: async}
+writers.operator -> writers.requeue
+writers.evaluation -> table
+writers.curators -> table
+writers.batch -> table
+writers.requeue -> table
+table -> fanout: stream {class: async}
+fanout -> db_queue {class: async}
+db_queue -> router {class: async}
+router -> topics.cand_insert {class: async}
+router -> topics.cand_update {class: async}
+router -> topics.cand_not_applicable {class: async}
+router -> topics.cand_remove {class: async}
+router -> topics.appr_insert {class: async}
+router -> topics.appr_update {class: async}
+router -> topics.appr_remove {class: async}
+
+topics.cand_insert -> gen_queue {class: async}
+topics.cand_update -> gen_queue {class: async}
+topics.appr_insert -> gen_queue {class: async}
+topics.appr_update -> gen_queue {class: async}
+topics.appr_remove -> gen_queue {class: async}
+topics.cand_not_applicable -> remove_queue {class: async}
+topics.cand_remove -> remove_queue {class: async}
+topics.cand_remove -> delete_queue {class: async}
+topics.cand_not_applicable -> gen_queue: "subscribed, but rejected\nby the queue policy" {class: rejected}
+
+gen_queue -> generate {class: async}
+generate -> s3_in
+generate -> s3_out
+generate -> persisted_queue {class: async}
+persisted_queue -> update {class: async}
+update -> s3_out: read document
+update -> sws: index by candidate id
+remove_queue -> remove {class: async}
+remove -> sws: delete by candidate id
+delete_queue -> delete_persisted {class: async}
+delete_persisted -> s3_out: delete object
+s3_out -> datareport {class: async}
+
+# Scenario boards: the same topology with everything outside one write's path faded.
+# Only styles change here, so every board shares the base board's layout.
+scenarios: {
+  candidate-upsert: {
+    # A candidate row is inserted, or updated while applicable.
+    topics.cand_not_applicable.style.opacity: ${faded-opacity}
+    topics.cand_remove.style.opacity: ${faded-opacity}
+    topics.appr_insert.style.opacity: ${faded-opacity}
+    topics.appr_update.style.opacity: ${faded-opacity}
+    topics.appr_remove.style.opacity: ${faded-opacity}
+    (router -> topics.cand_not_applicable)[0].style.opacity: ${faded-opacity}
+    (router -> topics.cand_remove)[0].style.opacity: ${faded-opacity}
+    (router -> topics.appr_insert)[0].style.opacity: ${faded-opacity}
+    (router -> topics.appr_update)[0].style.opacity: ${faded-opacity}
+    (router -> topics.appr_remove)[0].style.opacity: ${faded-opacity}
+    (topics.appr_insert -> gen_queue)[0].style.opacity: ${faded-opacity}
+    (topics.appr_update -> gen_queue)[0].style.opacity: ${faded-opacity}
+    (topics.appr_remove -> gen_queue)[0].style.opacity: ${faded-opacity}
+    (topics.cand_not_applicable -> remove_queue)[0].style.opacity: ${faded-opacity}
+    (topics.cand_not_applicable -> gen_queue)[0].style.opacity: ${faded-opacity}
+    (topics.cand_remove -> remove_queue)[0].style.opacity: ${faded-opacity}
+    (topics.cand_remove -> delete_queue)[0].style.opacity: ${faded-opacity}
+    remove_queue.style.opacity: ${faded-opacity}
+    delete_queue.style.opacity: ${faded-opacity}
+    remove.style.opacity: ${faded-opacity}
+    delete_persisted.style.opacity: ${faded-opacity}
+    (remove_queue -> remove)[0].style.opacity: ${faded-opacity}
+    (remove -> sws)[0].style.opacity: ${faded-opacity}
+    (delete_queue -> delete_persisted)[0].style.opacity: ${faded-opacity}
+    (delete_persisted -> s3_out)[0].style.opacity: ${faded-opacity}
+  }
+
+  approval-change: {
+    # An approval row is inserted, updated, or removed (curator actions, or new approvals on upsert).
+    topics.cand_insert.style.opacity: ${faded-opacity}
+    topics.cand_update.style.opacity: ${faded-opacity}
+    topics.cand_not_applicable.style.opacity: ${faded-opacity}
+    topics.cand_remove.style.opacity: ${faded-opacity}
+    (router -> topics.cand_insert)[0].style.opacity: ${faded-opacity}
+    (router -> topics.cand_update)[0].style.opacity: ${faded-opacity}
+    (router -> topics.cand_not_applicable)[0].style.opacity: ${faded-opacity}
+    (router -> topics.cand_remove)[0].style.opacity: ${faded-opacity}
+    (topics.cand_insert -> gen_queue)[0].style.opacity: ${faded-opacity}
+    (topics.cand_update -> gen_queue)[0].style.opacity: ${faded-opacity}
+    (topics.cand_not_applicable -> remove_queue)[0].style.opacity: ${faded-opacity}
+    (topics.cand_not_applicable -> gen_queue)[0].style.opacity: ${faded-opacity}
+    (topics.cand_remove -> remove_queue)[0].style.opacity: ${faded-opacity}
+    (topics.cand_remove -> delete_queue)[0].style.opacity: ${faded-opacity}
+    remove_queue.style.opacity: ${faded-opacity}
+    delete_queue.style.opacity: ${faded-opacity}
+    remove.style.opacity: ${faded-opacity}
+    delete_persisted.style.opacity: ${faded-opacity}
+    (remove_queue -> remove)[0].style.opacity: ${faded-opacity}
+    (remove -> sws)[0].style.opacity: ${faded-opacity}
+    (delete_queue -> delete_persisted)[0].style.opacity: ${faded-opacity}
+    (delete_persisted -> s3_out)[0].style.opacity: ${faded-opacity}
+  }
+
+  candidate-not-applicable: {
+    # A candidate row is updated and is no longer applicable: removed from the index, S3 document kept.
+    topics.cand_insert.style.opacity: ${faded-opacity}
+    topics.cand_update.style.opacity: ${faded-opacity}
+    topics.cand_remove.style.opacity: ${faded-opacity}
+    topics.appr_insert.style.opacity: ${faded-opacity}
+    topics.appr_update.style.opacity: ${faded-opacity}
+    topics.appr_remove.style.opacity: ${faded-opacity}
+    (router -> topics.cand_insert)[0].style.opacity: ${faded-opacity}
+    (router -> topics.cand_update)[0].style.opacity: ${faded-opacity}
+    (router -> topics.cand_remove)[0].style.opacity: ${faded-opacity}
+    (router -> topics.appr_insert)[0].style.opacity: ${faded-opacity}
+    (router -> topics.appr_update)[0].style.opacity: ${faded-opacity}
+    (router -> topics.appr_remove)[0].style.opacity: ${faded-opacity}
+    (topics.cand_insert -> gen_queue)[0].style.opacity: ${faded-opacity}
+    (topics.cand_update -> gen_queue)[0].style.opacity: ${faded-opacity}
+    (topics.appr_insert -> gen_queue)[0].style.opacity: ${faded-opacity}
+    (topics.appr_update -> gen_queue)[0].style.opacity: ${faded-opacity}
+    (topics.appr_remove -> gen_queue)[0].style.opacity: ${faded-opacity}
+    (topics.cand_remove -> remove_queue)[0].style.opacity: ${faded-opacity}
+    (topics.cand_remove -> delete_queue)[0].style.opacity: ${faded-opacity}
+    gen_queue.style.opacity: ${faded-opacity}
+    generate.style.opacity: ${faded-opacity}
+    s3_in.style.opacity: ${faded-opacity}
+    s3_out.style.opacity: ${faded-opacity}
+    persisted_queue.style.opacity: ${faded-opacity}
+    update.style.opacity: ${faded-opacity}
+    delete_queue.style.opacity: ${faded-opacity}
+    delete_persisted.style.opacity: ${faded-opacity}
+    datareport.style.opacity: ${faded-opacity}
+    (gen_queue -> generate)[0].style.opacity: ${faded-opacity}
+    (generate -> s3_in)[0].style.opacity: ${faded-opacity}
+    (generate -> s3_out)[0].style.opacity: ${faded-opacity}
+    (generate -> persisted_queue)[0].style.opacity: ${faded-opacity}
+    (persisted_queue -> update)[0].style.opacity: ${faded-opacity}
+    (update -> s3_out)[0].style.opacity: ${faded-opacity}
+    (update -> sws)[0].style.opacity: ${faded-opacity}
+    (delete_queue -> delete_persisted)[0].style.opacity: ${faded-opacity}
+    (delete_persisted -> s3_out)[0].style.opacity: ${faded-opacity}
+    (s3_out -> datareport)[0].style.opacity: ${faded-opacity}
+  }
+
+  candidate-removed: {
+    # A candidate row is deleted: removed from the index and the S3 document deleted.
+    topics.cand_insert.style.opacity: ${faded-opacity}
+    topics.cand_update.style.opacity: ${faded-opacity}
+    topics.cand_not_applicable.style.opacity: ${faded-opacity}
+    topics.appr_insert.style.opacity: ${faded-opacity}
+    topics.appr_update.style.opacity: ${faded-opacity}
+    topics.appr_remove.style.opacity: ${faded-opacity}
+    (router -> topics.cand_insert)[0].style.opacity: ${faded-opacity}
+    (router -> topics.cand_update)[0].style.opacity: ${faded-opacity}
+    (router -> topics.cand_not_applicable)[0].style.opacity: ${faded-opacity}
+    (router -> topics.appr_insert)[0].style.opacity: ${faded-opacity}
+    (router -> topics.appr_update)[0].style.opacity: ${faded-opacity}
+    (router -> topics.appr_remove)[0].style.opacity: ${faded-opacity}
+    (topics.cand_insert -> gen_queue)[0].style.opacity: ${faded-opacity}
+    (topics.cand_update -> gen_queue)[0].style.opacity: ${faded-opacity}
+    (topics.appr_insert -> gen_queue)[0].style.opacity: ${faded-opacity}
+    (topics.appr_update -> gen_queue)[0].style.opacity: ${faded-opacity}
+    (topics.appr_remove -> gen_queue)[0].style.opacity: ${faded-opacity}
+    (topics.cand_not_applicable -> remove_queue)[0].style.opacity: ${faded-opacity}
+    (topics.cand_not_applicable -> gen_queue)[0].style.opacity: ${faded-opacity}
+    gen_queue.style.opacity: ${faded-opacity}
+    generate.style.opacity: ${faded-opacity}
+    s3_in.style.opacity: ${faded-opacity}
+    persisted_queue.style.opacity: ${faded-opacity}
+    update.style.opacity: ${faded-opacity}
+    datareport.style.opacity: ${faded-opacity}
+    (gen_queue -> generate)[0].style.opacity: ${faded-opacity}
+    (generate -> s3_in)[0].style.opacity: ${faded-opacity}
+    (generate -> s3_out)[0].style.opacity: ${faded-opacity}
+    (generate -> persisted_queue)[0].style.opacity: ${faded-opacity}
+    (persisted_queue -> update)[0].style.opacity: ${faded-opacity}
+    (update -> s3_out)[0].style.opacity: ${faded-opacity}
+    (update -> sws)[0].style.opacity: ${faded-opacity}
+    (s3_out -> datareport)[0].style.opacity: ${faded-opacity}
+  }
+}

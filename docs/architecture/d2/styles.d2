@@ -1,0 +1,96 @@
+# Shared styles and renderer configuration for every D2 diagram in this folder.
+# Import at the top of a diagram with `...@styles`.
+# The d2-config block selects the free ELK layout engine, so plain `d2 in.d2 out.svg` (or ../render.sh) is enough.
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+    # Emits an SVG that switches theme with the viewer's prefers-color-scheme (GitHub dark mode).
+    dark-theme-id: 200
+  }
+  # Opacity for objects that are inactive in a scenario board. Apply it as a direct style,
+  # `x.style.opacity: ${faded-opacity}`, not as a class: assigning a class in a scenario replaces
+  # the object's existing class (and with it its shape and fill), which also changes the layout.
+  faded-opacity: 0.25
+}
+
+# Every filled class also pins font-color. In the dark theme D2 switches label text to a light colour
+# but keeps explicit hex fills, which made labels unreadable on these light cards; pinning the label
+# colour keeps shapes identical in both modes while edges, edge labels and the canvas follow the theme.
+# D2 does not accept theme palette codes (B5, N6, ...) in style.fill, so this is the workable option.
+classes: {
+  # An NVA service, Lambda function, or other component we own.
+  svc: {
+    style.fill: "#e8e8ff"
+    style.font-color: "#0a1f5c"
+  }
+  # The system as a whole, used for the single center box in the context diagram.
+  system: {
+    style.fill: "#e8e8ff"
+    style.font-color: "#0a1f5c"
+    style.stroke: "#4040a0"
+    style.border-radius: 8
+    style.font-size: 20
+    style.bold: true
+  }
+  # Something outside the current scope: another NVA service, an AWS bus, an external system.
+  ext: {
+    style.fill: "#f4f4f4"
+    style.font-color: "#0a1f5c"
+  }
+  # Persistent storage: DynamoDB, S3, OpenSearch.
+  store: {
+    shape: cylinder
+    style.fill: "#e8e8ff"
+    style.font-color: "#0a1f5c"
+  }
+  # SQS queue.
+  queue: {
+    shape: queue
+    style.fill: "#fff3e0"
+    style.font-color: "#0a1f5c"
+  }
+  # SQS dead-letter queue.
+  dlq: {
+    shape: queue
+    style.fill: "#ffebee"
+    style.font-color: "#0a1f5c"
+  }
+  # SNS topic.
+  topic: {
+    shape: hexagon
+    style.fill: "#fce4ec"
+    style.font-color: "#0a1f5c"
+  }
+  # A decision outcome.
+  outcome: {
+    style.fill: "#f1f8e9"
+    style.font-color: "#0a1f5c"
+  }
+  # A human actor.
+  person: {
+    shape: person
+    style.fill: "#dbe8fb"
+    style.font-color: "#0a1f5c"
+  }
+  # A visual grouping container with a subtle fill.
+  group: {
+    style.fill: "#fbfbfb"
+    style.font-color: "#0a1f5c"
+    style.stroke: "#bbbbbb"
+  }
+  # A conceptual category drawn as a dashed outline without fill.
+  dashed_group: {
+    style.fill: transparent
+    style.stroke-dash: 2
+  }
+  # Asynchronous hop: event, queue, stream, S3 notification, or file delivery.
+  async: {
+    style.stroke-dash: 4
+  }
+  # A connection that is configured but never delivers, for example an SNS subscription blocked by a queue policy.
+  rejected: {
+    style.stroke: "#c62828"
+    style.stroke-dash: 2
+  }
+}
