@@ -8,11 +8,11 @@ Access to every report endpoint requires NVI curator, NVI admin, editor, or the 
 
 ## Three kinds of report endpoints
 
-| Route | Function | How it works | Output |
-| --- | --- | --- | --- |
-| `GET /institution-report/{year}` | `FetchInstitutionStatusAggregationHandler` | One aggregation query on approval status for the caller's top-level organization | JSON status counts |
-| `GET /institution-approval-report/{year}` | `FetchInstitutionReportHandler` | Pages through the caller's candidates (300 per page) and builds a workbook in the request | XLSX, returned inline (base64 through API Gateway) |
-| `GET /reports`, `/reports/{period}`, `/reports/{period}/institutions`, `/reports/{period}/institutions/{institution}` | `FetchReportHandler` | JSON: aggregation queries answered in the request. CSV or XLSX (institutions routes only): asynchronous generation, see below | JSON, or a presigned URL |
+| Route                                                                                                                 | Function                                   | How it works                                                                                                                  | Output                                             |
+| --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| `GET /institution-report/{year}`                                                                                      | `FetchInstitutionStatusAggregationHandler` | One aggregation query on approval status for the caller's top-level organization                                              | JSON status counts                                 |
+| `GET /institution-approval-report/{year}`                                                                             | `FetchInstitutionReportHandler`            | Pages through the caller's candidates (300 per page) and builds a workbook in the request                                     | XLSX, returned inline (base64 through API Gateway) |
+| `GET /reports`, `/reports/{period}`, `/reports/{period}/institutions`, `/reports/{period}/institutions/{institution}` | `FetchReportHandler`                       | JSON: aggregation queries answered in the request. CSV or XLSX (institutions routes only): asynchronous generation, see below | JSON, or a presigned URL                           |
 
 The `Accept` header selects the format.
 For CSV and XLSX it may also carry a `profile` parameter choosing between the author-shares report (default) and the publication-points report.

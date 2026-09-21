@@ -9,12 +9,12 @@ This page shows how a change in the table reaches the index.
 There is no direct way to start indexing.
 The pipeline is triggered by the DynamoDB stream, so anything that writes a candidate or approval row starts it, and nothing else does.
 
-| Writer | Started by | Typical rows written |
-| --- | --- | --- |
-| [Evaluation pipeline](evaluation.md) | A publication change in NVA, or an operator re-evaluating a year | Candidate and its approvals |
-| Curator REST actions | NVI curators in the frontend | Approval (status, assignee) |
-| `ProcessBatchJobHandler` | An operator invoking `StartBatchJobHandler` with `REFRESH_CANDIDATES`, `MIGRATE_CANDIDATES`, or `REPORT_APPROVED_CANDIDATES` | Candidate, rewritten in place |
-| `NviRequeueDlqHandler` | An operator draining `IndexDLQ` | Candidate version bump |
+| Writer                               | Started by                                                                                                                   | Typical rows written          |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
+| [Evaluation pipeline](evaluation.md) | A publication change in NVA, or an operator re-evaluating a year                                                             | Candidate and its approvals   |
+| Curator REST actions                 | NVI curators in the frontend                                                                                                 | Approval (status, assignee)   |
+| `ProcessBatchJobHandler`             | An operator invoking `StartBatchJobHandler` with `REFRESH_CANDIDATES`, `MIGRATE_CANDIDATES`, or `REPORT_APPROVED_CANDIDATES` | Candidate, rewritten in place |
+| `NviRequeueDlqHandler`               | An operator draining `IndexDLQ`                                                                                              | Candidate version bump        |
 
 Notes and periods are also written to the table (`CreateNoteHandler`, the period handlers, `REFRESH_PERIODS`), but the stream handler drops those rows, so they never reach the index on their own.
 Because every writer goes through the same stream, "refresh the candidate" (a `REFRESH_CANDIDATES` batch job) is the universal repair action for a stale or missing index document.
@@ -61,11 +61,11 @@ nva-data-report-api is not notified, since it only listens for object creation.
    The handler forwards a compact `DynamoDbChangeMessage` (candidate identifier, entry type, operation) to `DbEventQueue`, never the full record.
 2. `DataEntryUpdateHandler` publishes that message to one SNS topic chosen by entry type and operation:
 
-   | Operation | `CANDIDATE` | `NON_CANDIDATE` | `APPROVAL_STATUS` |
-   | --- | --- | --- | --- |
-   | INSERT | candidate-insert | not expected | approval-insert |
-   | MODIFY | candidate-applicable-update | candidate-not-applicable-update | approval-update |
-   | REMOVE | candidate-remove | candidate-remove | approval-remove |
+   | Operation | `CANDIDATE`                 | `NON_CANDIDATE`                 | `APPROVAL_STATUS` |
+   | --------- | --------------------------- | ------------------------------- | ----------------- |
+   | INSERT    | candidate-insert            | not expected                    | approval-insert   |
+   | MODIFY    | candidate-applicable-update | candidate-not-applicable-update | approval-update   |
+   | REMOVE    | candidate-remove            | candidate-remove                | approval-remove   |
 
 3. The topics fan out to three queues.
    Inserts and applicable updates of candidates, plus all approval changes, go to `GenerateIndexDocumentQueue`.

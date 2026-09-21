@@ -8,16 +8,24 @@ Curators never create candidates by hand.
 
 Evaluation starts in exactly two ways.
 
-| Trigger | Who | What happens |
-| --- | --- | --- |
-| A: a publication changes in NVA | nva-publication-api, automatically | `ExpandDataEntriesHandler` writes the expanded publication to the persisted-resources bucket and emits `PublicationService.ExpandedEntry.Persisted`; nva-nvi's rule on the shared bus picks it up. This covers creates, updates, and deletes of any publication, so it runs continuously in production |
-| B: an operator re-evaluates a year | A developer, from the AWS console | Invoking `BatchReEvaluateNviCandidatesHandler` with a year queues every non-reported candidate of that year for evaluation again, using the S3 URI stored on each candidate. Used after rule changes or bug fixes in the evaluator |
+| Trigger                            | Who                                | What happens                                                                                                                                                                                                                                                                                           |
+| ---------------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| A: a publication changes in NVA    | nva-publication-api, automatically | `ExpandDataEntriesHandler` writes the expanded publication to the persisted-resources bucket and emits `PublicationService.ExpandedEntry.Persisted`; nva-nvi's rule on the shared bus picks it up. This covers creates, updates, and deletes of any publication, so it runs continuously in production |
+| B: an operator re-evaluates a year | A developer, from the AWS console  | Invoking `BatchReEvaluateNviCandidatesHandler` with a year queues every non-reported candidate of that year for evaluation again, using the S3 URI stored on each candidate. Used after rule changes or bug fixes in the evaluator                                                                     |
 
 Both triggers end up on the same `ResourceEvaluationQueue`, so everything from `EvaluateNviCandidateHandler` onwards is identical.
 Batch jobs (`REFRESH_CANDIDATES`, `MIGRATE_CANDIDATES`) do not re-evaluate; they rewrite existing candidates and only feed the [indexing pipeline](indexing.md).
 
 ## Flow
+TODO: Fix this
 
+Default, Elk/SVG:
+![Evaluation flow](diagrams/evaluation.svg)
+
+Elk/PNG:
+![Evaluation flow](diagrams/evaluation.svg)
+
+Tala/PNG:
 ![Evaluation flow](diagrams/evaluation.svg)
 
 ## Step by step
@@ -32,15 +40,16 @@ Batch jobs (`REFRESH_CANDIDATES`, `MIGRATE_CANDIDATES`) do not re-evaluate; they
    The graph is validated against `nva-shape.ttl`, then projected through four SPARQL construct queries into an NVI-specific graph, validated against `nvi-shape.ttl`, and framed with `publication_frame.json` into a `PublicationDto`.
    The queries live in `libs/publication-service/src/main/resources`:
 
-   | Query | Purpose |
-   | --- | --- |
-   | `nva_normalization.rq` | Normalizes the NVA publication model |
-   | `nvi_channel_pairing.rq` | Picks the channel that determines the level: the journal for articles, the series if it has a level, otherwise the publisher |
-   | `nvi_applicability.rq` | Marks whether the publication type and channel level qualify |
-   | `nvi_international_collaboration.rq` | Derives the international collaboration flag used by the point calculation |
+   | Query                                | Purpose                                                                                                                      |
+   | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+   | `nva_normalization.rq`               | Normalizes the NVA publication model                                                                                         |
+   | `nvi_channel_pairing.rq`             | Picks the channel that determines the level: the journal for articles, the series if it has a level, otherwise the publisher |
+   | `nvi_applicability.rq`               | Marks whether the publication type and channel level qualify                                                                 |
+   | `nvi_international_collaboration.rq` | Derives the international collaboration flag used by the point calculation                                                   |
 
    nva-nvi does not call the channel register or nva-publication-api here.
    Channel level, contributors, and affiliations are all read from the expanded document, so a stale expanded document gives a stale evaluation.
+
 5. `EvaluatorService` first checks whether evaluation should be skipped entirely: an unparseable publication year, a candidate that is already reported, or an existing candidate whose period is closed.
    Closed-period candidates are frozen so that reported numbers never change after the fact.
 6. If the publication is not published, not an applicable type, or has no channel with level 1 or 2, the result is a non-candidate.

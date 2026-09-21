@@ -7,12 +7,12 @@ All routes are defined in `docs/openapi.yaml` and wired to Lambda functions by `
 
 Access is decided by access rights in the Cognito token, issued by nva-identity-service.
 
-| Role in the code | Access right | Typical user |
-| --- | --- | --- |
-| NVI curator | `MANAGE_NVI_CANDIDATES` | Curator at one institution, sees only candidates in their viewing scope |
-| NVI admin | `MANAGE_NVI` | Application administrator, manages periods and sees everything |
-| Editor | `MANAGE_RESOURCES_ALL` | Institution editor, may read reports |
-| Internal backend | Cognito backend scope | Other NVA services |
+| Role in the code | Access right            | Typical user                                                            |
+| ---------------- | ----------------------- | ----------------------------------------------------------------------- |
+| NVI curator      | `MANAGE_NVI_CANDIDATES` | Curator at one institution, sees only candidates in their viewing scope |
+| NVI admin        | `MANAGE_NVI`            | Application administrator, manages periods and sees everything          |
+| Editor           | `MANAGE_RESOURCES_ALL`  | Institution editor, may read reports                                    |
+| Internal backend | Cognito backend scope   | Other NVA services                                                      |
 
 Two more checks appear on mutating endpoints:
 
@@ -22,20 +22,20 @@ Two more checks appear on mutating endpoints:
 
 ## Endpoints
 
-| Route | Function | Data source | Who may call |
-| --- | --- | --- | --- |
-| `GET /candidate` (worklist search) | `SearchNviCandidatesHandler` | OpenSearch | Authenticated; non-admins are restricted to their viewing scope |
-| `GET /candidate/{candidateIdentifier}` | `FetchNviCandidateHandler` | DynamoDB | NVI curator or NVI admin |
-| `GET /candidate/publication/{identifier}` | `FetchNviCandidateByPublicationIdHandler` | DynamoDB | NVI curator or NVI admin |
-| `PUT /candidate/{candidateIdentifier}/status` | `UpdateNviCandidateStatusHandler` | DynamoDB | NVI curator, same institution, viewing scope |
-| `PUT /candidate/{candidateIdentifier}/assignee` | `UpsertAssigneeHandler` | DynamoDB | NVI curator, same institution, viewing scope; the assignee must also be an NVI curator |
-| `POST /candidate/{candidateIdentifier}/note` | `CreateNoteHandler` | DynamoDB | NVI curator, viewing scope |
-| `DELETE /candidate/{candidateIdentifier}/note/{noteIdentifier}` | `RemoveNoteHandler` | DynamoDB | NVI curator, viewing scope |
-| `GET /period`, `POST /period`, `PUT /period` | `FetchNviPeriodsHandler`, `CreateNviPeriodHandler`, `UpdateNviPeriodHandler` | DynamoDB | NVI admin |
-| `GET /period/{periodIdentifier}` | `FetchNviPeriodHandler` | DynamoDB | Public |
-| `GET /publication/{identifier}/report-status` | `FetchReportStatusByPublicationIdHandler` | DynamoDB | Public |
-| `GET /context` | `FetchNviCandidateContextHandler` | Static | Public |
-| `GET /institution-report/{year}`, `GET /institution-approval-report/{year}`, `GET /reports/...` | See [Reports](reports.md) | OpenSearch | NVI curator, NVI admin, editor, or internal backend |
+| Route                                                                                           | Function                                                                     | Data source | Who may call                                                                           |
+| ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | ----------- | -------------------------------------------------------------------------------------- |
+| `GET /candidate` (worklist search)                                                              | `SearchNviCandidatesHandler`                                                 | OpenSearch  | Authenticated; non-admins are restricted to their viewing scope                        |
+| `GET /candidate/{candidateIdentifier}`                                                          | `FetchNviCandidateHandler`                                                   | DynamoDB    | NVI curator or NVI admin                                                               |
+| `GET /candidate/publication/{identifier}`                                                       | `FetchNviCandidateByPublicationIdHandler`                                    | DynamoDB    | NVI curator or NVI admin                                                               |
+| `PUT /candidate/{candidateIdentifier}/status`                                                   | `UpdateNviCandidateStatusHandler`                                            | DynamoDB    | NVI curator, same institution, viewing scope                                           |
+| `PUT /candidate/{candidateIdentifier}/assignee`                                                 | `UpsertAssigneeHandler`                                                      | DynamoDB    | NVI curator, same institution, viewing scope; the assignee must also be an NVI curator |
+| `POST /candidate/{candidateIdentifier}/note`                                                    | `CreateNoteHandler`                                                          | DynamoDB    | NVI curator, viewing scope                                                             |
+| `DELETE /candidate/{candidateIdentifier}/note/{noteIdentifier}`                                 | `RemoveNoteHandler`                                                          | DynamoDB    | NVI curator, viewing scope                                                             |
+| `GET /period`, `POST /period`, `PUT /period`                                                    | `FetchNviPeriodsHandler`, `CreateNviPeriodHandler`, `UpdateNviPeriodHandler` | DynamoDB    | NVI admin                                                                              |
+| `GET /period/{periodIdentifier}`                                                                | `FetchNviPeriodHandler`                                                      | DynamoDB    | Public                                                                                 |
+| `GET /publication/{identifier}/report-status`                                                   | `FetchReportStatusByPublicationIdHandler`                                    | DynamoDB    | Public                                                                                 |
+| `GET /context`                                                                                  | `FetchNviCandidateContextHandler`                                            | Static      | Public                                                                                 |
+| `GET /institution-report/{year}`, `GET /institution-approval-report/{year}`, `GET /reports/...` | See [Reports](reports.md)                                                    | OpenSearch  | NVI curator, NVI admin, editor, or internal backend                                    |
 
 The read endpoints for a single candidate check the access right but not the viewing scope, so a curator with the right can read any candidate by identifier.
 Only the search results and the mutating endpoints are scoped.
