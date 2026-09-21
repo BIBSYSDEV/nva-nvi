@@ -1,14 +1,12 @@
 package no.sikt.nva.nvi.migration;
 
 import static java.util.Objects.nonNull;
-import static no.sikt.nva.nvi.common.service.CandidateService.defaultCandidateService;
 import static nva.commons.core.StringUtils.isBlank;
 
 import java.net.URI;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.client.PublicationChannelRetriever;
 import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
@@ -18,22 +16,22 @@ import no.sikt.nva.nvi.common.model.PublicationChannel;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.publication.PublicationLoaderService;
-import no.unit.nva.auth.uriretriever.UriRetriever;
-import nva.commons.core.Environment;
-import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Backfills missing publication channel name and print ISSN (NP-51402) from the expanded
+ * publication stored in S3, falling back to the publication channel registry.
+ */
 public final class PublicationChannelMigrationService implements MigrationService {
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(PublicationChannelMigrationService.class);
 
-  private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
   private static final String MESSAGE_MIGRATION_NOT_NEEDED =
-      "Candidate {} does not require migration";
+      "Candidate {} does not require channel metadata migration";
   private static final String MESSAGE_MIGRATING_CANDIDATE =
-      "Migrating candidate with identifier {}";
+      "Migrating channel metadata for candidate {}";
   private static final String MESSAGE_CHANNEL_NOT_IN_PUBLICATION =
       "Channel {} of candidate {} is not in the current publication, fetching channel metadata."
           + " Channels in the publication {}";
@@ -52,20 +50,14 @@ public final class PublicationChannelMigrationService implements MigrationServic
     this.channelRetriever = channelRetriever;
   }
 
-  @JacocoGenerated
-  public static PublicationChannelMigrationService defaultService() {
-    return new PublicationChannelMigrationService(
-        defaultCandidateService(),
-        new S3StorageReader(new Environment().readEnv(EXPANDED_RESOURCES_BUCKET)),
-        new PublicationChannelRetriever(new UriRetriever()));
-  }
-
+  /** Always writes the candidate back, so untouched candidates are still reindexed. */
   @Override
   public void migrateCandidate(UUID identifier) {
     var candidate = candidateService.getCandidateByIdentifier(identifier);
     var currentChannel = candidate.getPublicationChannel();
     if (!hasMissingChannelMetadata(currentChannel)) {
       LOGGER.info(MESSAGE_MIGRATION_NOT_NEEDED, identifier);
+      candidateService.updateCandidate(candidate);
       return;
     }
 
@@ -73,9 +65,9 @@ public final class PublicationChannelMigrationService implements MigrationServic
     var publicationBucketUri = candidate.publicationDetails().publicationBucketUri();
     var publication = publicationLoader.extractAndTransform(publicationBucketUri);
     var updatedChannel = addMissingChannelMetadata(currentChannel, publication, identifier);
-    if (!updatedChannel.equals(currentChannel)) {
-      candidateService.updateCandidate(withChannel(candidate, updatedChannel));
-    }
+    var migratedCandidate =
+        updatedChannel.equals(currentChannel) ? candidate : withChannel(candidate, updatedChannel);
+    candidateService.updateCandidate(migratedCandidate);
   }
 
   private static Candidate withChannel(Candidate candidate, PublicationChannel channel) {

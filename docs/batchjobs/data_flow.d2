@@ -93,7 +93,7 @@ BatchJob: {
     execute(): BatchJobResult
   }
 
-  PeriodJob: PeriodJob extends BatchJob {
+  RefreshPeriodsJob: RefreshPeriodsJob extends BatchJob {
     shape: class
     periodService: NviPeriodService
   }
@@ -104,14 +104,14 @@ BatchJob: {
   ScanCandidatesJob: ScanCandidatesJob extends BatchJob {
     shape: class
     candidateService: CandidateService
-    request: CandidateScanBatchJobRequest
+    request: CandidateScanRequest
   }
   CandidatesByYearJob: CandidatesByYearJob extends BatchJob {
     shape: class
     candidateService: CandidateService
     request: CandidatesByYearRequest
   }
-  BatchJob -> PeriodJob
+  BatchJob -> RefreshPeriodsJob
   BatchJob -> StartCandidateScanJob
   BatchJob -> ScanCandidatesJob
   BatchJob -> CandidatesByYearJob
@@ -133,17 +133,13 @@ BatchJobMessage: {
     shape: class
     year: String
   }
-  RefreshCandidateMessage: RefreshCandidateMessage extends BatchJobMessage {
+  CandidateJobMessage: CandidateJobMessage extends BatchJobMessage {
     shape: class
     candidateIdentifier: UUID
-  }
-  MigrateCandidateMessage: MigrateCandidateMessage extends BatchJobMessage {
-    shape: class
-    candidateIdentifier: UUID
+    jobType: BatchJobType
   }
 
-  BatchJobMessage -> RefreshCandidateMessage
-  BatchJobMessage -> MigrateCandidateMessage
+  BatchJobMessage -> CandidateJobMessage
   BatchJobMessage -> RefreshPeriodMessage
 }
 
@@ -165,13 +161,24 @@ DLQ -> WorkQueue: Manual redrive
 CandidateService: {
   class: service
 }
-CandidateMigrationService: {
-  class: service
+MigrationService: {
+  MigrationService: {
+    shape: class
+    migrateCandidate(UUID)
+  }
+  CreatorDataMigrationService: CreatorDataMigrationService implements MigrationService {
+    shape: class
+  }
+  PublicationChannelMigrationService: PublicationChannelMigrationService implements MigrationService {
+    shape: class
+  }
+  MigrationService -> CreatorDataMigrationService
+  MigrationService -> PublicationChannelMigrationService
 }
 PeriodService: NviPeriodService {
   class: service
 }
 
-ProcessBatchJobHandler -> CandidateService: RefreshCandidateMessage
-ProcessBatchJobHandler -> CandidateMigrationService: MigrateCandidateMessage
+ProcessBatchJobHandler -> CandidateService: CandidateJobMessage (switch on jobType)
+ProcessBatchJobHandler -> MigrationService: BACKFILL_* job types
 ProcessBatchJobHandler -> PeriodService: RefreshPeriodMessage

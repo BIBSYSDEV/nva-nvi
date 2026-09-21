@@ -9,16 +9,11 @@ import no.unit.nva.commons.json.JsonSerializable;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = RefreshCandidateMessage.class, name = "REFRESH_CANDIDATE"),
-  @JsonSubTypes.Type(value = MigrateCandidateMessage.class, name = "MIGRATE_CANDIDATE"),
-  @JsonSubTypes.Type(value = RefreshPeriodMessage.class, name = "REFRESH_PERIOD"),
-  @JsonSubTypes.Type(value = ReportCandidateMessage.class, name = "REPORT_CANDIDATE")
+  @JsonSubTypes.Type(value = CandidateJobMessage.class, name = "CANDIDATE_JOB"),
+  @JsonSubTypes.Type(value = RefreshPeriodMessage.class, name = "REFRESH_PERIOD")
 })
 public sealed interface BatchJobMessage extends JsonSerializable
-    permits RefreshCandidateMessage,
-        MigrateCandidateMessage,
-        RefreshPeriodMessage,
-        ReportCandidateMessage {
+    permits CandidateJobMessage, RefreshPeriodMessage {
 
   static BatchJobMessage fromJson(String json) throws JsonProcessingException {
     return dtoObjectMapper.readValue(json, BatchJobMessage.class);

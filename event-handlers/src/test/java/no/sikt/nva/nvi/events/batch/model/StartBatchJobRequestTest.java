@@ -35,7 +35,7 @@ class StartBatchJobRequestTest {
           """
           {
             "type": "StartBatchJobRequest",
-            "jobType": "MIGRATE_CANDIDATES",
+            "jobType": "BACKFILL_CREATOR_DATA",
             "filter": {
               "type": "ReportingYearFilter",
               "reportingYears": ["2024", "2025"]
@@ -48,7 +48,7 @@ class StartBatchJobRequestTest {
       var request = fromJson(json);
       var expectedRequest =
           StartBatchJobRequest.builder()
-              .withJobType(BatchJobType.MIGRATE_CANDIDATES)
+              .withJobType(BatchJobType.BACKFILL_CREATOR_DATA)
               .withFilter(new ReportingYearFilter("2024", "2025"))
               .withMaxItems(100)
               .withMaxParallelSegments(5)

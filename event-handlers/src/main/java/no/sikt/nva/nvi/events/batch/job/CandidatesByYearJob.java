@@ -7,9 +7,7 @@ import java.util.UUID;
 import no.sikt.nva.nvi.common.model.ListingResult;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.events.batch.message.BatchJobMessage;
-import no.sikt.nva.nvi.events.batch.message.MigrateCandidateMessage;
-import no.sikt.nva.nvi.events.batch.message.RefreshCandidateMessage;
-import no.sikt.nva.nvi.events.batch.message.ReportCandidateMessage;
+import no.sikt.nva.nvi.events.batch.message.CandidateJobMessage;
 import no.sikt.nva.nvi.events.batch.request.CandidatesByYearRequest;
 
 public record CandidatesByYearJob(
@@ -28,11 +26,6 @@ public record CandidatesByYearJob(
   }
 
   private BatchJobMessage createMessage(UUID identifier) {
-    return switch (request.jobType()) {
-      case REFRESH_CANDIDATES -> new RefreshCandidateMessage(identifier);
-      case MIGRATE_CANDIDATES -> new MigrateCandidateMessage(identifier);
-      case REPORT_APPROVED_CANDIDATES -> new ReportCandidateMessage(identifier);
-      default -> throw new UnsupportedOperationException("Job type not supported");
-    };
+    return new CandidateJobMessage(identifier, request.jobType());
   }
 }

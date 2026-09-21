@@ -11,6 +11,8 @@ import static no.sikt.nva.nvi.events.RequestFixtures.migrateCandidatesForCurrent
 import static no.sikt.nva.nvi.events.RequestFixtures.refreshAllCandidates;
 import static no.sikt.nva.nvi.events.RequestFixtures.refreshAllPeriods;
 import static no.sikt.nva.nvi.events.RequestFixtures.refreshCandidatesForYear;
+import static no.sikt.nva.nvi.events.batch.request.BatchJobType.BACKFILL_CREATOR_DATA;
+import static no.sikt.nva.nvi.events.batch.request.BatchJobType.REFRESH_CANDIDATES;
 import static no.sikt.nva.nvi.test.TestConstants.LAST_YEAR;
 import static no.sikt.nva.nvi.test.TestConstants.NEXT_YEAR;
 import static no.sikt.nva.nvi.test.TestConstants.THIS_YEAR;
@@ -32,8 +34,7 @@ import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.exceptions.ValidationException;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.events.batch.message.BatchJobMessage;
-import no.sikt.nva.nvi.events.batch.message.MigrateCandidateMessage;
-import no.sikt.nva.nvi.events.batch.message.RefreshCandidateMessage;
+import no.sikt.nva.nvi.events.batch.message.CandidateJobMessage;
 import no.sikt.nva.nvi.events.batch.message.RefreshPeriodMessage;
 import no.sikt.nva.nvi.events.batch.model.ReportingYearFilter;
 import no.sikt.nva.nvi.events.batch.request.BatchJobRequest;
@@ -105,7 +106,10 @@ class StartBatchJobHandlerTest {
       runToCompletion(request);
 
       assertThat(getQueuedMessageCount()).isEqualTo(CANDIDATES_PER_YEAR);
-      assertThat(getQueuedMessages(RefreshCandidateMessage.class)).hasSize(CANDIDATES_PER_YEAR);
+      assertThat(getQueuedMessages(CandidateJobMessage.class))
+          .hasSize(CANDIDATES_PER_YEAR)
+          .extracting(CandidateJobMessage::jobType)
+          .containsOnly(REFRESH_CANDIDATES);
     }
 
     @Test
@@ -123,13 +127,42 @@ class StartBatchJobHandlerTest {
     }
 
     @Test
-    void shouldCreateMigrateCandidateMessagesForMigrateJobType() {
+    void shouldQueueCandidateJobsWithJobTypeForYear() {
       var request = migrateCandidatesForCurrentYear();
 
       runToCompletion(request);
 
       assertThat(getQueuedMessageCount()).isEqualTo(CANDIDATES_PER_YEAR);
-      assertThat(getQueuedMessages(MigrateCandidateMessage.class)).hasSize(CANDIDATES_PER_YEAR);
+      assertThat(getQueuedMessages(CandidateJobMessage.class))
+          .hasSize(CANDIDATES_PER_YEAR)
+          .extracting(CandidateJobMessage::jobType)
+          .containsOnly(BACKFILL_CREATOR_DATA);
+    }
+
+    @Test
+    void shouldQueueCandidateJobsWithJobTypeForFullTableScan() {
+      var request = migrateCandidatesForCurrentYear().copy().withFilter(null).build();
+
+      runToCompletion(request);
+
+      assertThat(getQueuedMessages(CandidateJobMessage.class))
+          .hasSize(TOTAL_CANDIDATE_COUNT)
+          .extracting(CandidateJobMessage::jobType)
+          .containsOnly(BACKFILL_CREATOR_DATA);
+    }
+
+    @Test
+    void shouldRejectUnknownJobTypeBeforeQueueingAnything() {
+      var rawRequest =
+          """
+          { "type": "StartBatchJobRequest", "jobType": "NOT_A_JOB_TYPE" }
+          """;
+      var requestInputStream = IoUtils.stringToStream(rawRequest);
+
+      assertThatThrownBy(() -> handler.handleRequest(requestInputStream, output, CONTEXT))
+          .isInstanceOf(RuntimeException.class)
+          .hasMessage("Failed to parse BatchJobRequest");
+      assertThat(getQueuedMessageCount()).isZero();
     }
 
     @Test
@@ -193,7 +226,7 @@ class StartBatchJobHandlerTest {
       handler.handleRequest(requestInputStream, output, CONTEXT);
       processAllPendingEvents();
 
-      assertThat(getQueuedMessages(RefreshCandidateMessage.class)).hasSize(CANDIDATES_PER_YEAR);
+      assertThat(getQueuedMessages(CandidateJobMessage.class)).hasSize(CANDIDATES_PER_YEAR);
     }
   }
 

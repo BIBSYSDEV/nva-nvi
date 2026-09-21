@@ -1034,8 +1034,7 @@ Resources:
     Properties:
       Description: >
         Lambda that initiates batch job processing. Triggered manually from AWS Console with a
-        StartBatchJobRequest payload. Supports REFRESH_CANDIDATES, MIGRATE_CANDIDATES, and
-        REFRESH_PERIODS job types.
+        StartBatchJobRequest payload. See docs/batch-jobs.md for the supported job types.
       CodeUri: event-handlers
       Handler: no.sikt.nva.nvi.events.batch.StartBatchJobHandler::handleRequest
       Role: !GetAtt NvaNviRole.Arn
