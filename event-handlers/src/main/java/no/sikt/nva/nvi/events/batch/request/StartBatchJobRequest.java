@@ -34,6 +34,7 @@ public record StartBatchJobRequest(
     return builder()
         .withJobType(jobType)
         .withFilter(filter)
+        .withMaxBatchSize(maxBatchSize)
         .withMaxItems(maxItems)
         .withMaxParallelSegments(maxParallelSegments);
   }
