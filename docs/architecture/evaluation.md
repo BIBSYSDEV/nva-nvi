@@ -34,10 +34,10 @@ Tala/PNG:
 ## Clickable links
 
 Tala/SVG:
-[![Evaluation flow](diagrams/evaluation.tala.svg)](diagrams/evaluation.tala.svg?raw=true)
+[Evaluation flow](diagrams/evaluation.tala.svg?raw=true))
 
 Tala/PNG:
-[![Evaluation flow](diagrams/evaluation.tala.png)](diagrams/evaluation.tala.png?raw=true)
+[Evaluation flow](diagrams/evaluation.tala.png?raw=true))
 
 ## Step by step
 
