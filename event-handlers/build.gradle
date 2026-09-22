@@ -22,6 +22,7 @@ dependencies {
     implementation(nvaCatalog.log4j.core)
     implementation(nvaCatalog.slf4j.api)
     implementation(nvaLibs.apigateway)
+    implementation(nvaLibs.auth)
     implementation(project(':publication-service'))
     runtimeOnly(nvaCatalog.jena.arq)
     runtimeOnly(nvaCatalog.jena.core)

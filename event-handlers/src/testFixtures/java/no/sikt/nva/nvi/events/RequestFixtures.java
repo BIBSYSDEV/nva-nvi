@@ -27,7 +27,7 @@ public final class RequestFixtures {
 
   public static StartBatchJobRequest migrateCandidatesForCurrentYear() {
     return StartBatchJobRequest.builder()
-        .withJobType(BatchJobType.MIGRATE_CANDIDATES)
+        .withJobType(BatchJobType.BACKFILL_CREATOR_DATA)
         .withFilter(new ReportingYearFilter(List.of(String.valueOf(CURRENT_YEAR))))
         .withMaxParallelSegments(5)
         .build();

@@ -10,40 +10,42 @@ import static no.sikt.nva.nvi.test.TestConstants.NEXT_YEAR;
 import static no.sikt.nva.nvi.test.TestConstants.THIS_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.SQSBatchResponse;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.QueueServiceTestUtils;
 import no.sikt.nva.nvi.common.TestScenario;
+import no.sikt.nva.nvi.common.client.PublicationChannelRetriever;
 import no.sikt.nva.nvi.common.service.CandidateService;
-import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.events.batch.message.BackfillChannelMetadataMessage;
+import no.sikt.nva.nvi.events.batch.message.BackfillCreatorDataMessage;
 import no.sikt.nva.nvi.events.batch.message.BatchJobMessage;
-import no.sikt.nva.nvi.events.batch.message.MigrateCandidateMessage;
 import no.sikt.nva.nvi.events.batch.message.RefreshCandidateMessage;
 import no.sikt.nva.nvi.events.batch.message.RefreshPeriodMessage;
 import no.sikt.nva.nvi.events.batch.message.ReportCandidateMessage;
-import no.sikt.nva.nvi.migration.CandidateMigrationService;
+import no.sikt.nva.nvi.test.uriretriever.FakeUriRetriever;
 import no.unit.nva.commons.json.JsonSerializable;
 import no.unit.nva.stubs.FakeContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class ProcessBatchJobHandlerTest {
 
   private static final Context CONTEXT = new FakeContext();
   private ProcessBatchJobHandler handler;
   private CandidateService candidateService;
-  private NviPeriodService periodService;
   private TestScenario scenario;
   private List<Candidate> candidates;
 
@@ -51,11 +53,12 @@ class ProcessBatchJobHandlerTest {
   void setUp() {
     scenario = new TestScenario();
     candidateService = scenario.getCandidateService();
-    periodService = scenario.getPeriodService();
-    var candidateMigrationService = mock(CandidateMigrationService.class);
-    doNothing().when(candidateMigrationService).migrateCandidate(any());
     handler =
-        new ProcessBatchJobHandler(candidateService, candidateMigrationService, periodService);
+        new ProcessBatchJobHandler(
+            candidateService,
+            scenario.getPeriodService(),
+            scenario.getS3StorageReaderForExpandedResourcesBucket(),
+            new PublicationChannelRetriever(FakeUriRetriever.newInstance()));
 
     setupClosedPeriod(scenario, LAST_YEAR);
     setupOpenPeriod(scenario, THIS_YEAR);
@@ -78,7 +81,7 @@ class ProcessBatchJobHandlerTest {
 
   @Test
   void shouldNotFailForWholeBatchIfSingleItemFails() {
-    var okMessage = new MigrateCandidateMessage(candidates.getFirst().identifier());
+    var okMessage = new BackfillCreatorDataMessage(candidates.getFirst().identifier());
     var successfulMessage = createMessage(okMessage);
     var failingMessage = createMessage(new RefreshCandidateMessage(randomUUID()));
 
@@ -92,8 +95,27 @@ class ProcessBatchJobHandlerTest {
   }
 
   @Test
-  void shouldHandleRefreshCandidateMessage() {
-    var input = toRefreshCandidateMessages(candidates);
+  void shouldFailMessageWithUnknownType() {
+    var legacyBody =
+        """
+        { "type": "MIGRATE_CANDIDATE", "candidateIdentifier": "%s" }
+        """
+            .formatted(candidates.getFirst().identifier());
+    var legacyMessage = createMessage(legacyBody);
+
+    var response = handleRequest(QueueServiceTestUtils.createEvent(legacyMessage));
+
+    assertThat(response.getBatchItemFailures())
+        .singleElement()
+        .extracting(SQSBatchResponse.BatchItemFailure::getItemIdentifier)
+        .isEqualTo(legacyMessage.getMessageId());
+  }
+
+  @ParameterizedTest
+  @MethodSource("candidateWriteBackMessages")
+  void shouldWriteCandidateBackForRefreshAndBackfillMessages(
+      Function<UUID, BatchJobMessage> messageFactory) {
+    var input = candidates.stream().map(Candidate::identifier).map(messageFactory).toList();
     var response = handleRequest(input);
 
     assertThat(response.getBatchItemFailures()).isEmpty();
@@ -101,23 +123,6 @@ class ProcessBatchJobHandlerTest {
       var updatedCandidate = candidateService.getCandidateByIdentifier(candidate.identifier());
       assertThat(updatedCandidate.revision()).isEqualTo(candidate.revision() + 1);
     }
-  }
-
-  @Test
-  void shouldPassMigrateCandidateMessageToService() {
-    var mockedCandidateMigrationService = mock(CandidateMigrationService.class);
-    handler =
-        new ProcessBatchJobHandler(
-            candidateService, mockedCandidateMigrationService, periodService);
-
-    var migrateCandidateMessage = new MigrateCandidateMessage(candidates.getFirst().identifier());
-
-    var input = QueueServiceTestUtils.createEvent(createMessage(migrateCandidateMessage));
-    var response = handleRequest(input);
-
-    assertThat(response.getBatchItemFailures()).isEmpty();
-    verify(mockedCandidateMigrationService, times(1))
-        .migrateCandidate(migrateCandidateMessage.candidateIdentifier());
   }
 
   @Test
@@ -134,13 +139,13 @@ class ProcessBatchJobHandlerTest {
 
   @Test
   void shouldHandleEventWithMixedMessageTypes() {
-    var migrateCandidate = new MigrateCandidateMessage(candidates.getFirst().identifier());
+    var backfillCandidate = new BackfillCreatorDataMessage(candidates.getFirst().identifier());
     var refreshCandidate = new RefreshCandidateMessage(candidates.get(1).identifier());
     var refreshPeriod = new RefreshPeriodMessage(LAST_YEAR);
 
     var input =
         QueueServiceTestUtils.createEvent(
-            createMessage(migrateCandidate),
+            createMessage(backfillCandidate),
             createMessage(refreshCandidate),
             createMessage(refreshPeriod));
     var response = handleRequest(input);
@@ -178,6 +183,17 @@ class ProcessBatchJobHandlerTest {
     assertThat(updatedCandidate.isReported()).isFalse();
   }
 
+  private static Stream<Arguments> candidateWriteBackMessages() {
+    return Stream.of(
+        argumentSet("Refresh", (Function<UUID, BatchJobMessage>) RefreshCandidateMessage::new),
+        argumentSet(
+            "Backfill creator data",
+            (Function<UUID, BatchJobMessage>) BackfillCreatorDataMessage::new),
+        argumentSet(
+            "Backfill channel metadata",
+            (Function<UUID, BatchJobMessage>) BackfillChannelMetadataMessage::new));
+  }
+
   private SQSBatchResponse handleRequest(SQSEvent sqsEvent) {
     return handler.handleRequest(sqsEvent, CONTEXT);
   }
@@ -187,17 +203,13 @@ class ProcessBatchJobHandlerTest {
     return handler.handleRequest(messageBatch, CONTEXT);
   }
 
-  private static List<RefreshCandidateMessage> toRefreshCandidateMessages(
-      Collection<Candidate> candidates) {
-    return candidates.stream()
-        .map(Candidate::identifier)
-        .map(RefreshCandidateMessage::new)
-        .toList();
+  private static SQSEvent.SQSMessage createMessage(JsonSerializable message) {
+    return createMessage(message.toJsonString());
   }
 
-  private static SQSEvent.SQSMessage createMessage(JsonSerializable message) {
+  private static SQSEvent.SQSMessage createMessage(String body) {
     var queueMessage = new SQSEvent.SQSMessage();
-    queueMessage.setBody(message.toJsonString());
+    queueMessage.setBody(body);
     queueMessage.setMessageId(randomString());
     queueMessage.setReceiptHandle(randomString());
     return queueMessage;

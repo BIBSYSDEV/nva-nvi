@@ -42,18 +42,58 @@ Reads candidates from DB and writes them back, triggering "on read" migrations (
 }
 ```
 
-### Migrate candidates
+### Backfill creator data
 
-Reads candidates from DB, fetches original publication from S3, enriches with missing data, and writes back.
+Reads candidates from DB and fetches the original publication from S3.
+Fills in missing verified creator names and ORCID, then writes the candidate back.
 
 ```json
 {
   "type": "StartBatchJobRequest",
-  "jobType": "MIGRATE_CANDIDATES",
-  "filter": { "reportingYears": ["2024", "2025"] },
+  "jobType": "BACKFILL_CREATOR_DATA",
+  "filter": {
+    "type": "ReportingYearFilter",
+    "reportingYears": ["2024", "2025"]
+  },
   "maxItems": 500
 }
 ```
+
+### Backfill channel metadata
+
+Reads candidates from DB and fills in missing publication channel name and print ISSN.
+The values come from the publication in S3, or from the channel registry when the publication has another channel.
+
+```json
+{
+  "type": "StartBatchJobRequest",
+  "jobType": "BACKFILL_CHANNEL_METADATA",
+  "filter": {
+    "type": "ReportingYearFilter",
+    "reportingYears": ["2024"]
+  }
+}
+```
+
+The backfill jobs are one-off data migrations.
+Delete them once they have run in all environments.
+Every candidate a backfill job visits is written back, whether or not the backfill changed it.
+This makes the job also trigger reindexing of the selected candidates.
+An unknown `jobType` fails at job start, before anything is queued.
+So does a job type that the requested listing cannot serve, such as `REPORT_APPROVED_CANDIDATES` without a year filter.
+
+#### Adding or retiring a migration
+
+1. Add a constant to `BatchJobType`.
+2. Implement `MigrationService` in a new class in `libs/migration-service`, with its own test.
+3. Add a message record for the job under `events.batch.message` and register it in `BatchJobMessage`.
+4. Add the constant to the job type switches in `BatchJobFactory`, `ScanCandidatesJob` and `CandidatesByYearJob`.
+   The switches in the two scan jobs state which job types each listing supports.
+5. Add the message to the switch in `ProcessBatchJobHandler`, which constructs the service from the injected clients.
+   The compiler flags each of these switches.
+6. Document the job here.
+
+To retire a migration, delete the service, the message record and the enum constant, then follow the compiler errors.
 
 ### Refresh periods
 
@@ -70,13 +110,17 @@ Reads periods from DB and writes them back.
 
 Marks globally approved candidates for a given year as reported, setting `reportStatus=REPORTED` and `reportedDate=now()`.
 The reporting period for the given year must be closed.
+The year filter is required for this job type.
 Candidates that are PENDING, REJECTED, or DISPUTE are skipped, as are already-reported candidates.
 
 ```json
 {
   "type": "StartBatchJobRequest",
   "jobType": "REPORT_APPROVED_CANDIDATES",
-  "filter": { "reportingYears": ["2024"] }
+  "filter": {
+    "type": "ReportingYearFilter",
+    "reportingYears": ["2024"]
+  }
 }
 ```
 
@@ -100,7 +144,10 @@ Other filters may be implemented later as needed.
 {
   "type": "StartBatchJobRequest",
   "jobType": "REFRESH_CANDIDATES",
-  "filter": { "reportingYears": ["2024"] },
+  "filter": {
+    "type": "ReportingYearFilter",
+    "reportingYears": ["2024"]
+  },
   "maxItems": 10
 }
 ```

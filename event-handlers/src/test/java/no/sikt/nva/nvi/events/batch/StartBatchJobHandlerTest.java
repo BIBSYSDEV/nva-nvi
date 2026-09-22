@@ -11,6 +11,7 @@ import static no.sikt.nva.nvi.events.RequestFixtures.migrateCandidatesForCurrent
 import static no.sikt.nva.nvi.events.RequestFixtures.refreshAllCandidates;
 import static no.sikt.nva.nvi.events.RequestFixtures.refreshAllPeriods;
 import static no.sikt.nva.nvi.events.RequestFixtures.refreshCandidatesForYear;
+import static no.sikt.nva.nvi.events.batch.request.BatchJobType.REPORT_APPROVED_CANDIDATES;
 import static no.sikt.nva.nvi.test.TestConstants.LAST_YEAR;
 import static no.sikt.nva.nvi.test.TestConstants.NEXT_YEAR;
 import static no.sikt.nva.nvi.test.TestConstants.THIS_YEAR;
@@ -31,8 +32,8 @@ import no.sikt.nva.nvi.common.FakeEnvironment;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.exceptions.ValidationException;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
+import no.sikt.nva.nvi.events.batch.message.BackfillCreatorDataMessage;
 import no.sikt.nva.nvi.events.batch.message.BatchJobMessage;
-import no.sikt.nva.nvi.events.batch.message.MigrateCandidateMessage;
 import no.sikt.nva.nvi.events.batch.message.RefreshCandidateMessage;
 import no.sikt.nva.nvi.events.batch.message.RefreshPeriodMessage;
 import no.sikt.nva.nvi.events.batch.model.ReportingYearFilter;
@@ -123,13 +124,37 @@ class StartBatchJobHandlerTest {
     }
 
     @Test
-    void shouldCreateMigrateCandidateMessagesForMigrateJobType() {
+    void shouldQueueBackfillMessagesForYear() {
       var request = migrateCandidatesForCurrentYear();
 
       runToCompletion(request);
 
       assertThat(getQueuedMessageCount()).isEqualTo(CANDIDATES_PER_YEAR);
-      assertThat(getQueuedMessages(MigrateCandidateMessage.class)).hasSize(CANDIDATES_PER_YEAR);
+      assertThat(getQueuedMessages(BackfillCreatorDataMessage.class)).hasSize(CANDIDATES_PER_YEAR);
+    }
+
+    @Test
+    void shouldQueueBackfillMessagesForFullTableScan() {
+      var request = migrateCandidatesForCurrentYear().copy().withFilter(null).build();
+
+      runToCompletion(request);
+
+      assertThat(getQueuedMessages(BackfillCreatorDataMessage.class))
+          .hasSize(TOTAL_CANDIDATE_COUNT);
+    }
+
+    @Test
+    void shouldRejectUnknownJobTypeBeforeQueueingAnything() {
+      var rawRequest =
+          """
+          { "type": "StartBatchJobRequest", "jobType": "NOT_A_JOB_TYPE" }
+          """;
+      var requestInputStream = IoUtils.stringToStream(rawRequest);
+
+      assertThatThrownBy(() -> handler.handleRequest(requestInputStream, output, CONTEXT))
+          .isInstanceOf(RuntimeException.class)
+          .hasMessage("Failed to parse BatchJobRequest");
+      assertThat(getQueuedMessageCount()).isZero();
     }
 
     @Test
@@ -139,12 +164,12 @@ class StartBatchJobHandlerTest {
               .copy()
               .withMaxBatchSize(3)
               .withMaxParallelSegments(3)
-              .withMaxItems(15)
+              .withMaxItems(6)
               .build();
 
       runToCompletion(request);
 
-      assertThat(getQueuedMessageCount()).isEqualTo(15);
+      assertThat(getQueuedMessageCount()).isEqualTo(6);
     }
 
     @Test
@@ -268,7 +293,10 @@ class StartBatchJobHandlerTest {
       return Stream.of(
           argumentSet("Negative max items", refreshAllCandidates().copy().withMaxItems(-1)),
           argumentSet(
-              "Negative segment count", refreshAllCandidates().copy().withMaxParallelSegments(-1)));
+              "Negative segment count", refreshAllCandidates().copy().withMaxParallelSegments(-1)),
+          argumentSet(
+              "Report job without year filter",
+              StartBatchJobRequest.builder().withJobType(REPORT_APPROVED_CANDIDATES)));
     }
 
     private static Stream<Arguments> invalidYearProvider() {

@@ -30,12 +30,12 @@ import no.sikt.nva.nvi.test.SampleExpandedPublication;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class CandidateMigrationServiceTest {
+class CreatorDataMigrationServiceTest {
 
   private TestScenario scenario;
   private CandidateService candidateService;
   private CandidateRepository candidateRepository;
-  private CandidateMigrationService migrationService;
+  private CreatorDataMigrationService migrationService;
   private SampleExpandedPublicationFactory publicationFactory;
 
   @BeforeEach
@@ -44,7 +44,7 @@ class CandidateMigrationServiceTest {
     candidateService = scenario.getCandidateService();
     candidateRepository = scenario.getCandidateRepository();
     var storageReader = scenario.getS3StorageReaderForExpandedResourcesBucket();
-    migrationService = new CandidateMigrationService(candidateService, storageReader);
+    migrationService = new CreatorDataMigrationService(candidateService, storageReader);
     setupOpenPeriod(scenario, CURRENT_YEAR);
     publicationFactory = new SampleExpandedPublicationFactory();
   }
@@ -107,6 +107,24 @@ class CandidateMigrationServiceTest {
     var updatedCreator = getCreatorById(candidateId, creator.id());
     assertThat(updatedCreator.name()).isEqualTo(creator.name());
     assertThat(updatedCreator.orcid()).isEqualTo(creator.orcid());
+  }
+
+  @Test
+  void shouldWriteBackCandidateThatNeedsNoMigration() {
+    var nviOrg = publicationFactory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
+    var creator = verifiedNviCreatorFrom(nviOrg, nviOrg.id());
+    var candidateId =
+        createLegacyCandidate(
+            publicationFactory.getExpandedPublication(),
+            builder -> builder.creators(List.of(creator.toDbCreatorType())));
+    var initialCandidate = candidateService.getCandidateByIdentifier(candidateId);
+
+    migrationService.migrateCandidate(candidateId);
+
+    var updatedCandidate = candidateService.getCandidateByIdentifier(candidateId);
+    assertThat(updatedCandidate.revision()).isEqualTo(initialCandidate.revision() + 1);
+    assertThat(updatedCandidate.publicationDetails().nviCreators())
+        .isEqualTo(initialCandidate.publicationDetails().nviCreators());
   }
 
   @Test

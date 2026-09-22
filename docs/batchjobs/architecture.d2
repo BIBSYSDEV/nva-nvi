@@ -44,6 +44,11 @@ s3: S3\n(publications) {
   style.fill: "#e8f5e9"
 }
 
+channels: Publication channel API {
+  shape: cylinder
+  style.fill: "#e8f5e9"
+}
+
 queue: BatchJobWorkQueue {
   shape: queue
   style.fill: "#fff3e0"
@@ -64,12 +69,13 @@ phase2: Phase 2 - Process {
     style.fill: "#e8f5e9"
   }
 
-  services: Service methods {
+  services: Actions per job type {
     style.fill: "#e3f2fd"
 
-    refresh_candidate: CandidateService.refreshCandidate()
-    migrate_candidate: CandidateService.migrateCandidate()
-    refresh_period: NviPeriodService.refreshPeriod()
+    refresh_candidate: REFRESH_CANDIDATES\nCandidateService.refreshCandidate()
+    backfill_candidate: BACKFILL_*\nMigrationService.migrateCandidate()
+    report_candidate: REPORT_APPROVED_CANDIDATES\nCandidateService.reportCandidate()
+    refresh_period: REFRESH_PERIODS\nNviPeriodService.refreshPeriod()
   }
 
   process -> services: pattern match\non message type
@@ -92,8 +98,12 @@ dlq -> queue: redrive {
 }
 
 phase2.services.refresh_candidate -> db: read + write
-phase2.services.migrate_candidate -> db: read + write
-phase2.services.migrate_candidate -> s3: fetch publication {
+phase2.services.backfill_candidate -> db: read + write
+phase2.services.backfill_candidate -> s3: fetch publication {
   style.stroke-dash: 3
 }
+phase2.services.backfill_candidate -> channels: fetch channel\n(fallback) {
+  style.stroke-dash: 3
+}
+phase2.services.report_candidate -> db: read + write
 phase2.services.refresh_period -> db: read + write

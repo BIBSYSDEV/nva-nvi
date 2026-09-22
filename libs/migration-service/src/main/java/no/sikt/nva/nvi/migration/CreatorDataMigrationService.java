@@ -3,7 +3,6 @@ package no.sikt.nva.nvi.migration;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.function.Predicate.not;
-import static no.sikt.nva.nvi.common.service.CandidateService.defaultCandidateService;
 import static nva.commons.core.StringUtils.isBlank;
 
 import java.net.URI;
@@ -13,7 +12,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.dto.ContributorDto;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
@@ -21,50 +19,38 @@ import no.sikt.nva.nvi.common.model.NviCreator;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.publication.PublicationLoaderService;
-import nva.commons.core.Environment;
-import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Service intended for updating persisted candidates with data from external sources, such as
- * expanded publications stored in S3. This can be used in batch migrations to add missing fields to
- * reported candidates. Currently, backfills missing verified creator names (NP-51445) and missing
- * creator ORCID (NP-51468).
+ * Backfills missing verified creator names (NP-51445) and creator ORCID (NP-51491) from the
+ * expanded publication stored in S3.
  */
-public final class CandidateMigrationService implements MigrationService {
+public final class CreatorDataMigrationService implements MigrationService {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(CandidateMigrationService.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(CreatorDataMigrationService.class);
 
-  private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
   private final CandidateService candidateService;
   private final PublicationLoaderService publicationLoader;
 
-  public CandidateMigrationService(
+  public CreatorDataMigrationService(
       CandidateService candidateService, StorageReader<URI> storageReader) {
     this.candidateService = candidateService;
     this.publicationLoader = new PublicationLoaderService(storageReader);
   }
 
-  @JacocoGenerated
-  public static CandidateMigrationService defaultCandidateMigrationService() {
-    return new CandidateMigrationService(
-        defaultCandidateService(),
-        new S3StorageReader(new Environment().readEnv(EXPANDED_RESOURCES_BUCKET)));
-  }
-
+  /** Always writes the candidate back, so untouched candidates are still reindexed. */
   @Override
   public void migrateCandidate(UUID identifier) {
     var candidate = candidateService.getCandidateByIdentifier(identifier);
 
     if (shouldMigrate(candidate)) {
-      LOGGER.info("Migrating candidate with identifier {}", identifier);
+      LOGGER.info("Migrating creator data for candidate {}", identifier);
       var publicationBucketUri = candidate.publicationDetails().publicationBucketUri();
       var publication = publicationLoader.extractAndTransform(publicationBucketUri);
-      var enrichedCandidate = addMissingPublicationDetails(candidate, publication);
-      candidateService.updateCandidate(enrichedCandidate);
+      candidateService.updateCandidate(addMissingPublicationDetails(candidate, publication));
     } else {
-      LOGGER.info("Candidate {} does not require migration", identifier);
+      LOGGER.info("Candidate {} does not require creator data migration", identifier);
       candidateService.updateCandidate(candidate);
     }
   }
@@ -72,7 +58,7 @@ public final class CandidateMigrationService implements MigrationService {
   private static boolean shouldMigrate(Candidate candidate) {
     var details = candidate.publicationDetails();
     return details.nviCreators().stream()
-        .anyMatch(CandidateMigrationService::hasMissingCreatorData);
+        .anyMatch(CreatorDataMigrationService::hasMissingCreatorData);
   }
 
   private static Candidate addMissingPublicationDetails(
