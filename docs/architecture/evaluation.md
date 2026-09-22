@@ -20,20 +20,6 @@ Batch jobs (`REFRESH_CANDIDATES`, `MIGRATE_CANDIDATES`) do not re-evaluate; they
 
 ![Evaluation flow](diagrams/evaluation.svg)
 
-## Clickable links
-
-Tala/SVG:
-[Evaluation flow](diagrams/evaluation.tala.svg?raw=true)
-
-Tala/PNG:
-[Evaluation flow](diagrams/evaluation.tala.png?raw=true)
-
-Raw=true inside
-[![Evaluation flow](diagrams/evaluation.svg?raw=true)](diagrams/evaluation.svg)
-
-Raw=true outside
-[![Evaluation flow](diagrams/evaluation.svg)](diagrams/evaluation.svg?raw=true)
-
 ## Step by step
 
 1. nva-publication-api's `ExpandDataEntriesHandler` writes the expanded publication to the persisted-resources bucket and emits `PublicationService.ExpandedEntry.Persisted`.
