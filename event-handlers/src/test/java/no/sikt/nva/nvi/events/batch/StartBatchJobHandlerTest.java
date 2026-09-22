@@ -11,6 +11,7 @@ import static no.sikt.nva.nvi.events.RequestFixtures.migrateCandidatesForCurrent
 import static no.sikt.nva.nvi.events.RequestFixtures.refreshAllCandidates;
 import static no.sikt.nva.nvi.events.RequestFixtures.refreshAllPeriods;
 import static no.sikt.nva.nvi.events.RequestFixtures.refreshCandidatesForYear;
+import static no.sikt.nva.nvi.events.batch.request.BatchJobType.REPORT_APPROVED_CANDIDATES;
 import static no.sikt.nva.nvi.test.TestConstants.LAST_YEAR;
 import static no.sikt.nva.nvi.test.TestConstants.NEXT_YEAR;
 import static no.sikt.nva.nvi.test.TestConstants.THIS_YEAR;
@@ -292,7 +293,10 @@ class StartBatchJobHandlerTest {
       return Stream.of(
           argumentSet("Negative max items", refreshAllCandidates().copy().withMaxItems(-1)),
           argumentSet(
-              "Negative segment count", refreshAllCandidates().copy().withMaxParallelSegments(-1)));
+              "Negative segment count", refreshAllCandidates().copy().withMaxParallelSegments(-1)),
+          argumentSet(
+              "Report job without year filter",
+              StartBatchJobRequest.builder().withJobType(REPORT_APPROVED_CANDIDATES)));
     }
 
     private static Stream<Arguments> invalidYearProvider() {

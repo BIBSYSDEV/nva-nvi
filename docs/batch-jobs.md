@@ -80,6 +80,7 @@ Delete them once they have run in all environments.
 Every candidate a backfill job visits is written back, whether or not the backfill changed it.
 This makes the job also trigger reindexing of the selected candidates.
 An unknown `jobType` fails at job start, before anything is queued.
+So does a job type that the requested listing cannot serve, such as `REPORT_APPROVED_CANDIDATES` without a year filter.
 
 #### Adding or retiring a migration
 
@@ -109,6 +110,7 @@ Reads periods from DB and writes them back.
 
 Marks globally approved candidates for a given year as reported, setting `reportStatus=REPORTED` and `reportedDate=now()`.
 The reporting period for the given year must be closed.
+The year filter is required for this job type.
 Candidates that are PENDING, REJECTED, or DISPUTE are skipped, as are already-reported candidates.
 
 ```json

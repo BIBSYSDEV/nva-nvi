@@ -1,15 +1,23 @@
 package no.sikt.nva.nvi.events.batch.job;
 
 import static no.sikt.nva.nvi.common.utils.CollectionUtils.splitEvenly;
+import static no.sikt.nva.nvi.events.batch.request.BatchJobType.REPORT_APPROVED_CANDIDATES;
 
 import java.util.List;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.exceptions.ValidationException;
 import no.sikt.nva.nvi.events.batch.request.CandidateScanRequest;
 import no.sikt.nva.nvi.events.batch.request.PaginationState;
 import no.sikt.nva.nvi.events.batch.request.StartBatchJobRequest;
 
 public record StartCandidateScanJob(StartBatchJobRequest request) implements BatchJob {
+
+  public StartCandidateScanJob {
+    if (request.jobType() == REPORT_APPROVED_CANDIDATES) {
+      throw new ValidationException(request.jobType() + " requires a filter with reportingYears");
+    }
+  }
 
   @Override
   public BatchJobResult execute() {
