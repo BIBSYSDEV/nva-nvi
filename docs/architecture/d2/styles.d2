@@ -1,12 +1,10 @@
 # Shared styles and renderer configuration for every D2 diagram in this folder.
 # Import at the top of a diagram with `...@styles`.
-# The d2-config block selects the free ELK layout engine, so no layout flag is needed; render through ../render.sh, which adds the flag GitHub needs.
+# The d2-config block selects the TALA layout engine, so no layout flag is needed; render through ../render.sh.
 
 vars: {
   d2-config: {
-    layout-engine: elk
-    # Emits an SVG that switches theme with the viewer's prefers-color-scheme (GitHub dark mode).
-    # dark-theme-id: 200
+    layout-engine: tala
   }
   # Opacity for objects that are inactive in a scenario board. Apply it as a direct style,
   # `x.style.opacity: ${faded-opacity}`, not as a class: assigning a class in a scenario replaces
@@ -14,10 +12,8 @@ vars: {
   faded-opacity: 0.25
 }
 
-# Every filled class also pins font-color. In the dark theme D2 switches label text to a light colour
-# but keeps explicit hex fills, which made labels unreadable on these light cards; pinning the label
-# colour keeps shapes identical in both modes while edges, edge labels and the canvas follow the theme.
-# D2 does not accept theme palette codes (B5, N6, ...) in style.fill, so this is the workable option.
+# Every filled class also pins font-color, so labels keep the same dark blue on every card whatever
+# theme D2 is run with. D2 does not accept theme palette codes (B5, N6, ...) in style.fill.
 classes: {
   # An NVA service, Lambda function, or other component we own.
   svc: {

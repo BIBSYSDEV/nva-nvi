@@ -4,7 +4,7 @@ Data-flow documentation for new developers on nva-nvi.
 The goal is to answer three questions: how the Lambda functions connect, where data enters the service, and where it leaves.
 
 The diagrams are [D2](https://d2lang.com/) sources in [`d2/`](d2/), rendered to the committed SVGs in [`diagrams/`](diagrams/) by [`render.sh`](render.sh).
-The sources share [`d2/styles.d2`](d2/styles.d2) (classes, ELK layout, dark mode) and [`d2/models.d2`](d2/models.d2) (the nodes that recur across diagrams); to change a diagram, edit its source, run the script, and commit both.
+The sources share [`d2/styles.d2`](d2/styles.d2) (classes and the TALA layout engine) and [`d2/models.d2`](d2/models.d2) (the nodes that recur across diagrams); to change a diagram, edit its source, run the script, and commit both.
 Solid arrows are synchronous calls (HTTP or AWS SDK), dashed arrows are asynchronous hops (EventBridge, SQS, SNS, DynamoDB streams, S3 notifications).
 The platform-wide view (how nva-nvi fits among the other NVA services) lives in [nva-api-documentation](https://github.com/BIBSYSDEV/nva-api-documentation/tree/main/system); this folder zooms in on the inside of this one service.
 Facts were verified against `template.yaml` at the repo root, `docs/openapi.yaml`, and the code on `main` in September 2026.

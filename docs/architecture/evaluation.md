@@ -17,28 +17,8 @@ Both triggers end up on the same `ResourceEvaluationQueue`, so everything from `
 Batch jobs (`REFRESH_CANDIDATES`, `MIGRATE_CANDIDATES`) do not re-evaluate; they rewrite existing candidates and only feed the [indexing pipeline](indexing.md).
 
 ## Flow
-TODO: Fix this
 
-Clickable:
-[![Evaluation flow](diagrams/evaluation.svg)](diagrams/evaluation.svg)
-
-Raw=true outside
-[![Evaluation flow](diagrams/evaluation.svg)](diagrams/evaluation.svg?raw=true)
-
-Raw=true single-level
-[Evaluation flow](diagrams/evaluation.svg?raw=true)
-
-Default, Elk/SVG:
 ![Evaluation flow](diagrams/evaluation.svg)
-
-Elk/PNG:
-![Evaluation flow](diagrams/evaluation.png)
-
-Tala/SVG:
-![Evaluation flow](diagrams/evaluation.tala.svg)
-
-Tala/PNG:
-![Evaluation flow](diagrams/evaluation.tala.png)
 
 ## Clickable links
 
