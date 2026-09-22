@@ -19,6 +19,15 @@ Batch jobs (`REFRESH_CANDIDATES`, `MIGRATE_CANDIDATES`) do not re-evaluate; they
 ## Flow
 TODO: Fix this
 
+Clickable:
+[![Evaluation flow](diagrams/evaluation.svg)](diagrams/evaluation.svg)
+
+Raw=true outside
+[![Evaluation flow](diagrams/evaluation.svg)](diagrams/evaluation.svg?raw=true)
+
+Raw=true single-level
+[Evaluation flow](diagrams/evaluation.svg?raw=true)
+
 Default, Elk/SVG:
 ![Evaluation flow](diagrams/evaluation.svg)
 
