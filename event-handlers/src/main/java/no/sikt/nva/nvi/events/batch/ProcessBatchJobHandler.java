@@ -6,19 +6,21 @@ import com.amazonaws.services.lambda.runtime.events.SQSBatchResponse;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.net.URI;
-import java.time.Instant;
 import java.util.ArrayList;
-import java.util.UUID;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.client.PublicationChannelRetriever;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
+import no.sikt.nva.nvi.events.batch.message.BackfillChannelMetadataMessage;
+import no.sikt.nva.nvi.events.batch.message.BackfillCreatorDataMessage;
 import no.sikt.nva.nvi.events.batch.message.BatchJobMessage;
-import no.sikt.nva.nvi.events.batch.message.CandidateJobMessage;
+import no.sikt.nva.nvi.events.batch.message.RefreshCandidateMessage;
 import no.sikt.nva.nvi.events.batch.message.RefreshPeriodMessage;
+import no.sikt.nva.nvi.events.batch.message.ReportCandidateMessage;
 import no.sikt.nva.nvi.migration.CreatorDataMigrationService;
+import no.sikt.nva.nvi.migration.MigrationService;
 import no.sikt.nva.nvi.migration.PublicationChannelMigrationService;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import nva.commons.core.Environment;
@@ -32,8 +34,8 @@ public class ProcessBatchJobHandler implements RequestHandler<SQSEvent, SQSBatch
   private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
   private final CandidateService candidateService;
   private final NviPeriodService periodService;
-  private final StorageReader<URI> storageReader;
-  private final PublicationChannelRetriever channelRetriever;
+  private final MigrationService creatorDataMigrationService;
+  private final MigrationService publicationChannelMigrationService;
 
   @JacocoGenerated
   public ProcessBatchJobHandler() {
@@ -51,8 +53,10 @@ public class ProcessBatchJobHandler implements RequestHandler<SQSEvent, SQSBatch
       PublicationChannelRetriever channelRetriever) {
     this.candidateService = candidateService;
     this.periodService = periodService;
-    this.storageReader = storageReader;
-    this.channelRetriever = channelRetriever;
+    this.creatorDataMigrationService =
+        new CreatorDataMigrationService(candidateService, storageReader);
+    this.publicationChannelMigrationService =
+        new PublicationChannelMigrationService(candidateService, storageReader, channelRetriever);
   }
 
   @Override
@@ -76,31 +80,13 @@ public class ProcessBatchJobHandler implements RequestHandler<SQSEvent, SQSBatch
 
   private void processMessage(BatchJobMessage message) {
     switch (message) {
-      case CandidateJobMessage candidateMessage -> processCandidateJob(candidateMessage);
+      case RefreshCandidateMessage candidateMessage -> candidateMessage.execute(candidateService);
+      case BackfillCreatorDataMessage candidateMessage ->
+          candidateMessage.execute(creatorDataMigrationService);
+      case BackfillChannelMetadataMessage candidateMessage ->
+          candidateMessage.execute(publicationChannelMigrationService);
+      case ReportCandidateMessage candidateMessage -> candidateMessage.execute(candidateService);
       case RefreshPeriodMessage periodMessage -> periodMessage.execute(periodService);
-    }
-  }
-
-  private void processCandidateJob(CandidateJobMessage message) {
-    var identifier = message.candidateIdentifier();
-    switch (message.jobType()) {
-      case REFRESH_CANDIDATES -> candidateService.refreshCandidate(identifier);
-      case BACKFILL_CREATOR_DATA ->
-          new CreatorDataMigrationService(candidateService, storageReader)
-              .migrateCandidate(identifier);
-      case BACKFILL_CHANNEL_METADATA ->
-          new PublicationChannelMigrationService(candidateService, storageReader, channelRetriever)
-              .migrateCandidate(identifier);
-      case REPORT_APPROVED_CANDIDATES -> reportCandidateIfReportable(identifier);
-      case REFRESH_PERIODS ->
-          throw new IllegalArgumentException("Not a candidate job type: " + message.jobType());
-    }
-  }
-
-  private void reportCandidateIfReportable(UUID identifier) {
-    var candidate = candidateService.getCandidateByIdentifier(identifier);
-    if (candidate.isReportable()) {
-      candidateService.reportCandidate(identifier, Instant.now());
     }
   }
 }

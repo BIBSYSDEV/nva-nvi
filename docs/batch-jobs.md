@@ -85,13 +85,14 @@ An unknown `jobType` fails at job start, before anything is queued.
 
 1. Add a constant to `BatchJobType`.
 2. Implement `MigrationService` in a new class in `libs/migration-service`, with its own test.
-3. Add the constant to the job type switches in `ProcessBatchJobHandler` and `BatchJobFactory`.
-   Do the same in `ScanCandidatesJob` and `CandidatesByYearJob`.
-   The compiler flags each of them.
-   The switch in `ProcessBatchJobHandler` is where the service is constructed from the injected clients.
-4. Document the job here.
+3. Add a message record for the job under `events.batch.message` and register it in `BatchJobMessage`.
+4. Add the constant to the job type switches in `BatchJobFactory`, `ScanCandidatesJob` and `CandidatesByYearJob`.
+   The switches in the two scan jobs state which job types each listing supports.
+5. Add the message to the switch in `ProcessBatchJobHandler`, which constructs the service from the injected clients.
+   The compiler flags each of these switches.
+6. Document the job here.
 
-To retire a migration, delete the class and the enum constant, then follow the compiler errors.
+To retire a migration, delete the service, the message record and the enum constant, then follow the compiler errors.
 
 ### Refresh periods
 

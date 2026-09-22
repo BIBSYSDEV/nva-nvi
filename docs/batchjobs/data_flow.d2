@@ -133,13 +133,27 @@ BatchJobMessage: {
     shape: class
     year: String
   }
-  CandidateJobMessage: CandidateJobMessage extends BatchJobMessage {
+  RefreshCandidateMessage: RefreshCandidateMessage extends BatchJobMessage {
     shape: class
     candidateIdentifier: UUID
-    jobType: BatchJobType
+  }
+  BackfillCreatorDataMessage: BackfillCreatorDataMessage extends BatchJobMessage {
+    shape: class
+    candidateIdentifier: UUID
+  }
+  BackfillChannelMetadataMessage: BackfillChannelMetadataMessage extends BatchJobMessage {
+    shape: class
+    candidateIdentifier: UUID
+  }
+  ReportCandidateMessage: ReportCandidateMessage extends BatchJobMessage {
+    shape: class
+    candidateIdentifier: UUID
   }
 
-  BatchJobMessage -> CandidateJobMessage
+  BatchJobMessage -> RefreshCandidateMessage
+  BatchJobMessage -> BackfillCreatorDataMessage
+  BatchJobMessage -> BackfillChannelMetadataMessage
+  BatchJobMessage -> ReportCandidateMessage
   BatchJobMessage -> RefreshPeriodMessage
 }
 
@@ -179,6 +193,6 @@ PeriodService: NviPeriodService {
   class: service
 }
 
-ProcessBatchJobHandler -> CandidateService: CandidateJobMessage (switch on jobType)
-ProcessBatchJobHandler -> MigrationService: BACKFILL_* job types
+ProcessBatchJobHandler -> CandidateService: RefreshCandidateMessage, ReportCandidateMessage
+ProcessBatchJobHandler -> MigrationService: Backfill*Message
 ProcessBatchJobHandler -> PeriodService: RefreshPeriodMessage

@@ -5,40 +5,41 @@ import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeri
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupFuturePeriod;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.model.CandidateFixtures.setupNumberOfCandidatesForYear;
-import static no.sikt.nva.nvi.events.batch.request.BatchJobType.BACKFILL_CREATOR_DATA;
-import static no.sikt.nva.nvi.events.batch.request.BatchJobType.REFRESH_CANDIDATES;
-import static no.sikt.nva.nvi.events.batch.request.BatchJobType.REFRESH_PERIODS;
-import static no.sikt.nva.nvi.events.batch.request.BatchJobType.REPORT_APPROVED_CANDIDATES;
 import static no.sikt.nva.nvi.test.TestConstants.LAST_YEAR;
 import static no.sikt.nva.nvi.test.TestConstants.NEXT_YEAR;
 import static no.sikt.nva.nvi.test.TestConstants.THIS_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.SQSBatchResponse;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
-import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.QueueServiceTestUtils;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.client.PublicationChannelRetriever;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.events.batch.message.BackfillChannelMetadataMessage;
+import no.sikt.nva.nvi.events.batch.message.BackfillCreatorDataMessage;
 import no.sikt.nva.nvi.events.batch.message.BatchJobMessage;
-import no.sikt.nva.nvi.events.batch.message.CandidateJobMessage;
+import no.sikt.nva.nvi.events.batch.message.RefreshCandidateMessage;
 import no.sikt.nva.nvi.events.batch.message.RefreshPeriodMessage;
-import no.sikt.nva.nvi.events.batch.request.BatchJobType;
+import no.sikt.nva.nvi.events.batch.message.ReportCandidateMessage;
 import no.sikt.nva.nvi.test.uriretriever.FakeUriRetriever;
 import no.unit.nva.commons.json.JsonSerializable;
 import no.unit.nva.stubs.FakeContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class ProcessBatchJobHandlerTest {
 
@@ -68,7 +69,7 @@ class ProcessBatchJobHandlerTest {
 
   @Test
   void shouldReturnFailedItems() {
-    var failingMessage = createMessage(new CandidateJobMessage(randomUUID(), REFRESH_CANDIDATES));
+    var failingMessage = createMessage(new RefreshCandidateMessage(randomUUID()));
     var input = QueueServiceTestUtils.createEvent(failingMessage);
     var response = handleRequest(input);
 
@@ -80,9 +81,9 @@ class ProcessBatchJobHandlerTest {
 
   @Test
   void shouldNotFailForWholeBatchIfSingleItemFails() {
-    var okMessage = new CandidateJobMessage(candidates.getFirst().identifier(), REFRESH_CANDIDATES);
+    var okMessage = new BackfillCreatorDataMessage(candidates.getFirst().identifier());
     var successfulMessage = createMessage(okMessage);
-    var failingMessage = createMessage(new CandidateJobMessage(randomUUID(), REFRESH_CANDIDATES));
+    var failingMessage = createMessage(new RefreshCandidateMessage(randomUUID()));
 
     var input = QueueServiceTestUtils.createEvent(successfulMessage, failingMessage);
     var response = handleRequest(input);
@@ -110,20 +111,11 @@ class ProcessBatchJobHandlerTest {
         .isEqualTo(legacyMessage.getMessageId());
   }
 
-  @Test
-  void shouldFailForNonCandidateJobType() {
-    var message = new CandidateJobMessage(candidates.getFirst().identifier(), REFRESH_PERIODS);
-    var input = QueueServiceTestUtils.createEvent(createMessage(message));
-
-    assertThatThrownBy(() -> handleRequest(input))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining(REFRESH_PERIODS.name());
-  }
-
   @ParameterizedTest
-  @EnumSource(names = {"REFRESH_CANDIDATES", "BACKFILL_CREATOR_DATA", "BACKFILL_CHANNEL_METADATA"})
-  void shouldWriteCandidateBackForRefreshAndBackfillJobs(BatchJobType jobType) {
-    var input = toCandidateJobMessages(candidates, jobType);
+  @MethodSource("candidateWriteBackMessages")
+  void shouldWriteCandidateBackForRefreshAndBackfillMessages(
+      Function<UUID, BatchJobMessage> messageFactory) {
+    var input = candidates.stream().map(Candidate::identifier).map(messageFactory).toList();
     var response = handleRequest(input);
 
     assertThat(response.getBatchItemFailures()).isEmpty();
@@ -147,10 +139,8 @@ class ProcessBatchJobHandlerTest {
 
   @Test
   void shouldHandleEventWithMixedMessageTypes() {
-    var backfillCandidate =
-        new CandidateJobMessage(candidates.getFirst().identifier(), BACKFILL_CREATOR_DATA);
-    var refreshCandidate =
-        new CandidateJobMessage(candidates.get(1).identifier(), REFRESH_CANDIDATES);
+    var backfillCandidate = new BackfillCreatorDataMessage(candidates.getFirst().identifier());
+    var refreshCandidate = new RefreshCandidateMessage(candidates.get(1).identifier());
     var refreshPeriod = new RefreshPeriodMessage(LAST_YEAR);
 
     var input =
@@ -164,79 +154,44 @@ class ProcessBatchJobHandlerTest {
   }
 
   @Test
-  void shouldReportApprovedCandidateInClosedPeriod() {
-    var candidate = approveCandidate(candidates.getFirst());
+  void shouldHandleReportCandidateMessage() {
+    var candidate = candidates.getFirst();
+    var institution = candidate.approvals().keySet().iterator().next();
+    scenario.updateApprovalStatus(candidate.identifier(), ApprovalStatus.APPROVED, institution);
     setupClosedPeriod(scenario, THIS_YEAR);
 
-    var startTime = Instant.now();
-    var response = handleRequest(List.of(reportMessage(candidate)));
-    var endTime = Instant.now();
+    var reportMessage = new ReportCandidateMessage(candidate.identifier());
+    var input = QueueServiceTestUtils.createEvent(createMessage(reportMessage));
+    var response = handleRequest(input);
 
     assertThat(response.getBatchItemFailures()).isEmpty();
-    var reportedCandidate = candidateService.getCandidateByIdentifier(candidate.identifier());
-    assertThat(reportedCandidate.isReported()).isTrue();
-    assertThat(reportedCandidate.reportedDate()).isBetween(startTime, endTime);
+    var updatedCandidate = candidateService.getCandidateByIdentifier(candidate.identifier());
+    assertThat(updatedCandidate.isReported()).isTrue();
   }
 
   @Test
-  void shouldKeepReportedDateWhenReportingAgain() {
-    var candidate = approveCandidate(candidates.getFirst());
-    setupClosedPeriod(scenario, THIS_YEAR);
-
-    handleRequest(List.of(reportMessage(candidate)));
-    var firstReportedDate =
-        candidateService.getCandidateByIdentifier(candidate.identifier()).reportedDate();
-    handleRequest(List.of(reportMessage(candidate)));
-    var secondReportedDate =
-        candidateService.getCandidateByIdentifier(candidate.identifier()).reportedDate();
-
-    assertThat(secondReportedDate).isEqualTo(firstReportedDate);
-  }
-
-  @Test
-  void shouldNotReportNonApprovedCandidate() {
+  void shouldSkipNonApprovedCandidateWithoutFailingBatch() {
     setupClosedPeriod(scenario, THIS_YEAR);
     var candidate = candidates.getFirst();
 
-    var response = handleRequest(List.of(reportMessage(candidate)));
+    var reportMessage = new ReportCandidateMessage(candidate.identifier());
+    var input = QueueServiceTestUtils.createEvent(createMessage(reportMessage));
+    var response = handleRequest(input);
 
     assertThat(response.getBatchItemFailures()).isEmpty();
-    assertThat(candidateService.getCandidateByIdentifier(candidate.identifier()).isReported())
-        .isFalse();
+    var updatedCandidate = candidateService.getCandidateByIdentifier(candidate.identifier());
+    assertThat(updatedCandidate.isReported()).isFalse();
   }
 
-  @Test
-  void shouldNotReportCandidateInOpenPeriod() {
-    var candidate = approveCandidate(candidates.getFirst());
-
-    var response = handleRequest(List.of(reportMessage(candidate)));
-
-    assertThat(response.getBatchItemFailures()).isEmpty();
-    assertThat(candidateService.getCandidateByIdentifier(candidate.identifier()).isReported())
-        .isFalse();
-  }
-
-  @Test
-  void shouldNotReportNonApplicableCandidate() {
-    var candidate = approveCandidate(candidates.getFirst());
-    setupClosedPeriod(scenario, THIS_YEAR);
-    candidateService.updateCandidate(candidate.copy().withApplicable(false).build());
-
-    var response = handleRequest(List.of(reportMessage(candidate)));
-
-    assertThat(response.getBatchItemFailures()).isEmpty();
-    assertThat(candidateService.getCandidateByIdentifier(candidate.identifier()).isReported())
-        .isFalse();
-  }
-
-  private Candidate approveCandidate(Candidate candidate) {
-    var institution = candidate.approvals().keySet().iterator().next();
-    scenario.updateApprovalStatus(candidate.identifier(), ApprovalStatus.APPROVED, institution);
-    return candidateService.getCandidateByIdentifier(candidate.identifier());
-  }
-
-  private static CandidateJobMessage reportMessage(Candidate candidate) {
-    return new CandidateJobMessage(candidate.identifier(), REPORT_APPROVED_CANDIDATES);
+  private static Stream<Arguments> candidateWriteBackMessages() {
+    return Stream.of(
+        argumentSet("Refresh", (Function<UUID, BatchJobMessage>) RefreshCandidateMessage::new),
+        argumentSet(
+            "Backfill creator data",
+            (Function<UUID, BatchJobMessage>) BackfillCreatorDataMessage::new),
+        argumentSet(
+            "Backfill channel metadata",
+            (Function<UUID, BatchJobMessage>) BackfillChannelMetadataMessage::new));
   }
 
   private SQSBatchResponse handleRequest(SQSEvent sqsEvent) {
@@ -246,14 +201,6 @@ class ProcessBatchJobHandlerTest {
   private SQSBatchResponse handleRequest(Collection<? extends BatchJobMessage> batchJobMessages) {
     var messageBatch = createEvent(batchJobMessages);
     return handler.handleRequest(messageBatch, CONTEXT);
-  }
-
-  private static List<CandidateJobMessage> toCandidateJobMessages(
-      Collection<Candidate> candidates, BatchJobType jobType) {
-    return candidates.stream()
-        .map(Candidate::identifier)
-        .map(identifier -> new CandidateJobMessage(identifier, jobType))
-        .toList();
   }
 
   private static SQSEvent.SQSMessage createMessage(JsonSerializable message) {

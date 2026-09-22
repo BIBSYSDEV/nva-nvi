@@ -78,7 +78,7 @@ phase2: Phase 2 - Process {
     refresh_period: REFRESH_PERIODS\nNviPeriodService.refreshPeriod()
   }
 
-  process -> services: switch on\nmessage type + jobType
+  process -> services: pattern match\non message type
 }
 
 # Connections
