@@ -117,7 +117,10 @@ Candidates that are PENDING, REJECTED, or DISPUTE are skipped, as are already-re
 {
   "type": "StartBatchJobRequest",
   "jobType": "REPORT_APPROVED_CANDIDATES",
-  "filter": { "reportingYears": ["2024"] }
+  "filter": {
+    "type": "ReportingYearFilter",
+    "reportingYears": ["2024"]
+  }
 }
 ```
 
@@ -141,7 +144,10 @@ Other filters may be implemented later as needed.
 {
   "type": "StartBatchJobRequest",
   "jobType": "REFRESH_CANDIDATES",
-  "filter": { "reportingYears": ["2024"] },
+  "filter": {
+    "type": "ReportingYearFilter",
+    "reportingYears": ["2024"]
+  },
   "maxItems": 10
 }
 ```
