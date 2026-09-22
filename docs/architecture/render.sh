@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 # Regenerates every diagram in diagrams/ from the D2 sources in d2/.
 # Requires the D2 CLI (brew install d2). Layout engine and dark theme come from d2/styles.d2.
+# --scale 1 writes fixed width and height on the SVG root, which GitHub's file viewer needs to
+# show the image scaled to the page instead of as a 300 by 150 thumbnail.
 set -euo pipefail
 cd "$(dirname "$0")"
 for source in d2/boundary.d2 d2/evaluation.d2 d2/indexing.d2 d2/curation-api.d2 d2/reports.d2; do
   name="$(basename "$source" .d2)"
-  d2 "$source" "diagrams/$name.svg"
+  d2 --scale 1 "$source" "diagrams/$name.svg"
   d2 "$source" "diagrams/$name.elk.png"
   d2 "$source" "diagrams/$name.tala.svg" -l tala
   d2 "$source" "diagrams/$name.tala.png" -l tala
