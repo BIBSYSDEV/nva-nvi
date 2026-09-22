@@ -7,5 +7,6 @@ for source in d2/boundary.d2 d2/evaluation.d2 d2/indexing.d2 d2/curation-api.d2 
   name="$(basename "$source" .d2)"
   d2 "$source" "diagrams/$name.svg"
   d2 "$source" "diagrams/$name.elk.png"
+  d2 "$source" "diagrams/$name.tala.svg" -l tala
   d2 "$source" "diagrams/$name.tala.png" -l tala
 done
