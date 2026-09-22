@@ -3,7 +3,6 @@ plugins {
 }
 
 dependencies {
-    api(nvaLibs.clients)
     api(project(':nvi-commons'))
     implementation(nvaCatalog.slf4j.api)
     implementation(nvaLibs.auth)
@@ -11,7 +10,6 @@ dependencies {
     implementation(project(':publication-service'))
     testImplementation(nvaCatalog.assertj.core)
     testImplementation(nvaCatalog.junit.jupiter.api)
-    testImplementation(nvaCatalog.mockito.core)
     testImplementation(nvaLibs.testutils)
     testImplementation(project(':nvi-test'))
     testImplementation(testFixtures(project(":nvi-commons")))
