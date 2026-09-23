@@ -9,11 +9,9 @@ import java.net.URI;
 import java.util.ArrayList;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.StorageReader;
-import no.sikt.nva.nvi.common.client.PublicationChannelRetriever;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
-import no.sikt.nva.nvi.events.batch.message.BackfillChannelMetadataMessage;
 import no.sikt.nva.nvi.events.batch.message.BackfillCreatorDataMessage;
 import no.sikt.nva.nvi.events.batch.message.BatchJobMessage;
 import no.sikt.nva.nvi.events.batch.message.RefreshCandidateMessage;
@@ -21,8 +19,6 @@ import no.sikt.nva.nvi.events.batch.message.RefreshPeriodMessage;
 import no.sikt.nva.nvi.events.batch.message.ReportCandidateMessage;
 import no.sikt.nva.nvi.migration.CreatorDataMigrationService;
 import no.sikt.nva.nvi.migration.MigrationService;
-import no.sikt.nva.nvi.migration.PublicationChannelMigrationService;
-import no.unit.nva.auth.uriretriever.UriRetriever;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
@@ -35,28 +31,23 @@ public class ProcessBatchJobHandler implements RequestHandler<SQSEvent, SQSBatch
   private final CandidateService candidateService;
   private final NviPeriodService periodService;
   private final MigrationService creatorDataMigrationService;
-  private final MigrationService publicationChannelMigrationService;
 
   @JacocoGenerated
   public ProcessBatchJobHandler() {
     this(
         CandidateService.defaultCandidateService(),
         NviPeriodService.defaultNviPeriodService(),
-        new S3StorageReader(new Environment().readEnv(EXPANDED_RESOURCES_BUCKET)),
-        new PublicationChannelRetriever(new UriRetriever()));
+        new S3StorageReader(new Environment().readEnv(EXPANDED_RESOURCES_BUCKET)));
   }
 
   public ProcessBatchJobHandler(
       CandidateService candidateService,
       NviPeriodService periodService,
-      StorageReader<URI> storageReader,
-      PublicationChannelRetriever channelRetriever) {
+      StorageReader<URI> storageReader) {
     this.candidateService = candidateService;
     this.periodService = periodService;
     this.creatorDataMigrationService =
         new CreatorDataMigrationService(candidateService, storageReader);
-    this.publicationChannelMigrationService =
-        new PublicationChannelMigrationService(candidateService, storageReader, channelRetriever);
   }
 
   @Override
@@ -83,8 +74,6 @@ public class ProcessBatchJobHandler implements RequestHandler<SQSEvent, SQSBatch
       case RefreshCandidateMessage candidateMessage -> candidateMessage.execute(candidateService);
       case BackfillCreatorDataMessage candidateMessage ->
           candidateMessage.execute(creatorDataMigrationService);
-      case BackfillChannelMetadataMessage candidateMessage ->
-          candidateMessage.execute(publicationChannelMigrationService);
       case ReportCandidateMessage candidateMessage -> candidateMessage.execute(candidateService);
       case RefreshPeriodMessage periodMessage -> periodMessage.execute(periodService);
     }

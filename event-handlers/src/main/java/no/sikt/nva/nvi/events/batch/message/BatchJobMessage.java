@@ -11,16 +11,12 @@ import no.unit.nva.commons.json.JsonSerializable;
 @JsonSubTypes({
   @JsonSubTypes.Type(value = RefreshCandidateMessage.class, name = "REFRESH_CANDIDATE"),
   @JsonSubTypes.Type(value = BackfillCreatorDataMessage.class, name = "BACKFILL_CREATOR_DATA"),
-  @JsonSubTypes.Type(
-      value = BackfillChannelMetadataMessage.class,
-      name = "BACKFILL_CHANNEL_METADATA"),
   @JsonSubTypes.Type(value = ReportCandidateMessage.class, name = "REPORT_CANDIDATE"),
   @JsonSubTypes.Type(value = RefreshPeriodMessage.class, name = "REFRESH_PERIOD")
 })
 public sealed interface BatchJobMessage extends JsonSerializable
     permits RefreshCandidateMessage,
         BackfillCreatorDataMessage,
-        BackfillChannelMetadataMessage,
         ReportCandidateMessage,
         RefreshPeriodMessage {
 

@@ -3,7 +3,6 @@ package no.sikt.nva.nvi.index.model.document;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 import java.util.Optional;
-import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.model.ChannelType;
 import no.sikt.nva.nvi.common.model.ScientificValue;
 
@@ -11,29 +10,15 @@ import no.sikt.nva.nvi.common.model.ScientificValue;
 public record PublicationChannel(
     URI id, String type, String scientificValue, String name, String printIssn) {
 
-  // TODO: NP-51402 - Remove fallback and publication parameter when channel data is migrated
   public static PublicationChannel from(
-      no.sikt.nva.nvi.common.model.PublicationChannel publicationChannelFromCandidate,
-      PublicationChannelDto publicationChannelFromPublication) {
+      no.sikt.nva.nvi.common.model.PublicationChannel publicationChannel) {
     return builder()
-        .withScientificValue(publicationChannelFromCandidate.scientificValue())
-        .withId(publicationChannelFromCandidate.id())
-        .withType(publicationChannelFromCandidate.channelType())
-        .withName(
-            Optional.ofNullable(publicationChannelFromCandidate.name())
-                .orElse(getNameFromPublication(publicationChannelFromPublication)))
-        .withPrintIssn(
-            Optional.ofNullable(publicationChannelFromCandidate.printIssn())
-                .orElse(getPrintIssnFromPublication(publicationChannelFromPublication)))
+        .withScientificValue(publicationChannel.scientificValue())
+        .withId(publicationChannel.id())
+        .withType(publicationChannel.channelType())
+        .withName(publicationChannel.name())
+        .withPrintIssn(publicationChannel.printIssn())
         .build();
-  }
-
-  private static String getPrintIssnFromPublication(PublicationChannelDto current) {
-    return Optional.ofNullable(current).map(PublicationChannelDto::printIssn).orElse(null);
-  }
-
-  private static String getNameFromPublication(PublicationChannelDto current) {
-    return Optional.ofNullable(current).map(PublicationChannelDto::name).orElse(null);
   }
 
   public static Builder builder() {

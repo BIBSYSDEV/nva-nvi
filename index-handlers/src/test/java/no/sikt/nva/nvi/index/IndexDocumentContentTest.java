@@ -186,9 +186,8 @@ class IndexDocumentContentTest extends IndexDocumentHandlerTestBase {
 
     var document = generateIndexDocument(candidate);
 
-    assertThat(document.publicationDetails().publicationChannel().name())
-        .isNotBlank()
-        .isEqualTo(channel.name());
+    assertThat(document.publicationDetails().publicationChannel().type())
+        .isEqualTo(channel.channelType().getValue());
   }
 
   @Test
@@ -199,9 +198,8 @@ class IndexDocumentContentTest extends IndexDocumentHandlerTestBase {
 
     var document = generateIndexDocument(candidate);
 
-    assertThat(document.publicationDetails().publicationChannel().name())
-        .isNotBlank()
-        .isEqualTo(channel.name());
+    assertThat(document.publicationDetails().publicationChannel().type())
+        .isEqualTo(channel.channelType().getValue());
   }
 
   /**

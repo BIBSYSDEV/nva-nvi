@@ -22,17 +22,14 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.QueueServiceTestUtils;
 import no.sikt.nva.nvi.common.TestScenario;
-import no.sikt.nva.nvi.common.client.PublicationChannelRetriever;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.events.batch.message.BackfillChannelMetadataMessage;
 import no.sikt.nva.nvi.events.batch.message.BackfillCreatorDataMessage;
 import no.sikt.nva.nvi.events.batch.message.BatchJobMessage;
 import no.sikt.nva.nvi.events.batch.message.RefreshCandidateMessage;
 import no.sikt.nva.nvi.events.batch.message.RefreshPeriodMessage;
 import no.sikt.nva.nvi.events.batch.message.ReportCandidateMessage;
-import no.sikt.nva.nvi.test.uriretriever.FakeUriRetriever;
 import no.unit.nva.commons.json.JsonSerializable;
 import no.unit.nva.stubs.FakeContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -57,8 +54,7 @@ class ProcessBatchJobHandlerTest {
         new ProcessBatchJobHandler(
             candidateService,
             scenario.getPeriodService(),
-            scenario.getS3StorageReaderForExpandedResourcesBucket(),
-            new PublicationChannelRetriever(FakeUriRetriever.newInstance()));
+            scenario.getS3StorageReaderForExpandedResourcesBucket());
 
     setupClosedPeriod(scenario, LAST_YEAR);
     setupOpenPeriod(scenario, THIS_YEAR);
@@ -188,10 +184,7 @@ class ProcessBatchJobHandlerTest {
         argumentSet("Refresh", (Function<UUID, BatchJobMessage>) RefreshCandidateMessage::new),
         argumentSet(
             "Backfill creator data",
-            (Function<UUID, BatchJobMessage>) BackfillCreatorDataMessage::new),
-        argumentSet(
-            "Backfill channel metadata",
-            (Function<UUID, BatchJobMessage>) BackfillChannelMetadataMessage::new));
+            (Function<UUID, BatchJobMessage>) BackfillCreatorDataMessage::new));
   }
 
   private SQSBatchResponse handleRequest(SQSEvent sqsEvent) {

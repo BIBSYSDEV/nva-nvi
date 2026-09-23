@@ -42,7 +42,7 @@ public final class CandidateToIndexDocumentMapper {
     this.environment = environment;
     this.contributorMapper = new ContributorMapper(candidate, publicationDto);
     this.approvalMapper = new ApprovalMapper(candidate, publicationDto);
-    this.publicationDetailsMapper = new PublicationDetailsMapper(candidate, publicationDto);
+    this.publicationDetailsMapper = new PublicationDetailsMapper(candidate);
   }
 
   public NviCandidateIndexDocument generate() {

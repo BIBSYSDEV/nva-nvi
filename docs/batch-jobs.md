@@ -59,22 +59,6 @@ Fills in missing verified creator names and ORCID, then writes the candidate bac
 }
 ```
 
-### Backfill channel metadata
-
-Reads candidates from DB and fills in missing publication channel name and print ISSN.
-The values come from the publication in S3, or from the channel registry when the publication has another channel.
-
-```json
-{
-  "type": "StartBatchJobRequest",
-  "jobType": "BACKFILL_CHANNEL_METADATA",
-  "filter": {
-    "type": "ReportingYearFilter",
-    "reportingYears": ["2024"]
-  }
-}
-```
-
 The backfill jobs are one-off data migrations.
 Delete them once they have run in all environments.
 Every candidate a backfill job visits is written back, whether or not the backfill changed it.
