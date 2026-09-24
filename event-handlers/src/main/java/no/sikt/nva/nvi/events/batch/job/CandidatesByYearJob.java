@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.model.ListingResult;
 import no.sikt.nva.nvi.common.service.CandidateService;
-import no.sikt.nva.nvi.events.batch.message.BackfillChannelMetadataMessage;
 import no.sikt.nva.nvi.events.batch.message.BackfillCreatorDataMessage;
 import no.sikt.nva.nvi.events.batch.message.BatchJobMessage;
 import no.sikt.nva.nvi.events.batch.message.RefreshCandidateMessage;
@@ -32,7 +31,6 @@ public record CandidatesByYearJob(
     return switch (request.jobType()) {
       case REFRESH_CANDIDATES -> new RefreshCandidateMessage(identifier);
       case BACKFILL_CREATOR_DATA -> new BackfillCreatorDataMessage(identifier);
-      case BACKFILL_CHANNEL_METADATA -> new BackfillChannelMetadataMessage(identifier);
       case REPORT_APPROVED_CANDIDATES -> new ReportCandidateMessage(identifier);
       case REFRESH_PERIODS ->
           throw new UnsupportedOperationException(
