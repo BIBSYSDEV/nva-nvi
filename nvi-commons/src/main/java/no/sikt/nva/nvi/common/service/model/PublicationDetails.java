@@ -24,8 +24,6 @@ import no.sikt.nva.nvi.common.model.PublicationChannel;
 import no.sikt.nva.nvi.common.model.PublicationDate;
 import no.unit.nva.identifiers.SortableIdentifier;
 
-// Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
-@SuppressWarnings("PMD.TooManyFields")
 public record PublicationDetails(
     URI publicationId,
     URI publicationBucketUri,
@@ -39,7 +37,6 @@ public record PublicationDetails(
     PublicationDate publicationDate,
     boolean isApplicable, // FIXME: Remove when migrated
     Collection<NviCreator> nviCreators,
-    int creatorCount,
     Collection<Organization> topLevelOrganizations,
     Instant modifiedDate,
     Set<URI> handles) {
@@ -68,7 +65,6 @@ public record PublicationDetails(
         .withIsApplicable(publicationDto.isApplicable())
         .withPublicationChannel(publicationChannel)
         .withNviCreators(upsertRequest.nviCreators())
-        .withCreatorCount(publicationDto.creatorCount())
         .withTopLevelOrganizations(topLevelNviOrganizations)
         .withModifiedDate(publicationDto.modifiedDate())
         .withHandles(publicationDto.handles())
@@ -93,7 +89,6 @@ public record PublicationDetails(
         .withPublicationDate(publicationDate)
         .withIsApplicable(isApplicable)
         .withNviCreators(nviCreators)
-        .withCreatorCount(creatorCount)
         .withTopLevelOrganizations(topLevelOrganizations)
         .withModifiedDate(modifiedDate)
         .withHandles(handles);
@@ -139,7 +134,6 @@ public record PublicationDetails(
         .pages(dbPageCount)
         .publicationDate(publicationDate.toDbPublicationDate())
         .creators(dbCreators)
-        .contributorCount(creatorCount)
         .modifiedDate(modifiedDate)
         .topLevelNviOrganizations(
             topLevelOrganizations.stream().map(Organization::toDbOrganization).toList())
@@ -182,7 +176,6 @@ public record PublicationDetails(
         .withPageCount(pageCount)
         .withPublicationDate(PublicationDate.from(dbDetails.publicationDate()))
         .withModifiedDate(dbDetails.modifiedDate())
-        .withCreatorCount(dbDetails.contributorCount())
         .withAbstract(dbDetails.abstractText())
         .withIdentifier(dbDetails.identifier())
         .withLanguage(dbDetails.language())
@@ -223,7 +216,6 @@ public record PublicationDetails(
     private boolean isApplicable;
     private PublicationChannel publicationChannel;
     private Collection<NviCreator> nviCreators;
-    private int creatorCount;
     private Collection<Organization> topLevelOrganizations;
     private Instant modifiedDate;
     private Set<URI> handles;
@@ -295,11 +287,6 @@ public record PublicationDetails(
       return this;
     }
 
-    public Builder withCreatorCount(int creatorCount) {
-      this.creatorCount = creatorCount;
-      return this;
-    }
-
     public Builder withTopLevelOrganizations(Collection<Organization> topLevelOrganizations) {
       this.topLevelOrganizations = topLevelOrganizations;
       return this;
@@ -329,7 +316,6 @@ public record PublicationDetails(
           publicationDate,
           isApplicable,
           nviCreators,
-          creatorCount,
           topLevelOrganizations,
           modifiedDate,
           handles);

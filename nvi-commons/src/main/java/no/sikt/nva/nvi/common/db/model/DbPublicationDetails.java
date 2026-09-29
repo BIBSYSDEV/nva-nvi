@@ -22,7 +22,6 @@ public record DbPublicationDetails(
     @DynamoDbConvertedBy(DbCreatorTypeListConverter.class) List<DbCreatorType> creators,
     List<DbOrganization> topLevelNviOrganizations,
     Instant modifiedDate,
-    int contributorCount,
     String abstractText,
     String identifier,
     String language,
@@ -51,7 +50,6 @@ public record DbPublicationDetails(
         .creators(this.creators)
         .topLevelNviOrganizations(this.topLevelNviOrganizations)
         .modifiedDate(this.modifiedDate)
-        .contributorCount(this.contributorCount)
         .abstractText(this.abstractText)
         .identifier(this.identifier)
         .language(this.language)
@@ -69,7 +67,6 @@ public record DbPublicationDetails(
     private List<DbCreatorType> creators;
     private List<DbOrganization> topLevelNviOrganizations;
     private Instant modifiedDate;
-    private int contributorCount;
     private String abstractText;
     private String identifier;
     private String language;
@@ -114,11 +111,6 @@ public record DbPublicationDetails(
       return this;
     }
 
-    public Builder contributorCount(int contributorCount) {
-      this.contributorCount = contributorCount;
-      return this;
-    }
-
     public Builder abstractText(String abstractText) {
       this.abstractText = abstractText;
       return this;
@@ -158,7 +150,6 @@ public record DbPublicationDetails(
           creators,
           topLevelNviOrganizations,
           modifiedDate,
-          contributorCount,
           abstractText,
           identifier,
           language,
