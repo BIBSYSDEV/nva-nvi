@@ -20,7 +20,7 @@ CONSTRUCT {
                :pageCount ?pageCount ;
                :publicationDate ?date ;
                :parentPublicationType ?parentInstanceType ;
-               :contributor ?personId ;
+               :contributor ?contributorNode ;
                :topLevelOrganization ?topLevelOrganization ;
                :modifiedDate ?modifiedDate ;
                :isbn ?isbnList ;
@@ -45,13 +45,15 @@ CONSTRUCT {
                 :partOf ?parent ;
                 :hasPart ?child .
 
-  # Include all contributors
-  ?personId a :Contributor ;
-            :affiliation ?affiliation ;
-            :role ?roleType ;
-            :verificationStatus ?verificationStatus ;
-            :name ?contributorName ;
-            :orcid ?orcid .
+  # Include all contributors. The same person can appear several times with different roles and
+  # affiliations, so a contributor is keyed on person and role, and links to the person ID.
+  ?contributorNode a :Contributor ;
+                   :identity ?verifiedPersonId ;
+                   :affiliation ?affiliation ;
+                   :role ?roleType ;
+                   :verificationStatus ?verificationStatus ;
+                   :name ?contributorName ;
+                   :orcid ?orcid .
 }
 
 WHERE {
@@ -128,6 +130,14 @@ WHERE {
                  :role ?role .
     ?role a ?roleType .
 
+    # Entries for the same person and role are merged into one contributor, while the same person
+    # in another role (possibly at another institution) is kept separate. Unverified contributors
+    # have no person IRI to merge on, so each of their entries is kept as its own contributor.
+    BIND(IF(isIRI(?personId), ?personId, ?noPersonId) AS ?verifiedPersonId)
+    BIND(IF(isIRI(?personId),
+            IRI(CONCAT(STR(?personId), "#", ENCODE_FOR_URI(STR(?roleType)))),
+            ?contributor)
+         AS ?contributorNode)
     BIND(IF(EXISTS { ?personId :verificationStatus "Verified" }, "Verified", "NotVerified")
     AS ?verificationStatus)
     OPTIONAL {

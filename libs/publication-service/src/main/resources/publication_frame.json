@@ -11,6 +11,15 @@
     "channelType": {
       "@type": "@vocab"
     },
+    "Contributor": {
+      "@id": "Contributor",
+      "@context": {
+        "id": {
+          "@id": "identity",
+          "@type": "@id"
+        }
+      }
+    },
     "contributors": {
       "@id": "contributor",
       "@type": "@id",
