@@ -54,6 +54,17 @@ public record ContributorDto(
     return new Builder();
   }
 
+  @JsonIgnore
+  public Builder copy() {
+    return builder()
+        .withId(id)
+        .withName(name)
+        .withOrcid(orcid)
+        .withVerificationStatus(verificationStatus)
+        .withRoles(roles)
+        .withAffiliations(affiliations);
+  }
+
   public static final class Builder {
 
     private URI id;
