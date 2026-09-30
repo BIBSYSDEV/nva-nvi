@@ -623,7 +623,7 @@ class NviGraphValidatorTest {
   }
 
   @Test
-  void shouldReportWhenVerifiedPersonIsListedAsCreatorMoreThanOnce() {
+  void shouldReportWhenPersonWithIdIsListedAsCreatorMoreThanOnce() {
     var model = createModelWithNoErrors();
     var validation = nviGraphValidator.validate(addContributionForSameIdentity(model, "Creator"));
     assertThat(validation.generateReport())
