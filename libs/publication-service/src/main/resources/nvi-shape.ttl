@@ -308,6 +308,12 @@
 :ContributorShape a sh:NodeShape ;
   sh:targetClass :Contributor ;
   sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Contributor identity is repeated" ;
+    sh:path :identity ;
+    sh:maxCount 1
+  ] ;
+  sh:property [
     sh:severity sh:Warning ;
     sh:message "Contributor affiliation is missing" ;
     sh:path :affiliation ;

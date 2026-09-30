@@ -603,6 +603,18 @@ class NviGraphValidatorTest {
   }
 
   @Test
+  void shouldReportWhenContributorIdentityIsRepeated() {
+    var model = createModelWithNoErrors();
+    var otherIdentity = URI.create("https://example.org/person/other");
+    var validation =
+        nviGraphValidator.validate(
+            addTriples(model, addQuery(CONTRIBUTOR_CLASS, "identity", otherIdentity)));
+    assertThat(validation.generateReport())
+        .containsSequence("Contributor identity is repeated")
+        .hasSize(1);
+  }
+
+  @Test
   void shouldNotReportWhenContributorHasOtherRoleThanCreator() {
     var model = createModelWithNoErrors();
     var validation =
