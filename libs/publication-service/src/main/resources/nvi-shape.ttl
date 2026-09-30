@@ -21,9 +21,9 @@
     sh:message "Publication is missing"
   ] .
 
-:PublicationNodeDuplicatedShape a sh:NodeShape ;
-  sh:name "Publication is not duplicated shape" ;
-  sh:description "Validates that there is not more than one type Publication in the document" ;
+:SinglePublicationShape a sh:NodeShape ;
+  sh:name "Single publication shape" ;
+  sh:description "Validates that the document has at most one node with type Publication" ;
   sh:targetNode rdf:nil ;  # Target the dataset as a whole
   sh:sparql [
     a sh:SPARQLConstraint ;
@@ -344,14 +344,14 @@
     sh:nodeKind sh:IRI
   ] .
 
-:CreatorIdentityShape a sh:NodeShape ;
-  sh:name "Creator is not repeated shape" ;
-  sh:description "Validates that a person with an ID is listed with the role Creator at most once" ;
+:UniqueCreatorShape a sh:NodeShape ;
+  sh:name "Unique creator shape" ;
+  sh:description "Validates that each person with an ID has at most one contribution with the role Creator" ;
   sh:targetClass :Publication ;
   sh:sparql [
     a sh:SPARQLConstraint ;
     sh:severity sh:Violation ;
-    sh:message "Contributor is listed as Creator more than once" ;
+    sh:message "Person {?value} is listed as Creator more than once" ;
     sh:select """
       SELECT $this ?value
       WHERE {
