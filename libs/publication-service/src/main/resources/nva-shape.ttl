@@ -67,6 +67,15 @@
     sh:maxCount 1
   ] .
 
+:ContributorRoleShape a sh:NodeShape ;
+  sh:targetObjectsOf :role ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Contributor role has multiple types" ;
+    sh:path rdf:type ;
+    sh:maxCount 1
+  ] .
+
 :IdentityShape a sh:NodeShape ;
   sh:targetClass :Identity ;
   sh:property [

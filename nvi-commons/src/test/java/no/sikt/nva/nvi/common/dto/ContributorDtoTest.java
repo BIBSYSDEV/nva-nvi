@@ -11,11 +11,11 @@ import static no.sikt.nva.nvi.common.model.ContributorFixtures.STATUS_VERIFIED;
 import static no.sikt.nva.nvi.test.TestUtils.randomUriWithSuffix;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -54,15 +54,14 @@ class ContributorDtoTest {
   }
 
   @Test
-  void shouldPreserveMultipleRolesWhenBuildingContributorDto() {
-    var expectedRoles = List.of(ROLE_CREATOR, ROLE_OTHER);
+  void shouldNotBeCreatorWhenRoleIsOther() {
     var contributor =
         ContributorDto.builder()
             .withName("Test Person")
-            .withRoles(expectedRoles)
+            .withRole(ROLE_OTHER)
             .withVerificationStatus(STATUS_VERIFIED)
             .build();
-    assertEquals(expectedRoles, contributor.roles());
+    assertFalse(contributor.isCreator());
   }
 
   private static Stream<Arguments> exampleContributorProvider() {

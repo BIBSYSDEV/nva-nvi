@@ -1,7 +1,10 @@
 package no.sikt.nva.nvi.common.dto;
 
 import static java.util.Collections.emptyList;
+import static no.sikt.nva.nvi.common.model.ContributorFixtures.unverifiedCreatorFrom;
+import static no.sikt.nva.nvi.common.model.ContributorFixtures.verifiedCreatorFrom;
 import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_CHAPTER;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganization;
 import static no.sikt.nva.nvi.common.model.PublicationDetailsFixtures.randomPublicationDtoBuilder;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -97,6 +100,59 @@ class PublicationDtoTest {
 
   private static Stream<Collection<URI>> emptyAndNullCollectionProvider() {
     return Stream.of(null, Collections.emptySet());
+  }
+
+  @Test
+  void shouldExcludeContributionsWithOtherRolesFromCreators() {
+    var creator = verifiedCreatorFrom(randomOrganization().build());
+    var editor = creator.copy().withRole(ContributorRole.EDITOR).build();
+    var publication =
+        randomPublicationDtoBuilder().withContributors(List.of(creator, editor)).build();
+
+    assertThat(publication.creators()).containsExactly(creator);
+  }
+
+  @Test
+  void shouldThrowValidationExceptionWhenPersonIsListedAsCreatorMoreThanOnce() {
+    var creator = verifiedCreatorFrom(randomOrganization().build());
+    var sameCreatorElsewhere =
+        creator.copy().withAffiliations(List.of(randomOrganization().build())).build();
+    var publication =
+        randomPublicationDtoBuilder()
+            .withContributors(List.of(creator, sameCreatorElsewhere))
+            .build();
+
+    var exception = assertThrows(ValidationException.class, publication::validate);
+
+    assertThat(exception.getMessage())
+        .isEqualTo("A contributor is listed as Creator more than once");
+  }
+
+  @Test
+  void shouldAllowPersonListedAsCreatorAndInOtherRole() {
+    var creator = verifiedCreatorFrom(randomOrganization().build());
+    var editor =
+        creator
+            .copy()
+            .withRole(ContributorRole.EDITOR)
+            .withAffiliations(List.of(randomOrganization().build()))
+            .build();
+    var publication =
+        randomPublicationDtoBuilder().withContributors(List.of(creator, editor)).build();
+
+    assertDoesNotThrow(publication::validate);
+  }
+
+  @Test
+  void shouldAllowSeveralUnverifiedCreators() {
+    var affiliation = randomOrganization().build();
+    var publication =
+        randomPublicationDtoBuilder()
+            .withContributors(
+                List.of(unverifiedCreatorFrom(affiliation), unverifiedCreatorFrom(affiliation)))
+            .build();
+
+    assertDoesNotThrow(publication::validate);
   }
 
   @Test

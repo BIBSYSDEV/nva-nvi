@@ -28,8 +28,7 @@ public final class CreatorVerificationUtil {
   public static List<NviCreator> getNviCreatorsWithNviInstitutions(
       Map<URI, Customer> customers, PublicationDto publication) {
     var topLevelNviOrganizations = getTopLevelNviOrganizations(customers, publication);
-    return publication.contributors().stream()
-        .filter(ContributorDto::isCreator)
+    return publication.creators().stream()
         .filter(CreatorVerificationUtil::isValidContributor)
         .map(contributor -> toNviCreator(topLevelNviOrganizations, contributor))
         .filter(CreatorVerificationUtil::isAffiliatedWithNviOrganization)

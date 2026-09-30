@@ -183,18 +183,16 @@ public class SampleExpandedPublicationFactory {
     if (nonNull(additionalNames)) {
       names.addAll(List.of(additionalNames));
     }
-    for (var role : contributor.roles()) {
-      var expandedContributor =
-          SampleExpandedContributor.builder()
-              .withId(contributor.id())
-              .withNames(names)
-              .withRole(role.getValue())
-              .withOrcId(contributor.orcid())
-              .withVerificationStatus(contributor.verificationStatus().getValue())
-              .withAffiliations(expandedAffiliations)
-              .build();
-      this.contributors.add(expandedContributor);
-    }
+    var expandedContributor =
+        SampleExpandedContributor.builder()
+            .withId(contributor.id())
+            .withNames(names)
+            .withRole(contributor.role().getValue())
+            .withOrcId(contributor.orcid())
+            .withVerificationStatus(contributor.verificationStatus().getValue())
+            .withAffiliations(expandedAffiliations)
+            .build();
+    this.contributors.add(expandedContributor);
   }
 
   public SampleExpandedPublicationFactory withContributor(

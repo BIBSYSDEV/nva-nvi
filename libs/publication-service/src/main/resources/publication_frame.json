@@ -11,15 +11,6 @@
     "channelType": {
       "@type": "@vocab"
     },
-    "Contributor": {
-      "@id": "Contributor",
-      "@context": {
-        "id": {
-          "@id": "identity",
-          "@type": "@id"
-        }
-      }
-    },
     "contributors": {
       "@id": "contributor",
       "@type": "@id",
@@ -80,10 +71,8 @@
     "parentPublicationType": {
       "@type": "@vocab"
     },
-    "roles": {
-      "@id": "role",
-      "@type": "@vocab",
-      "@container": "@set"
+    "role": {
+      "@type": "@vocab"
     },
     "status": {
       "@type": "@vocab"

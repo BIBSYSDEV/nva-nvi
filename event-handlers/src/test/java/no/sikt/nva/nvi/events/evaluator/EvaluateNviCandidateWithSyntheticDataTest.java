@@ -159,7 +159,7 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
   }
 
   @Test
-  void shouldMergeCreatorEntriesWithSameId() {
+  void shouldRejectPublicationWithSameCreatorListedMoreThanOnce() {
     var author = verifiedCreatorFrom(nviOrganization);
     var nviOrganization2 = factory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
     var sameAuthorAtOtherInstitution =
@@ -168,11 +168,7 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
 
     handleEvaluation(factory);
 
-    var candidate = candidateService.getCandidateByPublicationId(publicationId);
-    assertThat(candidate.publicationDetails().verifiedCreators())
-        .extracting(NviCreator::id)
-        .containsExactly(author.id());
-    assertThat(candidate.pointCalculation().institutionPoints()).hasSize(2);
+    assertThatNoCandidateExistsForPublication(publicationId);
   }
 
   @Test

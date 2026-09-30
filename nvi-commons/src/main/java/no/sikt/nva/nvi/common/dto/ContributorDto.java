@@ -13,40 +13,56 @@ import java.net.URI;
 import java.util.List;
 import no.sikt.nva.nvi.common.client.model.Organization;
 
+/**
+ * A contribution to a publication: the identity contributed in one role, on behalf of a set of
+ * affiliations. The same person can have several contributions, for example in different roles.
+ */
 @JsonSerialize
 public record ContributorDto(
-    URI id,
-    String name,
-    URI orcid,
-    VerificationStatus verificationStatus,
-    List<ContributorRole> roles,
-    List<Organization> affiliations) {
+    IdentityDto identity, ContributorRole role, List<Organization> affiliations) {
+
+  private static final IdentityDto MISSING_IDENTITY = new IdentityDto(null, null, null, null);
 
   public ContributorDto {
-    verificationStatus = requireNonNullElse(verificationStatus, VerificationStatus.NOT_VERIFIED);
-    roles = copyOfNullable(roles);
+    identity = requireNonNullElse(identity, MISSING_IDENTITY);
     affiliations = copyOfNullable(affiliations);
   }
 
+  public URI id() {
+    return identity.id();
+  }
+
+  public String name() {
+    return identity.name();
+  }
+
+  public URI orcid() {
+    return identity.orcid();
+  }
+
+  public VerificationStatus verificationStatus() {
+    return identity.verificationStatus();
+  }
+
   public void validate() {
-    if (isBlank(name)) {
-      shouldNotBeNull(id, "Both 'id' and 'name' is null, one of these fields must be set");
+    if (isBlank(name())) {
+      shouldNotBeNull(id(), "Both 'id' and 'name' is null, one of these fields must be set");
     }
   }
 
   @JsonIgnore
   public boolean isCreator() {
-    return roles.stream().anyMatch(ContributorRole::isCreator);
+    return nonNull(role) && role.isCreator();
   }
 
   @JsonIgnore
   public boolean isVerified() {
-    return nonNull(id) && verificationStatus.isVerified();
+    return nonNull(id()) && verificationStatus().isVerified();
   }
 
   @JsonIgnore
   public boolean isNamed() {
-    return isNotBlank(name);
+    return isNotBlank(name());
   }
 
   @JsonIgnore
@@ -57,11 +73,11 @@ public record ContributorDto(
   @JsonIgnore
   public Builder copy() {
     return builder()
-        .withId(id)
-        .withName(name)
-        .withOrcid(orcid)
-        .withVerificationStatus(verificationStatus)
-        .withRoles(roles)
+        .withId(id())
+        .withName(name())
+        .withOrcid(orcid())
+        .withVerificationStatus(verificationStatus())
+        .withRole(role)
         .withAffiliations(affiliations);
   }
 
@@ -71,7 +87,7 @@ public record ContributorDto(
     private String name;
     private URI orcid;
     private VerificationStatus verificationStatus;
-    private List<ContributorRole> roles;
+    private ContributorRole role;
     private List<Organization> affiliations;
 
     private Builder() {}
@@ -97,12 +113,7 @@ public record ContributorDto(
     }
 
     public Builder withRole(ContributorRole role) {
-      this.roles = List.of(role);
-      return this;
-    }
-
-    public Builder withRoles(List<ContributorRole> roles) {
-      this.roles = roles;
+      this.role = role;
       return this;
     }
 
@@ -112,7 +123,8 @@ public record ContributorDto(
     }
 
     public ContributorDto build() {
-      return new ContributorDto(id, name, orcid, verificationStatus, roles, affiliations);
+      var identity = new IdentityDto(id, name, orcid, verificationStatus);
+      return new ContributorDto(identity, role, affiliations);
     }
   }
 }

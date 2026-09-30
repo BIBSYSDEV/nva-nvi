@@ -29,7 +29,7 @@ public record SampleExpandedContributor(
     URI id,
     Collection<String> verificationStatus,
     List<String> names,
-    String role,
+    List<String> roles,
     List<SampleExpandedAffiliation> affiliations,
     URI orcId) {
 
@@ -42,9 +42,7 @@ public record SampleExpandedContributor(
 
     contributorNode.set(AFFILIATIONS_FIELD, createAndPopulateAffiliationsNode());
 
-    var roleNode = objectMapper.createObjectNode();
-    roleNode.put(TYPE_FIELD, role);
-    contributorNode.set(ROLE_FIELD, roleNode);
+    contributorNode.set(ROLE_FIELD, createRoleNode());
 
     var identityNode = createNodeWithType(IDENTITY);
     identityNode.put(TYPE_FIELD, IDENTITY);
@@ -55,6 +53,16 @@ public record SampleExpandedContributor(
 
     contributorNode.set(IDENTITY_FIELD, identityNode);
     return contributorNode;
+  }
+
+  /**
+   * Several roles are written as one role object with multiple types, which is how repeated roles
+   * appear in invalid production data.
+   */
+  private ObjectNode createRoleNode() {
+    var roleNode = objectMapper.createObjectNode();
+    putAsArrayIfMultipleValues(roleNode, TYPE_FIELD, roles);
+    return roleNode;
   }
 
   private ArrayNode createAndPopulateAffiliationsNode() {
@@ -70,7 +78,7 @@ public record SampleExpandedContributor(
 
     private URI id = randomUri();
     private List<String> names = List.of(randomString());
-    private String role = CREATOR;
+    private List<String> roles = List.of(CREATOR);
     private Collection<String> verificationStatus = List.of("NotVerified");
     private URI orcId;
     private List<SampleExpandedAffiliation> affiliations;
@@ -98,7 +106,12 @@ public record SampleExpandedContributor(
     }
 
     public Builder withRole(String role) {
-      this.role = role;
+      this.roles = List.of(role);
+      return this;
+    }
+
+    public Builder withRoles(List<String> roles) {
+      this.roles = List.copyOf(roles);
       return this;
     }
 
@@ -114,7 +127,7 @@ public record SampleExpandedContributor(
 
     public SampleExpandedContributor build() {
       return new SampleExpandedContributor(
-          id, verificationStatus, names, role, affiliations, orcId);
+          id, verificationStatus, names, roles, affiliations, orcId);
     }
   }
 }

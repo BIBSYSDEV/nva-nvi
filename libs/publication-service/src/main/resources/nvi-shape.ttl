@@ -335,7 +335,28 @@
     sh:severity sh:Violation ;
     sh:message "Contributor role is invalid" ;
     sh:path :role ;
-    sh:in (:Creator)
+    sh:nodeKind sh:IRI
+  ] .
+
+:CreatorIdentityShape a sh:NodeShape ;
+  sh:name "Creator is not repeated shape" ;
+  sh:description "Validates that a verified person is listed with the role Creator at most once" ;
+  sh:targetClass :Publication ;
+  sh:sparql [
+    a sh:SPARQLConstraint ;
+    sh:severity sh:Violation ;
+    sh:message "Contributor is listed as Creator more than once" ;
+    sh:select """
+      SELECT $this ?value
+      WHERE {
+        $this <https://nva.sikt.no/ontology/publication#contributor> ?creator .
+        ?creator <https://nva.sikt.no/ontology/publication#role> <https://nva.sikt.no/ontology/publication#Creator> ;
+                 <https://nva.sikt.no/ontology/publication#identity> ?value .
+        FILTER (isIRI(?value))
+      }
+      GROUP BY $this ?value
+      HAVING (COUNT(?creator) > 1)
+    """
   ] .
 
 :IdentityShape a sh:NodeShape ;

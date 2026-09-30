@@ -20,7 +20,7 @@ CONSTRUCT {
                :pageCount ?pageCount ;
                :publicationDate ?date ;
                :parentPublicationType ?parentInstanceType ;
-               :contributor ?contributorNode ;
+               :contributor ?contributor ;
                :topLevelOrganization ?topLevelOrganization ;
                :modifiedDate ?modifiedDate ;
                :isbn ?isbnList ;
@@ -45,15 +45,18 @@ CONSTRUCT {
                 :partOf ?parent ;
                 :hasPart ?child .
 
-  # Include all contributors. The same person can appear several times with different roles and
-  # affiliations, so a contributor is keyed on person and role, and links to the person ID.
-  ?contributorNode a :Contributor ;
-                   :identity ?verifiedPersonId ;
-                   :affiliation ?affiliation ;
-                   :role ?roleType ;
-                   :verificationStatus ?verificationStatus ;
-                   :name ?contributorName ;
-                   :orcid ?orcid .
+  # Include all contributors. Each contributor entry is really a contribution: the identity
+  # contributed in one role, on behalf of a set of affiliations. The same person can have several
+  # contributions, so the facts about the person are kept on a separate identity node.
+  ?contributor a :Contributor ;
+               :identity ?identity ;
+               :role ?roleType ;
+               :affiliation ?affiliation .
+
+  ?identity a :Identity ;
+            :verificationStatus ?verificationStatus ;
+            :name ?contributorName ;
+            :orcid ?orcid .
 }
 
 WHERE {
@@ -126,33 +129,34 @@ WHERE {
     ?publication :entityDescription ?entityDescription .
     ?entityDescription :contributor ?contributor .
 
-    ?contributor :identity ?personId ;
+    # The identity is the person IRI for verified contributors, and a blank node otherwise
+    ?contributor :identity ?identity ;
                  :role ?role .
     ?role a ?roleType .
+    # A contribution has one role, but malformed input can list several. We keep exactly one,
+    # preferring Creator and otherwise picking the highest IRI, so the choice is deterministic.
+    FILTER NOT EXISTS {
+      ?contributor :role/a ?otherRoleType .
+      FILTER(?otherRoleType != ?roleType
+             && (?otherRoleType = :Creator
+                 || (?roleType != :Creator && STR(?otherRoleType) > STR(?roleType))))
+    }
 
-    # Entries for the same person and role are merged into one contributor, while the same person
-    # in another role (possibly at another institution) is kept separate. Unverified contributors
-    # have no person IRI to merge on, so each of their entries is kept as its own contributor.
-    BIND(IF(isIRI(?personId), ?personId, ?noPersonId) AS ?verifiedPersonId)
-    BIND(IF(isIRI(?personId),
-            IRI(CONCAT(STR(?personId), "#", ENCODE_FOR_URI(STR(?roleType)))),
-            ?contributor)
-         AS ?contributorNode)
-    BIND(IF(EXISTS { ?personId :verificationStatus "Verified" }, "Verified", "NotVerified")
+    BIND(IF(EXISTS { ?identity :verificationStatus "Verified" }, "Verified", "NotVerified")
     AS ?verificationStatus)
     OPTIONAL {
-      ?personId :name ?contributorName
+      ?identity :name ?contributorName
       # In rare cases, multiple names are given for the same contributor, but we need at most one.
       # This filter works as a "MAX(name)" while avoiding the use of subqueries.
       FILTER NOT EXISTS {
-        ?personId :name ?otherName .
+        ?identity :name ?otherName .
         FILTER(?otherName > ?contributorName)
       }
     }
     # The ORCID is currently stored with the key "orcId" in expanded publications, but we
     # accept both casing variants in case this is normalized to "orcid" upstream.
-    OPTIONAL { ?personId :orcId ?mixedCaseOrcid }
-    OPTIONAL { ?personId :orcid ?lowerCaseOrcid }
+    OPTIONAL { ?identity :orcId ?mixedCaseOrcid }
+    OPTIONAL { ?identity :orcid ?lowerCaseOrcid }
     BIND(COALESCE(?mixedCaseOrcid, ?lowerCaseOrcid) AS ?orcid)
 
     # Find all valid affiliations for the contributor
