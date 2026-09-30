@@ -346,7 +346,7 @@
 
 :CreatorIdentityShape a sh:NodeShape ;
   sh:name "Creator is not repeated shape" ;
-  sh:description "Validates that a verified person is listed with the role Creator at most once" ;
+  sh:description "Validates that a person with an ID is listed with the role Creator at most once" ;
   sh:targetClass :Publication ;
   sh:sparql [
     a sh:SPARQLConstraint ;
