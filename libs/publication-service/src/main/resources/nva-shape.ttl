@@ -45,10 +45,8 @@
   ] .
 
 
-# Targets the contributors of the publication only. The contributors preview repeats some of them
-# with the type Contributor, and targeting the class would report the same problem twice.
 :ContributorShape a sh:NodeShape ;
-  sh:targetObjectsOf :contributor ;
+  sh:targetClass :Contributor ;
   sh:property [
     sh:severity sh:Info ;
     sh:message "Contributor affiliation is missing" ;

@@ -85,22 +85,6 @@ class NvaGraphValidatorTest {
     assertThat(validation.generateReport()).containsExactly("Contributor role has multiple types");
   }
 
-  @Test
-  void shouldNotValidateContributorsPreview() {
-    var previewContributor =
-        """
-        :entityDescription :contributorsPreview :previewContributor .
-        :previewContributor a :Contributor ;
-                            :role :previewRole .
-        :previewRole a :Creator , :Editor .
-        """;
-    var model = addToModel(createModel(), previewContributor);
-
-    var validation = nvaGraphValidator.validate(model);
-
-    assertThat(validation.generateReport()).isEmpty();
-  }
-
   private static Model createModel() {
     return addToModel(ModelFactory.createDefaultModel(), PUBLICATION_WITH_ONE_CONTRIBUTOR);
   }

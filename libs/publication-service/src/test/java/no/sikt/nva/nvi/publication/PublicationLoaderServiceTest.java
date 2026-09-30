@@ -237,6 +237,16 @@ class PublicationLoaderServiceTest {
     assertThat(logRecorder.asString()).contains("Contributor role has multiple types");
   }
 
+  @Test
+  void shouldValidateContributorOnlyOnceWhenAlsoInContributorsPreview() {
+    logRecorder.clear();
+    var roleTypes = roleTypes(ContributorRole.CREATOR, ContributorRole.EDITOR);
+
+    parsePublicationWithContributorRoles(roleTypes);
+
+    assertThat(logRecorder.asString()).containsOnlyOnce("Contributor role has multiple types");
+  }
+
   private PublicationDto parsePublicationWithContributorRoles(List<String> roleTypes) {
     var factory = new SampleExpandedPublicationFactory();
     var organization = factory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);

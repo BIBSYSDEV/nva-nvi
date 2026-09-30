@@ -26,6 +26,7 @@ public final class TestConstants {
   public static final String STATUS_FIELD = "status";
   public static final String CONTRIBUTOR = "Contributor";
   public static final String CONTRIBUTORS_FIELD = "contributors";
+  public static final String CONTRIBUTORS_PREVIEW_FIELD = "contributorsPreview";
   public static final String CREATOR = "Creator";
   public static final String HARDCODED_NORWEGIAN_LABEL = "Hardcoded Norwegian label";
   public static final String HARDCODED_ENGLISH_LABEL = "Hardcoded English label";
