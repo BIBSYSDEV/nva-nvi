@@ -626,9 +626,10 @@ class NviGraphValidatorTest {
   void shouldReportWhenPersonWithIdIsListedAsCreatorMoreThanOnce() {
     var model = createModelWithNoErrors();
     var validation = nviGraphValidator.validate(addContributionForSameIdentity(model, "Creator"));
-    var expectedMessage =
-        "Person <https://api.sandbox.nva.aws.unit.no/cristin/person/1215176> is listed as Creator more than once";
-    assertThat(validation.generateReport()).containsExactly(expectedMessage);
+    assertThat(validation.generateReport())
+        .containsExactly(
+            "Person <https://api.sandbox.nva.aws.unit.no/cristin/person/1215176> is listed as Creator"
+                + " more than once");
   }
 
   @Test
