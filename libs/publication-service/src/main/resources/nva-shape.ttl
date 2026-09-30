@@ -82,6 +82,12 @@
   ] ;
   sh:property [
     sh:severity sh:Violation ;
+    sh:message "Contributor role type is missing" ;
+    sh:path ( :role rdf:type ) ;
+    sh:minCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
     sh:message "Contributor role has multiple types" ;
     sh:path :role ;
     sh:node :ContributorRoleShape
