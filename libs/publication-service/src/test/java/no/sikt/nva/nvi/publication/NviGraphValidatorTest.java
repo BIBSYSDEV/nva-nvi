@@ -628,8 +628,8 @@ class NviGraphValidatorTest {
     var validation = nviGraphValidator.validate(addContributionForSameIdentity(model, "Creator"));
     assertThat(validation.generateReport())
         .containsExactly(
-            "Person <https://api.sandbox.nva.aws.unit.no/cristin/person/1215176> is listed as Creator"
-                + " more than once");
+            "Person <https://api.sandbox.nva.aws.unit.no/cristin/person/1215176> is listed as"
+                + " Creator more than once");
   }
 
   @Test
