@@ -5,7 +5,6 @@ import static java.util.Objects.isNull;
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.model.PageCountFixtures.PAGE_RANGE_AS_DTO;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.getRandomDateInCurrentYearAsDto;
-import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 
@@ -26,7 +25,6 @@ public final class PublicationDetailsDtoBuilder {
   private PageCountDto pageCount;
   private PublicationDateDto publicationDate;
   private boolean isApplicable;
-  private int creatorCount;
   private Instant modifiedDate;
   private Set<URI> handles;
 
@@ -42,7 +40,6 @@ public final class PublicationDetailsDtoBuilder {
     this.pageCount = other.pageCount();
     this.publicationDate = other.publicationDate();
     this.isApplicable = other.isApplicable();
-    this.creatorCount = other.creatorCount();
     this.modifiedDate = other.modifiedDate();
     this.handles = other.handles();
   }
@@ -58,7 +55,6 @@ public final class PublicationDetailsDtoBuilder {
         .withPageCount(PAGE_RANGE_AS_DTO)
         .withPublicationDate(getRandomDateInCurrentYearAsDto())
         .withIsApplicable(true)
-        .withCreatorCount(randomInteger())
         .withModifiedDate(Instant.now());
   }
 
@@ -115,11 +111,6 @@ public final class PublicationDetailsDtoBuilder {
     return this;
   }
 
-  public PublicationDetailsDtoBuilder withCreatorCount(int creatorCount) {
-    this.creatorCount = creatorCount;
-    return this;
-  }
-
   public PublicationDetailsDtoBuilder withModifiedDate(Instant modifiedDate) {
     this.modifiedDate = modifiedDate;
     return this;
@@ -141,7 +132,6 @@ public final class PublicationDetailsDtoBuilder {
         pageCount,
         publicationDate,
         isApplicable,
-        creatorCount,
         modifiedDate,
         handles);
   }

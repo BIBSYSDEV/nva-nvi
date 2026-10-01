@@ -230,7 +230,7 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
     handleEvaluation(publication);
 
     var candidate = candidateService.getCandidateByPublicationId(publicationId);
-    assertThat(candidate.publicationDetails().creatorCount()).isEqualTo(1);
+    assertThat(candidate.publicationDetails().nviCreators()).hasSize(1);
     assertThat(candidate.publicationDetails().verifiedCreators())
         .hasSize(1)
         .extracting("id")
@@ -257,7 +257,7 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
     handleEvaluation(publication);
 
     var candidate = candidateService.getCandidateByPublicationId(publicationId);
-    assertThat(candidate.publicationDetails().creatorCount()).isEqualTo(1);
+    assertThat(candidate.publicationDetails().nviCreators()).hasSize(1);
     assertThat(candidate.publicationDetails().verifiedCreators())
         .hasSize(1)
         .extracting("id")

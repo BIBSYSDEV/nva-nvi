@@ -18,7 +18,6 @@ public record PublicationDetailsDto(
     PageCountDto pageCount,
     PublicationDateDto publicationDate,
     boolean isApplicable,
-    int creatorCount,
     Instant modifiedDate,
     Set<URI> handles) {
 
@@ -43,7 +42,6 @@ public record PublicationDetailsDto(
         publication.pageCount(),
         publication.publicationDate(),
         publication.isApplicable(),
-        publication.contributors().size(),
         publication.modifiedDate(),
         publication.handles());
   }
