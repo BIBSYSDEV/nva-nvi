@@ -11,6 +11,7 @@ import static no.sikt.nva.nvi.test.TestConstants.ACADEMIC_MONOGRAPH;
 import static no.sikt.nva.nvi.test.TestConstants.ADDITIONAL_IDENTIFIERS_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.BODY_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.CONTRIBUTORS_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.CONTRIBUTORS_PREVIEW_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.ENTITY_DESCRIPTION_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.HANDLE_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.IDENTIFIER_FIELD;
@@ -72,6 +73,7 @@ public record SampleExpandedPublication(
     List<SampleAdditionalIdentifier> additionalIdentifiers) {
 
   private static final String TEMPLATE_JSON_PATH = "template_publication.json";
+  private static final int CONTRIBUTORS_PREVIEW_SIZE = 10;
 
   public static Builder builder() {
     return new Builder();
@@ -162,7 +164,8 @@ public record SampleExpandedPublication(
     putIfNotBlank(node, LANGUAGE_FIELD, language);
     putIfNotBlank(node, ABSTRACT_FIELD, abstractText);
     node.put(MAIN_TITLE_FIELD, mainTitle);
-    node.set(CONTRIBUTORS_FIELD, createContributorsNode());
+    node.set(CONTRIBUTORS_FIELD, createContributorsNode(contributors));
+    node.set(CONTRIBUTORS_PREVIEW_FIELD, createContributorsNode(getContributorsPreview()));
     if (nonNull(publicationDate)) {
       node.set(PUBLICATION_DATE_FIELD, publicationDate.asObjectNode());
     }
@@ -170,7 +173,12 @@ public record SampleExpandedPublication(
     return node;
   }
 
-  private ArrayNode createContributorsNode() {
+  /** Mirrors NVA, which repeats the first contributors as separate nodes in a preview list. */
+  private List<SampleExpandedContributor> getContributorsPreview() {
+    return contributors.stream().limit(CONTRIBUTORS_PREVIEW_SIZE).toList();
+  }
+
+  private static ArrayNode createContributorsNode(List<SampleExpandedContributor> contributors) {
     var contributorsNode = objectMapper.createArrayNode();
     contributors.stream()
         .map(SampleExpandedContributor::asObjectNode)

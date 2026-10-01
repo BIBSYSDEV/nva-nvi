@@ -56,6 +56,18 @@
   ] ;
   sh:property [
     sh:severity sh:Violation ;
+    sh:message "Contributor identity is missing" ;
+    sh:path :identity ;
+    sh:minCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Contributor identity is repeated" ;
+    sh:path :identity ;
+    sh:maxCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
     sh:message "Contributor role is missing" ;
     sh:path :role ;
     sh:minCount 1
@@ -64,6 +76,24 @@
     sh:severity sh:Violation ;
     sh:message "Contributor role is repeated" ;
     sh:path :role ;
+    sh:maxCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Contributor role type is missing" ;
+    sh:path ( :role rdf:type ) ;
+    sh:minCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Contributor role has multiple types" ;
+    sh:path :role ;
+    sh:node :ContributorRoleShape
+  ] .
+
+:ContributorRoleShape a sh:NodeShape ;
+  sh:property [
+    sh:path rdf:type ;
     sh:maxCount 1
   ] .
 

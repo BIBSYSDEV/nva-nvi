@@ -145,7 +145,7 @@ public class EvaluatorService {
     try {
       publication.validate();
     } catch (ValidationException e) {
-      LOGGER.info("Publication failed validation due to missing required data: {}", e.getMessage());
+      LOGGER.info("Publication failed validation: {}", e.getMessage());
       return true;
     }
 

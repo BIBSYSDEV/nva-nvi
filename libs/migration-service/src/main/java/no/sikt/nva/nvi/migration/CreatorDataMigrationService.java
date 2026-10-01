@@ -97,16 +97,14 @@ public final class CreatorDataMigrationService implements MigrationService {
   }
 
   private static Map<URI, String> buildCreatorNameMap(PublicationDto publication) {
-    return publication.contributors().stream()
-        .filter(ContributorDto::isCreator)
+    return publication.creators().stream()
         .filter(ContributorDto::isVerified)
         .filter(not(contributor -> isBlank(contributor.name())))
         .collect(Collectors.toMap(ContributorDto::id, ContributorDto::name));
   }
 
   private static Map<URI, URI> buildCreatorOrcidMap(PublicationDto publication) {
-    return publication.contributors().stream()
-        .filter(ContributorDto::isCreator)
+    return publication.creators().stream()
         .filter(ContributorDto::isVerified)
         .filter(contributor -> nonNull(contributor.orcid()))
         .collect(Collectors.toMap(ContributorDto::id, ContributorDto::orcid));

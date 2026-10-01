@@ -55,10 +55,7 @@ public final class PointService {
    * </ul>
    */
   private static int getTotalShares(PublicationDto publication) {
-    return publication.contributors().stream()
-        .filter(ContributorDto::isCreator)
-        .mapToInt(PointService::getUniqueContributorShare)
-        .sum();
+    return publication.creators().stream().mapToInt(PointService::getUniqueContributorShare).sum();
   }
 
   private static int getUniqueContributorShare(ContributorDto contributor) {

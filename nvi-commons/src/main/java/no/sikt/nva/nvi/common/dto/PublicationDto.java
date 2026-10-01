@@ -11,6 +11,7 @@ import static no.sikt.nva.nvi.common.utils.Validator.shouldNotBeEmpty;
 import static no.sikt.nva.nvi.common.utils.Validator.shouldNotBeNull;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -21,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import no.sikt.nva.nvi.common.client.model.Organization;
@@ -78,6 +80,7 @@ public record PublicationDto(
     shouldBeTrue(publicationType().isValid(), "Required field 'publicationType' is invalid");
     validateIsbnWhenRequired();
     validateParentPublicationType();
+    validateCreatorsAreUnique();
     contributors.forEach(ContributorDto::validate);
   }
 
@@ -97,6 +100,24 @@ public record PublicationDto(
 
   public static PublicationDto from(String json) throws JsonProcessingException {
     return dtoObjectMapper.readValue(json, PublicationDto.class);
+  }
+
+  @JsonIgnore
+  public List<ContributorDto> creators() {
+    return contributors.stream().filter(ContributorDto::isCreator).toList();
+  }
+
+  /**
+   * The contributors are contributions, so the same person can appear several times in different
+   * roles. A person listed as Creator more than once is invalid input, because each creator must be
+   * counted exactly once when calculating points.
+   */
+  private void validateCreatorsAreUnique() {
+    var creatorIds = creators().stream().map(ContributorDto::id).filter(Objects::nonNull).toList();
+    var hasRepeatedCreator = creatorIds.size() != new HashSet<>(creatorIds).size();
+    if (hasRepeatedCreator) {
+      throw new ValidationException("A contributor is listed as Creator more than once");
+    }
   }
 
   public PublicationChannelDto getNviChannel() {

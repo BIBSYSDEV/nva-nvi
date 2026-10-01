@@ -32,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
 import no.sikt.nva.nvi.common.client.model.Organization;
+import no.sikt.nva.nvi.common.dto.ContributorRole;
 import no.sikt.nva.nvi.common.dto.PageCountDto;
 import no.sikt.nva.nvi.common.model.NviCreator;
 import no.sikt.nva.nvi.test.SampleAdditionalIdentifier;
@@ -136,6 +137,38 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
     var candidate = candidateService.getCandidateByPublicationId(publicationId);
     assertThat(candidate.publicationDetails().handles())
         .containsExactlyInAnyOrderElementsOf(handles);
+  }
+
+  @Test
+  void shouldExcludeNonCreatorWithSameId() {
+    var author = verifiedCreatorFrom(nviOrganization);
+    var nviOrganization2 = factory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
+    var editor =
+        author
+            .copy()
+            .withRole(ContributorRole.EDITOR)
+            .withAffiliations(List.of(nviOrganization2))
+            .build();
+    factory.withContributor(author).withContributor(editor);
+
+    handleEvaluation(factory);
+
+    var candidate = candidateService.getCandidateByPublicationId(publicationId);
+    assertThat(candidate.getInstitutionPoints()).hasSize(1);
+    assertThat(candidate.getInstitutionPoints(nviOrganization.id())).isNotEmpty();
+  }
+
+  @Test
+  void shouldRejectPublicationWithSameCreatorListedMoreThanOnce() {
+    var author = verifiedCreatorFrom(nviOrganization);
+    var nviOrganization2 = factory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
+    var sameAuthorAtOtherInstitution =
+        author.copy().withAffiliations(List.of(nviOrganization2)).build();
+    factory.withContributor(author).withContributor(sameAuthorAtOtherInstitution);
+
+    handleEvaluation(factory);
+
+    assertThatNoCandidateExistsForPublication(publicationId);
   }
 
   @Test

@@ -71,10 +71,8 @@
     "parentPublicationType": {
       "@type": "@vocab"
     },
-    "roles": {
-      "@id": "role",
-      "@type": "@vocab",
-      "@container": "@set"
+    "role": {
+      "@type": "@vocab"
     },
     "status": {
       "@type": "@vocab"

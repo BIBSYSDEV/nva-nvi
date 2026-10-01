@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.publication;
 
+import static no.sikt.nva.nvi.common.SampleExpandedPublicationFactory.mapOrganizationToAffiliation;
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EMPTY_BODY;
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_ACADEMIC_CHAPTER;
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_ACADEMIC_CHAPTER_PATH;
@@ -13,6 +14,7 @@ import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_PUBLIC
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_WITH_DUPLICATE_DATE;
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_WITH_NO_TITLE;
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_WITH_TWO_TITLES;
+import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -26,12 +28,17 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.S3StorageReader;
+import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
+import no.sikt.nva.nvi.common.dto.ContributorDto;
+import no.sikt.nva.nvi.common.dto.ContributorRole;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
 import no.sikt.nva.nvi.common.examples.ExamplePublications;
 import no.sikt.nva.nvi.common.exceptions.ParsingException;
 import no.sikt.nva.nvi.common.model.InstanceType;
+import no.sikt.nva.nvi.test.SampleExpandedContributor;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.paths.UnixPath;
@@ -209,6 +216,64 @@ class PublicationLoaderServiceTest {
         .allSatisfy(contributor -> assertThat(contributor.orcid()).isEqualTo(expectedOrcid));
   }
 
+  @ParameterizedTest
+  @MethodSource("repeatedRoleProvider")
+  void shouldKeepOneRoleWhenContributorHasSeveralRoles(
+      List<String> roleTypes, ContributorRole expectedRole) {
+    var publication = parsePublicationWithContributorRoles(roleTypes);
+
+    assertThat(publication.contributors())
+        .extracting(ContributorDto::role)
+        .containsExactly(expectedRole);
+  }
+
+  @Test
+  void shouldLogWhenContributorRoleHasMultipleTypes() {
+    logRecorder.clear();
+    var roleTypes = roleTypes(ContributorRole.CREATOR, ContributorRole.EDITOR);
+
+    assertDoesNotThrow(() -> parsePublicationWithContributorRoles(roleTypes));
+
+    assertThat(logRecorder.asString()).contains("Contributor role has multiple types");
+  }
+
+  @Test
+  void shouldValidateContributorOnlyOnceWhenAlsoInContributorsPreview() {
+    logRecorder.clear();
+    var roleTypes = roleTypes(ContributorRole.CREATOR, ContributorRole.EDITOR);
+
+    parsePublicationWithContributorRoles(roleTypes);
+
+    assertThat(logRecorder.asString()).containsOnlyOnce("Contributor role has multiple types");
+  }
+
+  private PublicationDto parsePublicationWithContributorRoles(List<String> roleTypes) {
+    var factory = new SampleExpandedPublicationFactory();
+    var organization = factory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
+    var contributor =
+        SampleExpandedContributor.builder()
+            .withRoles(roleTypes)
+            .withAffiliations(List.of(mapOrganizationToAffiliation(organization)))
+            .build();
+    var document = factory.withContributor(contributor).getExpandedPublication().toJsonString();
+    return parseExampleDocument(factory.getPublicationId().toString(), document);
+  }
+
+  private static Stream<Arguments> repeatedRoleProvider() {
+    var creator = ContributorRole.CREATOR;
+    var editor = ContributorRole.EDITOR;
+    var engineDriver = new ContributorRole("EngineDriver");
+    return Stream.of(
+        argumentSet("Creator first", roleTypes(creator, engineDriver), creator),
+        argumentSet("Creator last", roleTypes(engineDriver, creator), creator),
+        argumentSet("No Creator", roleTypes(editor, engineDriver), engineDriver),
+        argumentSet("No Creator, reversed", roleTypes(engineDriver, editor), engineDriver));
+  }
+
+  private static List<String> roleTypes(ContributorRole... roles) {
+    return Stream.of(roles).map(ContributorRole::value).toList();
+  }
+
   private static String withOrcidOnAllContributors(String orcidKey, URI orcid) throws IOException {
     var rawDocument = stringFromResources(Path.of(EXAMPLE_PUBLICATION_1_PATH));
     var document = (ObjectNode) dtoObjectMapper.readTree(rawDocument);
@@ -347,8 +412,11 @@ class PublicationLoaderServiceTest {
   @Test
   void shouldLogWhenContributorRoleIsRepeated() {
     logRecorder.clear();
-    assertDoesNotThrow(() -> parseExampleDocument(ExamplePublications.CONTRIBUTOR_ROLE_REPEATED));
+    var publication = parseExampleDocument(ExamplePublications.CONTRIBUTOR_ROLE_REPEATED);
     assertThat(logRecorder.asString()).contains("Contributor role is repeated");
+    assertThat(publication.contributors())
+        .extracting(ContributorDto::role)
+        .containsExactly(ContributorRole.CREATOR);
   }
 
   // In this case, it is an NVA test

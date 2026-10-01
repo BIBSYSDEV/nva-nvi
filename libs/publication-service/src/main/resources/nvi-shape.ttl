@@ -21,9 +21,9 @@
     sh:message "Publication is missing"
   ] .
 
-:PublicationNodeDuplicatedShape a sh:NodeShape ;
-  sh:name "Publication is not duplicated shape" ;
-  sh:description "Validates that there is not more than one type Publication in the document" ;
+:SinglePublicationShape a sh:NodeShape ;
+  sh:name "Single publication shape" ;
+  sh:description "Validates that the document has at most one node with type Publication" ;
   sh:targetNode rdf:nil ;  # Target the dataset as a whole
   sh:sparql [
     a sh:SPARQLConstraint ;
@@ -308,6 +308,12 @@
 :ContributorShape a sh:NodeShape ;
   sh:targetClass :Contributor ;
   sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Contributor identity is repeated" ;
+    sh:path :identity ;
+    sh:maxCount 1
+  ] ;
+  sh:property [
     sh:severity sh:Warning ;
     sh:message "Contributor affiliation is missing" ;
     sh:path :affiliation ;
@@ -335,7 +341,28 @@
     sh:severity sh:Violation ;
     sh:message "Contributor role is invalid" ;
     sh:path :role ;
-    sh:in (:Creator)
+    sh:nodeKind sh:IRI
+  ] .
+
+:UniqueCreatorShape a sh:NodeShape ;
+  sh:name "Unique creator shape" ;
+  sh:description "Validates that each person with an ID has at most one contribution with the role Creator" ;
+  sh:targetClass :Publication ;
+  sh:sparql [
+    a sh:SPARQLConstraint ;
+    sh:severity sh:Violation ;
+    sh:message "Person {?value} is listed as Creator more than once" ;
+    sh:select """
+      SELECT $this ?value
+      WHERE {
+        $this <https://nva.sikt.no/ontology/publication#contributor> ?creator .
+        ?creator <https://nva.sikt.no/ontology/publication#role> <https://nva.sikt.no/ontology/publication#Creator> ;
+                 <https://nva.sikt.no/ontology/publication#identity> ?value .
+        FILTER (isIRI(?value))
+      }
+      GROUP BY $this ?value
+      HAVING (COUNT(?creator) > 1)
+    """
   ] .
 
 :IdentityShape a sh:NodeShape ;

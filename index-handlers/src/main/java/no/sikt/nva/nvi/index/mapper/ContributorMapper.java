@@ -124,10 +124,7 @@ final class ContributorMapper {
 
   private static Optional<String> roleFromPublication(ContributorDto contributorDto) {
     return Optional.ofNullable(contributorDto)
-        .map(ContributorDto::roles)
-        .orElse(emptyList())
-        .stream()
-        .findAny()
+        .map(ContributorDto::role)
         .map(ContributorRole::value);
   }
 

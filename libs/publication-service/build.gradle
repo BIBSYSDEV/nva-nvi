@@ -21,5 +21,6 @@ dependencies {
     testImplementation(nvaLibs.logutils)
     testImplementation(nvaLibs.s3)
     testImplementation(nvaLibs.testutils)
+    testImplementation(project(':nvi-test'))
     testImplementation(testFixtures(project(":nvi-commons")))
 }

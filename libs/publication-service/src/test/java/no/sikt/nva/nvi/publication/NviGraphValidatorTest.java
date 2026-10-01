@@ -590,9 +590,7 @@ class NviGraphValidatorTest {
     var validation = nviGraphValidator.validate(addContributorRole(model));
     assertThat(validation.generateReport())
         .containsSequence("Contributor role is repeated")
-        // Because we have to pass in an invalid role to create a duplicate (graphs cannot have
-        // duplicates), we have two errors.
-        .hasSize(2);
+        .hasSize(1);
   }
 
   @Test
@@ -602,6 +600,36 @@ class NviGraphValidatorTest {
     assertThat(validation.generateReport())
         .containsSequence("Contributor role is invalid")
         .hasSize(1);
+  }
+
+  @Test
+  void shouldReportWhenContributorIdentityIsRepeated() {
+    var model = createModelWithNoErrors();
+    var otherIdentity = URI.create("https://example.org/person/other");
+    var validation =
+        nviGraphValidator.validate(
+            addTriples(model, addQuery(CONTRIBUTOR_CLASS, "identity", otherIdentity)));
+    assertThat(validation.generateReport())
+        .containsSequence("Contributor identity is repeated")
+        .hasSize(1);
+  }
+
+  @Test
+  void shouldNotReportWhenContributorHasOtherRoleThanCreator() {
+    var model = createModelWithNoErrors();
+    var validation =
+        nviGraphValidator.validate(addContributionForSameIdentity(model, "ContactPerson"));
+    assertThat(validation.isNonConformant()).isFalse();
+  }
+
+  @Test
+  void shouldReportWhenPersonWithIdIsListedAsCreatorMoreThanOnce() {
+    var model = createModelWithNoErrors();
+    var validation = nviGraphValidator.validate(addContributionForSameIdentity(model, "Creator"));
+    assertThat(validation.generateReport())
+        .containsExactly(
+            "Person <https://api.sandbox.nva.aws.unit.no/cristin/person/1215176> is listed as"
+                + " Creator more than once");
   }
 
   @Test
@@ -1065,8 +1093,27 @@ class NviGraphValidatorTest {
 
   private Model replaceContributorRoleWithInvalidValue(Model model) {
     var removeTriples = removeTriples(model, removeQuery(CONTRIBUTOR_CLASS, ROLE_PROPERTY));
-    return addTriples(
-        removeTriples, addQuery(CONTRIBUTOR_CLASS, ROLE_PROPERTY, "Class:Photographer"));
+    return addTriples(removeTriples, addQuery(CONTRIBUTOR_CLASS, ROLE_PROPERTY, "Photographer"));
+  }
+
+  private Model addContributionForSameIdentity(Model model, String role) {
+    var query =
+        """
+        PREFIX : <%s>
+        CONSTRUCT {
+          ?publication :contributor _:contribution .
+          _:contribution a :Contributor ;
+                         :identity ?identity ;
+                         :role :%s ;
+                         :affiliation ?affiliation .
+        } WHERE {
+          ?publication :contributor ?contributor .
+          ?contributor :identity ?identity ;
+                       :affiliation ?affiliation .
+        }
+        """
+            .formatted(NVA_ONTOLOGY, role);
+    return addTriples(model, query);
   }
 
   private Model replaceContributorNameWithInvalidValue(Model model) {
