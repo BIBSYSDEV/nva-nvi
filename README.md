@@ -13,7 +13,10 @@ The project enables evaluation, point calculation and curator management of publ
 
 ## Overview
 
-![Alt text](resources/NVI-overview.png)
+Architecture and data-flow documentation for developers lives in [docs/architecture](docs/architecture/README.md).
+It covers [evaluation](docs/architecture/evaluation.md), [indexing](docs/architecture/indexing.md), the [curation API](docs/architecture/curation-api.md), and [reports](docs/architecture/reports.md).
+
+![System boundary of nva-nvi](docs/architecture/diagrams/boundary.svg)
 
 ## Add a resource to your application
 

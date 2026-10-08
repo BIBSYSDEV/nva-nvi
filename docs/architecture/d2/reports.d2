@@ -1,0 +1,37 @@
+# nva-nvi reports: asynchronous CSV and XLSX generation.
+# Mirrors the sequence diagram in ../reports.md.
+# Render: ./render.sh (from docs/architecture)
+...@styles
+shape: sequence_diagram
+
+user: @models.curator
+user.label: "NVI admin\nor curator"
+fe: @models.spa
+fetch: FetchReportHandler {class: svc}
+periods: @models.table
+periods.label: "DynamoDB\n(periods)"
+os: @models.sws
+os.label: OpenSearch nvi-candidates
+bucket: @models.reports_bucket
+queue: SQS ReportQueue {class: queue}
+gen: GenerateReportHandler {class: svc}
+
+user -> fe: "download report for a period\n(optionally one institution)"
+fe -> fetch: "GET /scientific-index/reports/{period}/institutions[/{institution}]\nAccept: text/csv or xlsx, profile=author-shares | publication-points"
+fetch -> periods: resolve the period
+fetch -> fetch: "presign a GET URL for a new random key\nin the reports bucket (valid 1 hour)"
+fetch -> queue: "GenerateReportMessage\n{period, institution, format, bucket, key, presigned URL}"
+fetch -> fe: "200 {id, uri}"
+queue -> gen: "SQS trigger\n(batch size 1, 15 minute timeout)" {class: async}
+gen -> periods: resolve the period
+alt author-shares: {
+  gen -> os: "scroll all candidate documents\nfor the period (1000 per page)"
+}
+alt publication-points: {
+  gen -> os: aggregation queries
+}
+gen -> bucket: put CSV or XLSX at the presigned key
+loop until the object exists (404 while generating, backoff 1 s to 16 s, gives up after 60 s): {
+  fe -> bucket: GET presigned URL
+}
+bucket -> fe: file
