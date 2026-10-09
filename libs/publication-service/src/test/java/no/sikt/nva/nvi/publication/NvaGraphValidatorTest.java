@@ -98,6 +98,17 @@ class NvaGraphValidatorTest {
   }
 
   @Test
+  void shouldAcceptEveryVerificationStatusDefinedByNva() {
+    var model = createModel();
+    model.removeAll(resource(model, "person"), property(model, "verificationStatus"), null);
+    addToModel(model, ":person :verificationStatus \"CannotBeEstablished\" .");
+
+    var validation = nvaGraphValidator.validate(model);
+
+    assertThat(validation.generateReport()).isEmpty();
+  }
+
+  @Test
   void shouldReportWhenContributorVerificationStatusIsInvalid() {
     var model = createModel();
     model.removeAll(resource(model, "person"), property(model, "verificationStatus"), null);

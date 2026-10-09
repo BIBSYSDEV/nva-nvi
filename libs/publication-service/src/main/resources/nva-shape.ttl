@@ -156,7 +156,7 @@
     sh:message "Contributor verification status is invalid" ;
     sh:path :verificationStatus ;
     sh:datatype xsd:string ;
-    sh:in ( "Verified" "NotVerified" )
+    sh:in ( "Verified" "NotVerified" "CannotBeEstablished" )
   ] ;
   sh:property [
     sh:severity sh:Violation ;
