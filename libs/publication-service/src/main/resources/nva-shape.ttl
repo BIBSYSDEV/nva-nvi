@@ -5,6 +5,13 @@
 
 # This document constrains what is considered a valid NVA expanded resource.
 
+# Turtle prefixes do not apply inside SPARQL strings. SPARQL targets and constraints that want
+# to use the ":" shorthand reference this declaration with "sh:prefixes :".
+: sh:declare [
+  sh:prefix "" ;
+  sh:namespace "https://nva.sikt.no/ontology/publication#"^^xsd:anyURI
+] .
+
 
 :PublicationNodeExistsShape a sh:NodeShape ;
   sh:name "Publication exists in document shape" ;
@@ -45,8 +52,20 @@
   ] .
 
 
+# Targets only the main publication's contributors. Targeting the class would also match the
+# contributors of an embedded parent publication (e.g. a chapter's anthology), which only carry a name.
 :ContributorShape a sh:NodeShape ;
-  sh:targetClass :Contributor ;
+  sh:target [
+    a sh:SPARQLTarget ;
+    sh:prefixes : ;
+    sh:select """
+      SELECT ?this
+      WHERE {
+        ?publication a :Publication ;
+                     :entityDescription/:contributor ?this .
+      }
+    """
+  ] ;
   sh:property [
     sh:severity sh:Info ;
     sh:message "Contributor affiliation is missing" ;
@@ -97,8 +116,20 @@
     sh:maxCount 1
   ] .
 
+# Targets the identities of the main publication's contributors only, for the same reason as above.
 :IdentityShape a sh:NodeShape ;
-  sh:targetClass :Identity ;
+  sh:target [
+    a sh:SPARQLTarget ;
+    sh:prefixes : ;
+    sh:select """
+      SELECT ?this
+      WHERE {
+        ?publication a :Publication ;
+                     :entityDescription/:contributor/:identity ?this .
+        ?this a :Identity .
+      }
+    """
+  ] ;
   sh:property [
       sh:severity sh:Info ;
       sh:message "Contributor name is missing" ;

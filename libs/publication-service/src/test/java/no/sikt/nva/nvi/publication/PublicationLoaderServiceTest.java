@@ -485,6 +485,15 @@ class PublicationLoaderServiceTest {
     assertThat(logRecorder.asString()).contains("Publication channel is missing");
   }
 
+  @Test
+  void shouldNotValidateContributorsOfParentPublication() {
+    assertDoesNotThrow(() -> parseExampleDocument(EXAMPLE_ACADEMIC_CHAPTER_PATH));
+    assertThat(logRecorder.asString())
+        .doesNotContain("Contributor role is missing")
+        .doesNotContain("Contributor affiliation is missing")
+        .doesNotContain("Contributor verification status is missing");
+  }
+
   // In this case, it is an NVA test
   @Test
   void shouldLogWhenPublicationChannelTypeHasMultipleValues() {
