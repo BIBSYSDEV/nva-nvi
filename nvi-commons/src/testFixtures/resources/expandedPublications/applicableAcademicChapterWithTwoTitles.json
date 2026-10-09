@@ -66,7 +66,7 @@
                 "type" : "Report",
                 "series" : {
                   "id" : "https://api.sandbox.nva.aws.unit.no/publication-channels-v2/serial-publication/65CF2101-E6CE-437F-9DDD-07FC3DB6B119/2017",
-                  "type" : [ "Series", "Journal" ],
+                  "type" : "Series",
                   "identifier" : "65CF2101-E6CE-437F-9DDD-07FC3DB6B119",
                   "name" : "Norsk veterinærtidsskrift",
                   "onlineIssn" : "2704-0410",
