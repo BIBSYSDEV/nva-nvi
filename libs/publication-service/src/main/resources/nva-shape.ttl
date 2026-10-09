@@ -263,25 +263,6 @@
     sh:datatype xsd:string
   ] ;
   sh:property [
-    sh:severity sh:Warning ;
-    sh:message "Publication channel print ISSN is missing" ;
-    sh:path :printIssn ;
-    sh:minCount 1
-  ] ;
-  sh:property [
-    sh:severity sh:Violation ;
-    sh:message "Publication channel print ISSN is repeated" ;
-    sh:path :printIssn ;
-    sh:maxCount 1
-  ] ;
-  sh:property [
-    sh:severity sh:Violation ;
-    sh:message "Publication channel print ISSN is not a string matching regex" ;
-    sh:path :printIssn ;
-    sh:datatype xsd:string ;
-    sh:pattern "^[0-9]{4}-[0-9]{3}[0-9X]$"
-  ] ;
-  sh:property [
     sh:severity sh:Violation ;
     sh:message "Publication channel scientificValue is missing" ;
     sh:path :scientificValue ;
@@ -320,6 +301,7 @@
     sh:pattern "^[0-9]{4}$"
   ] .
 
+# Only serial publications have an ISSN, so publishers are not targeted here
 :PublicationChannelIssnShape a sh:NodeShape ;
   sh:targetClass :Journal ;
   sh:targetClass :Series ;

@@ -488,6 +488,12 @@ class PublicationLoaderServiceTest {
   }
 
   @Test
+  void shouldNotRequirePrintIssnOnPublisher() {
+    assertDoesNotThrow(() -> parseExampleDocument(EXAMPLE_PUBLICATION_2_PATH));
+    assertThat(logRecorder.asString()).doesNotContain("Publication channel print ISSN is missing");
+  }
+
+  @Test
   void shouldNotValidateContributorsOfParentPublication() {
     assertDoesNotThrow(() -> parseExampleDocument(EXAMPLE_ACADEMIC_CHAPTER_PATH));
     assertThat(logRecorder.asString())

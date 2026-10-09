@@ -5,6 +5,13 @@
 
 # This document constrains what is considered a valid NVA expanded resource from the perspective of NVI.
 
+# Turtle prefixes do not apply inside SPARQL strings. SPARQL targets and constraints that want
+# to use the ":" shorthand reference this declaration with "sh:prefixes :".
+: sh:declare [
+  sh:prefix "" ;
+  sh:namespace "https://nva.sikt.no/ontology/publication#"^^xsd:anyURI
+] .
+
 :PublicationNodeExistsShape a sh:NodeShape ;
   sh:name "Publication exists in document shape" ;
   sh:description "Validates that there is at least one type Publication in the document" ;
@@ -405,8 +412,20 @@
     sh:in ( "Verified" "NotVerified" )
   ] .
 
-:PublicationChannelShape a sh:NodeShape ;
-  sh:targetClass :PublicationChannel ;
+# Only serial publications have an ISSN, so publishers are not targeted here
+:SerialPublicationChannelShape a sh:NodeShape ;
+  sh:target [
+    a sh:SPARQLTarget ;
+    sh:prefixes : ;
+    sh:select """
+      SELECT ?this
+      WHERE {
+        ?this a :PublicationChannel ;
+              :channelType ?channelType .
+        VALUES ?channelType { :Journal :Series }
+      }
+    """
+  ] ;
   sh:property [
     sh:severity sh:Warning ;
     sh:message "Publication channel print ISSN is missing" ;
@@ -425,7 +444,10 @@
     sh:path :printIssn ;
     sh:datatype xsd:string ;
     sh:pattern "^[0-9]{4}-[0-9]{3}[0-9X]$"
-  ] ;
+  ] .
+
+:PublicationChannelShape a sh:NodeShape ;
+  sh:targetClass :PublicationChannel ;
   sh:property [
     sh:severity sh:Violation ;
     sh:message "Publication channel year is missing" ;
