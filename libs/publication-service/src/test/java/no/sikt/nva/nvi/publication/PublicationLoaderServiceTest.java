@@ -424,7 +424,8 @@ class PublicationLoaderServiceTest {
   void shouldLogWhenContributorVerificationStatusIsMissing() {
     assertDoesNotThrow(
         () -> parseExampleDocument(ExamplePublications.CONTRIBUTOR_VERIFICATION_STATUS_MISSING));
-    assertThat(logRecorder.asString()).contains("Contributor verification status is missing");
+    assertThat(logRecorder.asString())
+        .contains("[Warning] Contributor verification status is missing");
   }
 
   // In this case, it is an NVA test

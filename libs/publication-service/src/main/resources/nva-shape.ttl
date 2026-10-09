@@ -144,11 +144,17 @@
     sh:maxCount 1 ;
     sh:datatype xsd:string
   ] ;
+  # A missing status is tolerated, since the normalization treats it as NotVerified
   sh:property [
-    sh:severity sh:Violation ;
+    sh:severity sh:Warning ;
     sh:message "Contributor verification status is missing" ;
     sh:path :verificationStatus ;
-    sh:minCount 1 ;
+    sh:minCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Contributor verification status is invalid" ;
+    sh:path :verificationStatus ;
     sh:datatype xsd:string ;
     sh:in ( "Verified" "NotVerified" )
   ] ;
@@ -156,9 +162,7 @@
     sh:severity sh:Violation ;
     sh:message "Contributor verification status is repeated" ;
     sh:path :verificationStatus ;
-    sh:maxCount 1 ;
-    sh:datatype xsd:string ;
-    sh:in ( "Verified" "NotVerified" )
+    sh:maxCount 1
   ] .
 
 :OrganizationCountryRepeatedShape a sh:NodeShape ;
