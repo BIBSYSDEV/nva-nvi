@@ -474,7 +474,8 @@ class PublicationLoaderServiceTest {
   void shouldLogWhenOrganizationLabelIsPresentAndIsNotKnownLanguage() {
     assertDoesNotThrow(() -> parseExampleDocument(ExamplePublications.ORGANIZATION_LABEL_INVALID));
     assertThat(logRecorder.asString())
-        .contains("Organization label is not a unique language literal from [en, nb, nn]");
+        .contains(
+            "[Warning] Organization label is not a unique language literal from [en, nb, nn]");
   }
 
   // NVI test!

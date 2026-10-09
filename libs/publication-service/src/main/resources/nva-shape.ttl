@@ -179,9 +179,10 @@
       ]
     ) .
 
+# Duplicate labels in the same language are tolerated, since the normalization keeps the longest one
 :OrganizationLabelShape a sh:NodeShape ;
   sh:targetClass :Organization ;
-  sh:severity sh:Violation ;
+  sh:severity sh:Warning ;
   sh:message "Organization label is not a unique language literal from [en, nb, nn]" ;
   sh:or (
     [
