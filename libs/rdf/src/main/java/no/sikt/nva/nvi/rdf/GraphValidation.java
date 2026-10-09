@@ -30,11 +30,17 @@ public class GraphValidation {
     if (!validationReport.conforms() && logger.isWarnEnabled()) {
       logger.warn(
           "Model validation failed: {}",
-          generateReport().collect(Collectors.joining(System.lineSeparator())));
+          validationReport.getEntries().stream()
+              .map(GraphValidation::formatWithSeverity)
+              .collect(Collectors.joining(System.lineSeparator())));
     }
   }
 
   public Stream<String> generateReport() {
     return validationReport.getEntries().stream().map(ReportEntry::message);
+  }
+
+  private static String formatWithSeverity(ReportEntry entry) {
+    return "[%s] %s".formatted(entry.severity().level().getLocalName(), entry.message());
   }
 }

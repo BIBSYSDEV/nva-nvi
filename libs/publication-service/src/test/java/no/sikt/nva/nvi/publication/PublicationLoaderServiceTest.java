@@ -490,7 +490,8 @@ class PublicationLoaderServiceTest {
   void shouldLogWhenPublicationChannelTypeHasMultipleValues() {
     assertDoesNotThrow(
         () -> parseExampleDocument(ExamplePublications.PUBLICATION_CHANNEL_REPEATED));
-    assertThat(logRecorder.asString()).contains("Publication channel type has multiple values");
+    assertThat(logRecorder.asString())
+        .contains("[Violation] Publication channel type has multiple values");
   }
 
   // In this case, it is an NVA test

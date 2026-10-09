@@ -108,7 +108,7 @@ class NviGraphValidatorTest {
     validation.log(logger);
     assertTrue(validation.hasViolations());
     assertThat(logRecorder.asString())
-        .containsSequence("Model validation failed: Publication is missing");
+        .containsSequence("Model validation failed: [Violation] Publication is missing");
   }
 
   @Test
