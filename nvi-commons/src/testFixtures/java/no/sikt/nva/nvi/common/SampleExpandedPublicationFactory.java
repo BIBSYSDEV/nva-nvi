@@ -15,7 +15,7 @@ import static no.sikt.nva.nvi.test.TestConstants.JOURNAL_TYPE;
 import static no.sikt.nva.nvi.test.TestConstants.LEVEL_ONE;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.sikt.nva.nvi.test.TestUtils.randomContributorId;
-import static no.sikt.nva.nvi.test.TestUtils.randomUriWithSuffix;
+import static no.sikt.nva.nvi.test.TestUtils.randomName;
 import static no.unit.nva.testutils.RandomDataGenerator.randomIsbn13;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -94,8 +94,17 @@ public class SampleExpandedPublicationFactory {
     return this;
   }
 
+  /** Channels are resolved for the publication year, so existing channels follow a new date. */
   public SampleExpandedPublicationFactory withPublicationDate(PublicationDate publicationDate) {
     this.publicationDate = publicationDate;
+    for (var channel : List.copyOf(publicationChannels)) {
+      replacePublicationChannel(
+          channel,
+          SampleExpandedPublicationChannel.from(channel)
+              .withYear(publicationDate.year())
+              .withDerivedId()
+              .build());
+    }
     return this;
   }
 
@@ -151,8 +160,8 @@ public class SampleExpandedPublicationFactory {
     this.contributors.add(expandedContributor);
   }
 
-  private void addContributor(String name, String role, Collection<Organization> affiliations) {
-    addContributor(randomContributorId(), name, role, affiliations);
+  private void addContributor(String role, Collection<Organization> affiliations) {
+    addContributor(randomContributorId(), randomName(), role, affiliations);
   }
 
   public static SampleExpandedAffiliation mapOrganizationToAffiliation(Organization organization) {
@@ -216,33 +225,33 @@ public class SampleExpandedPublicationFactory {
 
   public SampleExpandedPublicationFactory withCreatorAffiliatedWith(
       Collection<Organization> affiliations) {
-    addContributor(null, ROLE_CREATOR, affiliations);
+    addContributor(ROLE_CREATOR, affiliations);
     return this;
   }
 
   public SampleExpandedPublicationFactory withCreatorAffiliatedWith(Organization... affiliations) {
-    addContributor(null, ROLE_CREATOR, List.of(affiliations));
+    addContributor(ROLE_CREATOR, List.of(affiliations));
     return this;
   }
 
   public SampleExpandedPublicationFactory withCreatorsAffiliatedWith(
       int count, Organization... affiliations) {
     for (int i = 0; i < count; i++) {
-      addContributor(randomString(), ROLE_CREATOR, List.of(affiliations));
+      addContributor(ROLE_CREATOR, List.of(affiliations));
     }
     return this;
   }
 
   public SampleExpandedPublicationFactory withNonCreatorAffiliatedWith(
       Organization... affiliations) {
-    addContributor(null, ROLE_OTHER, List.of(affiliations));
+    addContributor(ROLE_OTHER, List.of(affiliations));
     return this;
   }
 
   public SampleExpandedPublicationFactory withNonCreatorsAffiliatedWith(
       int count, Organization... affiliations) {
     for (int i = 0; i < count; i++) {
-      addContributor(randomString(), ROLE_OTHER, List.of(affiliations));
+      addContributor(ROLE_OTHER, List.of(affiliations));
     }
     return this;
   }
@@ -278,17 +287,20 @@ public class SampleExpandedPublicationFactory {
       String channelType, String name, String printIssn) {
     var currentChannel = getPublicationChannel(channelType);
     var renamedChannel =
-        SampleExpandedPublicationChannel.builder()
-            .withId(currentChannel.id())
-            .withType(currentChannel.type())
-            .withLevel(currentChannel.level())
+        SampleExpandedPublicationChannel.from(currentChannel)
             .withName(name)
             .withPrintIssn(printIssn)
             .build();
-    this.publicationChannels.remove(currentChannel);
-    this.publicationChannels.add(renamedChannel);
-    this.channels.put(channelType, renamedChannel);
+    replacePublicationChannel(currentChannel, renamedChannel);
     return this;
+  }
+
+  private void replacePublicationChannel(
+      SampleExpandedPublicationChannel currentChannel,
+      SampleExpandedPublicationChannel replacement) {
+    this.publicationChannels.remove(currentChannel);
+    this.publicationChannels.add(replacement);
+    this.channels.put(replacement.type(), replacement);
   }
 
   public SampleExpandedPublicationChannel getPublicationChannel(String channelType) {
@@ -298,9 +310,9 @@ public class SampleExpandedPublicationFactory {
   private void addPublicationChannel(String channelType, String scientificLevel) {
     var channel =
         SampleExpandedPublicationChannel.builder()
-            .withId(randomUriWithSuffix("channel"))
             .withType(channelType)
             .withLevel(scientificLevel)
+            .withYear(publicationDate.year())
             .build();
     this.publicationChannels.add(channel);
     this.channels.put(channelType, channel);
@@ -323,6 +335,7 @@ public class SampleExpandedPublicationFactory {
         .withId(publicationId)
         .withIdentifier(publicationIdentifier)
         .withInstanceType(publicationType)
+        .withAbstract(randomString())
         .withPublicationDate(expandedDate)
         .withPublicationContext(resolvePublicationContext())
         .withContributors(contributors)
