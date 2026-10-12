@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.publication;
 
+import static no.sikt.nva.nvi.common.SampleExpandedPublicationFactory.defaultExpandedPublicationFactory;
 import static no.sikt.nva.nvi.common.SampleExpandedPublicationFactory.mapOrganizationToAffiliation;
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EMPTY_BODY;
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_ACADEMIC_CHAPTER;
@@ -14,7 +15,10 @@ import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_PUBLIC
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_WITH_DUPLICATE_DATE;
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_WITH_NO_TITLE;
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_WITH_TWO_TITLES;
+import static no.sikt.nva.nvi.test.TestConstants.ACADEMIC_MONOGRAPH;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
+import static no.sikt.nva.nvi.test.TestConstants.LEVEL_ONE;
+import static no.sikt.nva.nvi.test.TestConstants.PUBLISHER_TYPE;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -485,6 +489,29 @@ class PublicationLoaderServiceTest {
     assertDoesNotThrow(
         () -> parseExampleDocument(ExamplePublications.PUBLICATION_CHANNEL_INVALID_TYPE));
     assertThat(logRecorder.asString()).contains("Publication channel is missing");
+  }
+
+  @Test
+  void shouldNotLogValidationIssuesForDefaultFactoryPublication() {
+    var factory = defaultExpandedPublicationFactory();
+    var document = factory.getExpandedPublication().toJsonString();
+
+    parseExampleDocument(factory.getPublicationId().toString(), document);
+
+    assertThat(logRecorder.asString()).doesNotContain("Model validation failed");
+  }
+
+  @Test
+  void shouldNotLogValidationIssuesForFactoryPublicationWithPublisherChannel() {
+    var factory =
+        defaultExpandedPublicationFactory()
+            .withPublicationType(ACADEMIC_MONOGRAPH)
+            .withPublicationChannel(PUBLISHER_TYPE, LEVEL_ONE);
+    var document = factory.getExpandedPublication().toJsonString();
+
+    parseExampleDocument(factory.getPublicationId().toString(), document);
+
+    assertThat(logRecorder.asString()).doesNotContain("Model validation failed");
   }
 
   @Test
