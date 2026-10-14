@@ -51,6 +51,7 @@ class NviGraphValidatorTest {
   private static final String ABSTRACT_TEXT_PROPERTY = "abstractText";
   private static final String PRINT_ISSN_PROPERTY = "printIssn";
   private static final String PUBLICATION_CHANNEL_PROPERTY = "publicationChannel";
+  private static final String CHANNEL_TYPE_PROPERTY = "channelType";
   private NviGraphValidator nviGraphValidator;
   private Logger logger;
 
@@ -108,7 +109,7 @@ class NviGraphValidatorTest {
     validation.log(logger);
     assertTrue(validation.hasViolations());
     assertThat(logRecorder.asString())
-        .containsSequence("Model validation failed: Publication is missing");
+        .containsSequence("Model validation failed: [Violation] Publication is missing");
   }
 
   @Test
@@ -670,6 +671,15 @@ class NviGraphValidatorTest {
   }
 
   @Test
+  void shouldNotRequireIssnWhenPublicationChannelIsPublisher() {
+    var model = createModelWithNoErrors();
+    var publisherModel =
+        replacePublicationChannelTypeWithPublisher(removePublicationChannelIssn(model));
+    var validation = nviGraphValidator.validate(publisherModel);
+    assertThat(validation.isNonConformant()).isFalse();
+  }
+
+  @Test
   void shouldReportWhenPublicationChannelIssnIsRepeated() {
     var model = createModelWithNoErrors();
     var validation = nviGraphValidator.validate(addPublicationChannelIssn(model));
@@ -942,7 +952,7 @@ class NviGraphValidatorTest {
   }
 
   private Model removePublicationChannelType(Model model) {
-    return removeTriples(model, removeQuery(PUBLICATION_CHANNEL_CLASS, "channelType"));
+    return removeTriples(model, removeQuery(PUBLICATION_CHANNEL_CLASS, CHANNEL_TYPE_PROPERTY));
   }
 
   private Model addPublicationChannelType(Model model) {
@@ -961,11 +971,19 @@ class NviGraphValidatorTest {
     return addTriples(model, query);
   }
 
+  private Model replacePublicationChannelTypeWithPublisher(Model model) {
+    var removeModel =
+        removeTriples(model, removeQuery(PUBLICATION_CHANNEL_CLASS, CHANNEL_TYPE_PROPERTY));
+    return addTriples(
+        removeModel, addQuery(PUBLICATION_CHANNEL_CLASS, CHANNEL_TYPE_PROPERTY, "Class:Publisher"));
+  }
+
   private Model replacePublicationChannelType(Model model) {
-    var removeModel = removeTriples(model, removeQuery(PUBLICATION_CHANNEL_CLASS, "channelType"));
+    var removeModel =
+        removeTriples(model, removeQuery(PUBLICATION_CHANNEL_CLASS, CHANNEL_TYPE_PROPERTY));
     return addTriples(
         removeModel,
-        addQuery(PUBLICATION_CHANNEL_CLASS, "channelType", "Class:NonsensicalChannelType"));
+        addQuery(PUBLICATION_CHANNEL_CLASS, CHANNEL_TYPE_PROPERTY, "Class:NonsensicalChannelType"));
   }
 
   private Model removePublicationChannelName(Model model) {

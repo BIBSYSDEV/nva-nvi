@@ -85,6 +85,42 @@ class NvaGraphValidatorTest {
     assertThat(validation.generateReport()).containsExactly("Contributor role has multiple types");
   }
 
+  @Test
+  void shouldReportWhenContributorVerificationStatusIsMissing() {
+    var model = createModel();
+    model.removeAll(resource(model, "person"), property(model, "verificationStatus"), null);
+
+    var validation = nvaGraphValidator.validate(model);
+
+    assertThat(validation.generateReport())
+        .containsExactly("Contributor verification status is missing");
+    assertThat(validation.hasViolations()).isFalse();
+  }
+
+  @Test
+  void shouldAcceptEveryVerificationStatusDefinedByNva() {
+    var model = createModel();
+    model.removeAll(resource(model, "person"), property(model, "verificationStatus"), null);
+    addToModel(model, ":person :verificationStatus \"CannotBeEstablished\" .");
+
+    var validation = nvaGraphValidator.validate(model);
+
+    assertThat(validation.generateReport()).isEmpty();
+  }
+
+  @Test
+  void shouldReportWhenContributorVerificationStatusIsInvalid() {
+    var model = createModel();
+    model.removeAll(resource(model, "person"), property(model, "verificationStatus"), null);
+    addToModel(model, ":person :verificationStatus \"Unknown\" .");
+
+    var validation = nvaGraphValidator.validate(model);
+
+    assertThat(validation.generateReport())
+        .containsExactly("Contributor verification status is invalid");
+    assertThat(validation.hasViolations()).isTrue();
+  }
+
   private static Model createModel() {
     return addToModel(ModelFactory.createDefaultModel(), PUBLICATION_WITH_ONE_CONTRIBUTOR);
   }

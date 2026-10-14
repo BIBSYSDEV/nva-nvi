@@ -424,7 +424,8 @@ class PublicationLoaderServiceTest {
   void shouldLogWhenContributorVerificationStatusIsMissing() {
     assertDoesNotThrow(
         () -> parseExampleDocument(ExamplePublications.CONTRIBUTOR_VERIFICATION_STATUS_MISSING));
-    assertThat(logRecorder.asString()).contains("Contributor verification status is missing");
+    assertThat(logRecorder.asString())
+        .contains("[Warning] Contributor verification status is missing");
   }
 
   // In this case, it is an NVA test
@@ -474,7 +475,8 @@ class PublicationLoaderServiceTest {
   void shouldLogWhenOrganizationLabelIsPresentAndIsNotKnownLanguage() {
     assertDoesNotThrow(() -> parseExampleDocument(ExamplePublications.ORGANIZATION_LABEL_INVALID));
     assertThat(logRecorder.asString())
-        .contains("Organization label is not a unique language literal from [en, nb, nn]");
+        .contains(
+            "[Warning] Organization label is not a unique language literal from [en, nb, nn]");
   }
 
   // NVI test!
@@ -485,12 +487,28 @@ class PublicationLoaderServiceTest {
     assertThat(logRecorder.asString()).contains("Publication channel is missing");
   }
 
+  @Test
+  void shouldNotRequirePrintIssnOnPublisher() {
+    assertDoesNotThrow(() -> parseExampleDocument(EXAMPLE_PUBLICATION_2_PATH));
+    assertThat(logRecorder.asString()).doesNotContain("Publication channel print ISSN is missing");
+  }
+
+  @Test
+  void shouldNotValidateContributorsOfParentPublication() {
+    assertDoesNotThrow(() -> parseExampleDocument(EXAMPLE_ACADEMIC_CHAPTER_PATH));
+    assertThat(logRecorder.asString())
+        .doesNotContain("Contributor role is missing")
+        .doesNotContain("Contributor affiliation is missing")
+        .doesNotContain("Contributor verification status is missing");
+  }
+
   // In this case, it is an NVA test
   @Test
   void shouldLogWhenPublicationChannelTypeHasMultipleValues() {
     assertDoesNotThrow(
         () -> parseExampleDocument(ExamplePublications.PUBLICATION_CHANNEL_REPEATED));
-    assertThat(logRecorder.asString()).contains("Publication channel type has multiple values");
+    assertThat(logRecorder.asString())
+        .contains("[Violation] Publication channel type has multiple values");
   }
 
   // In this case, it is an NVA test
