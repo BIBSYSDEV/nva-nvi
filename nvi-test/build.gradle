@@ -10,4 +10,6 @@ dependencies {
     implementation(nvaCatalog.slf4j.api)
     implementation(nvaLibs.core)
     implementation(nvaLibs.testutils)
+    testImplementation(nvaCatalog.assertj.core)
+    testImplementation(nvaCatalog.junit.jupiter.api)
 }

@@ -6,6 +6,7 @@ import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.test.TestConstants.ABSTRACT_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.ACADEMIC_ARTICLE;
 import static no.sikt.nva.nvi.test.TestConstants.ACADEMIC_CHAPTER;
+import static no.sikt.nva.nvi.test.TestConstants.ACADEMIC_COMMENTARY;
 import static no.sikt.nva.nvi.test.TestConstants.ACADEMIC_LITERATURE_REVIEW;
 import static no.sikt.nva.nvi.test.TestConstants.ACADEMIC_MONOGRAPH;
 import static no.sikt.nva.nvi.test.TestConstants.ADDITIONAL_IDENTIFIERS_FIELD;
@@ -98,7 +99,7 @@ public record SampleExpandedPublication(
         var pages = pageCount.asPageRange();
         publicationInstance.set(PAGES_FIELD, pages);
       }
-      case ACADEMIC_MONOGRAPH -> {
+      case ACADEMIC_MONOGRAPH, ACADEMIC_COMMENTARY -> {
         var pages = pageCount.asMonographPages();
         publicationInstance.set(PAGES_FIELD, pages);
       }
