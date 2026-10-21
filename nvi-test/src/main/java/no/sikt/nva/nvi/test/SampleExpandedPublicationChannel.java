@@ -35,9 +35,7 @@ public record SampleExpandedPublicationChannel(
     return new Builder();
   }
 
-  /**
-   * Copies every field of an existing channel, so a modified copy keeps the rest intact.
-   */
+  /** Copies every field of an existing channel, so a modified copy keeps the rest intact. */
   public static Builder from(SampleExpandedPublicationChannel channel) {
     var builder =
         new Builder()
