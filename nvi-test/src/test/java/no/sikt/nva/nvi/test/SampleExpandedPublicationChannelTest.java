@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common.test;
+package no.sikt.nva.nvi.test;
 
 import static no.sikt.nva.nvi.test.TestConstants.JOURNAL_TYPE;
 import static no.sikt.nva.nvi.test.TestConstants.PUBLISHER_TYPE;
@@ -6,7 +6,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.net.URI;
-import no.sikt.nva.nvi.test.SampleExpandedPublicationChannel;
 import org.junit.jupiter.api.Test;
 
 class SampleExpandedPublicationChannelTest {
@@ -74,10 +73,33 @@ class SampleExpandedPublicationChannelTest {
   void shouldDeriveNewIdWhenYearChangesOnCopy() {
     var original = SampleExpandedPublicationChannel.builder().withType(JOURNAL_TYPE).build();
 
-    var moved =
-        SampleExpandedPublicationChannel.from(original).withYear("1999").withDerivedId().build();
+    var moved = SampleExpandedPublicationChannel.from(original).withYear("1999").build();
 
     assertThat(moved.id().toString()).endsWith("/" + original.identifier() + "/1999");
     assertThat(moved.id()).isNotEqualTo(original.id());
+  }
+
+  @Test
+  void shouldKeepExplicitIdWhenYearChangesOnCopy() {
+    var explicitId = URI.create("https://example.org/custom-channel");
+    var original =
+        SampleExpandedPublicationChannel.builder()
+            .withType(JOURNAL_TYPE)
+            .withId(explicitId)
+            .build();
+
+    var moved = SampleExpandedPublicationChannel.from(original).withYear("1999").build();
+
+    assertThat(moved.id()).isEqualTo(explicitId);
+  }
+
+  @Test
+  void shouldStayWithoutIdOnCopy() {
+    var original =
+        SampleExpandedPublicationChannel.builder().withType(JOURNAL_TYPE).withoutId().build();
+
+    var copy = SampleExpandedPublicationChannel.from(original).withYear("1999").build();
+
+    assertThat(copy.id()).isNull();
   }
 }

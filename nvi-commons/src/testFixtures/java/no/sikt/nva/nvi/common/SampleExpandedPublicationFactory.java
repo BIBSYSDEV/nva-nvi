@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.common;
 
-import static java.util.Collections.emptyList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
@@ -100,10 +99,7 @@ public class SampleExpandedPublicationFactory {
     for (var channel : List.copyOf(publicationChannels)) {
       replacePublicationChannel(
           channel,
-          SampleExpandedPublicationChannel.from(channel)
-              .withYear(publicationDate.year())
-              .withDerivedId()
-              .build());
+          SampleExpandedPublicationChannel.from(channel).withYear(publicationDate.year()).build());
     }
     return this;
   }
@@ -141,27 +137,22 @@ public class SampleExpandedPublicationFactory {
     return builder.build();
   }
 
-  private void addContributor(
-      URI id, String name, String role, Collection<Organization> affiliations) {
-    var verificationStatus = nonNull(id) ? "Verified" : "NotVerified";
+  /** Adds a verified contributor with a random identity in the given role. */
+  private void addContributor(String role, Collection<Organization> affiliations) {
     var expandedAffiliations =
         affiliations.stream()
             .map(SampleExpandedPublicationFactory::mapOrganizationToAffiliation)
             .toList();
     var expandedContributor =
         SampleExpandedContributor.builder()
-            .withId(id)
-            .withNames(nonNull(name) ? List.of(name) : emptyList())
+            .withId(randomContributorId())
+            .withNames(List.of(randomName()))
             .withRole(role)
             .withOrcId(randomUri())
-            .withVerificationStatus(verificationStatus)
+            .withVerificationStatus("Verified")
             .withAffiliations(expandedAffiliations)
             .build();
     this.contributors.add(expandedContributor);
-  }
-
-  private void addContributor(String role, Collection<Organization> affiliations) {
-    addContributor(randomContributorId(), randomName(), role, affiliations);
   }
 
   public static SampleExpandedAffiliation mapOrganizationToAffiliation(Organization organization) {

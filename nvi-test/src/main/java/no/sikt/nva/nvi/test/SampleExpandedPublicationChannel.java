@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.test;
 
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 import static no.sikt.nva.nvi.test.TestConstants.IDENTIFIER_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.ID_FIELD;
@@ -34,16 +35,22 @@ public record SampleExpandedPublicationChannel(
     return new Builder();
   }
 
-  /** Copies every field of an existing channel, so a modified copy keeps the rest intact. */
+  /**
+   * Copies every field of an existing channel, so a modified copy keeps the rest intact.
+   */
   public static Builder from(SampleExpandedPublicationChannel channel) {
-    return new Builder()
-        .withType(channel.type())
-        .withId(channel.id())
-        .withIdentifier(channel.identifier())
-        .withName(channel.name())
-        .withLevel(channel.level())
-        .withPrintIssn(channel.printIssn())
-        .withYear(channel.year());
+    var builder =
+        new Builder()
+            .withType(channel.type())
+            .withIdentifier(channel.identifier())
+            .withName(channel.name())
+            .withLevel(channel.level())
+            .withPrintIssn(channel.printIssn())
+            .withYear(channel.year());
+    if (isNull(channel.id())) {
+      return builder.withoutId();
+    }
+    return builder.isDerivedId(channel.id()) ? builder : builder.withId(channel.id());
   }
 
   public ObjectNode asObjectNode() {
@@ -90,11 +97,6 @@ public record SampleExpandedPublicationChannel(
       return this;
     }
 
-    /** Discards any explicit ID so that it is derived from type, identifier and year on build. */
-    public Builder withDerivedId() {
-      return withId(null);
-    }
-
     public Builder withIdentifier(String identifier) {
       this.identifier = identifier;
       return this;
@@ -137,6 +139,13 @@ public record SampleExpandedPublicationChannel(
       requireNonNull(identifier, "Channel identifier is required to derive the channel ID");
       requireNonNull(year, "Channel year is required to derive the channel ID");
       return publicationChannelId(type, identifier, year);
+    }
+
+    private boolean isDerivedId(URI candidate) {
+      return nonNull(type)
+          && nonNull(identifier)
+          && nonNull(year)
+          && publicationChannelId(type, identifier, year).equals(candidate);
     }
 
     private String defaultPrintIssn() {
