@@ -2,22 +2,17 @@ package no.sikt.nva.nvi.common.model;
 
 import static java.util.Collections.emptyList;
 import static java.util.Objects.isNull;
-import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.API_HOST;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
 import static no.sikt.nva.nvi.test.TestUtils.randomEnglishUnitLabel;
 import static no.sikt.nva.nvi.test.TestUtils.randomNorwegianUnitLabel;
 import static no.sikt.nva.nvi.test.TestUtils.randomUnitName;
-import static no.sikt.nva.nvi.test.TestUtils.randomUriWithSuffix;
 import static no.unit.nva.testutils.RandomDataGenerator.FAKER;
-import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 
 import java.net.URI;
 import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.client.model.Organization.Builder;
@@ -93,21 +88,12 @@ public final class OrganizationFixtures {
   }
 
   public static Builder randomOrganization(String countryCode, int numberOfSubOrganizations) {
-    var topLevelOrganizationId = randomUriWithSuffix("topLevelOrganization");
+    var topLevelOrganizationId = randomOrganizationId();
     var topLevelLeafNode = Organization.builder().withId(topLevelOrganizationId).build();
     var subOrganizations =
-        IntStream.range(0, numberOfSubOrganizations)
-            .mapToObj(
-                i ->
-                    randomOrganization()
-                        .withId(randomUriWithSuffix("subOrganization"))
-                        .withCountryCode(countryCode)
-                        .withPartOf(List.of(topLevelLeafNode))
-                        .withLabels(
-                            (i % 2 == 0 && nonNull(countryCode))
-                                ? Map.of(countryCode.toLowerCase(Locale.ROOT), randomString())
-                                : null)
-                        .build())
+        Stream.generate(
+                () -> randomOrganization(countryCode).withPartOf(List.of(topLevelLeafNode)).build())
+            .limit(numberOfSubOrganizations)
             .toList();
 
     return randomOrganization()

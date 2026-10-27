@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.publication;
 
+import static no.sikt.nva.nvi.common.SampleExpandedPublicationFactory.defaultExpandedPublicationFactory;
 import static no.sikt.nva.nvi.common.SampleExpandedPublicationFactory.mapOrganizationToAffiliation;
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EMPTY_BODY;
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_ACADEMIC_CHAPTER;
@@ -14,7 +15,16 @@ import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_PUBLIC
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_WITH_DUPLICATE_DATE;
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_WITH_NO_TITLE;
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_WITH_TWO_TITLES;
+import static no.sikt.nva.nvi.test.TestConstants.ACADEMIC_ARTICLE;
+import static no.sikt.nva.nvi.test.TestConstants.ACADEMIC_CHAPTER;
+import static no.sikt.nva.nvi.test.TestConstants.ACADEMIC_COMMENTARY;
+import static no.sikt.nva.nvi.test.TestConstants.ACADEMIC_LITERATURE_REVIEW;
+import static no.sikt.nva.nvi.test.TestConstants.ACADEMIC_MONOGRAPH;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
+import static no.sikt.nva.nvi.test.TestConstants.JOURNAL_TYPE;
+import static no.sikt.nva.nvi.test.TestConstants.LEVEL_ONE;
+import static no.sikt.nva.nvi.test.TestConstants.PUBLISHER_TYPE;
+import static no.sikt.nva.nvi.test.TestConstants.SERIES_TYPE;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -487,6 +497,21 @@ class PublicationLoaderServiceTest {
     assertThat(logRecorder.asString()).contains("Publication channel is missing");
   }
 
+  @ParameterizedTest
+  @MethodSource("applicableTypeAndChannelProvider")
+  void shouldNotLogValidationIssuesForFactoryPublication(
+      String publicationType, String channelType) {
+    var factory =
+        defaultExpandedPublicationFactory()
+            .withPublicationType(publicationType)
+            .withPublicationChannel(channelType, LEVEL_ONE);
+    var document = factory.getExpandedPublication().toJsonString();
+
+    parseExampleDocument(factory.getPublicationId().toString(), document);
+
+    assertThat(logRecorder.asString()).doesNotContain("Model validation failed");
+  }
+
   @Test
   void shouldNotRequirePrintIssnOnPublisher() {
     assertDoesNotThrow(() -> parseExampleDocument(EXAMPLE_PUBLICATION_2_PATH));
@@ -621,6 +646,19 @@ class PublicationLoaderServiceTest {
     } catch (IOException e) {
       throw new RuntimeException("Failed to add publication to S3", e);
     }
+  }
+
+  /** The publication type and channel type pairs that nvi_channel_pairing.rq accepts. */
+  private static Stream<Arguments> applicableTypeAndChannelProvider() {
+    return Stream.of(
+        argumentSet("Article in journal", ACADEMIC_ARTICLE, JOURNAL_TYPE),
+        argumentSet("Literature review in journal", ACADEMIC_LITERATURE_REVIEW, JOURNAL_TYPE),
+        argumentSet("Monograph in series", ACADEMIC_MONOGRAPH, SERIES_TYPE),
+        argumentSet("Monograph by publisher", ACADEMIC_MONOGRAPH, PUBLISHER_TYPE),
+        argumentSet("Commentary in series", ACADEMIC_COMMENTARY, SERIES_TYPE),
+        argumentSet("Commentary by publisher", ACADEMIC_COMMENTARY, PUBLISHER_TYPE),
+        argumentSet("Chapter in series", ACADEMIC_CHAPTER, SERIES_TYPE),
+        argumentSet("Chapter by publisher", ACADEMIC_CHAPTER, PUBLISHER_TYPE));
   }
 
   private static Stream<Arguments> exampleDocumentProvider() {

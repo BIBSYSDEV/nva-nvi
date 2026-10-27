@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.test;
 
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.test.TestConstants.ONE;
+import static no.sikt.nva.nvi.test.TestConstants.PUBLISHER_TYPE;
 import static no.sikt.nva.nvi.test.TestConstants.TYPE_FIELD;
 import static no.unit.nva.testutils.RandomDataGenerator.FAKER;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
@@ -94,6 +95,19 @@ public final class TestUtils {
     var baseUnits = List.of("University of", "Institute for");
     var base = FAKER.options().option(baseUnits.toArray(String[]::new));
     return String.join(" ", base, FAKER.word().adjective(), FAKER.word().noun());
+  }
+
+  /**
+   * Builds a channel ID matching the publication channel API, with the year as the last segment.
+   */
+  public static URI publicationChannelId(String channelType, String identifier, String year) {
+    var channelPath = PUBLISHER_TYPE.equals(channelType) ? "publisher" : "serial-publication";
+    return UriWrapper.fromHost(API_HOST)
+        .addChild("publication-channels-v2")
+        .addChild(channelPath)
+        .addChild(identifier)
+        .addChild(year)
+        .getUri();
   }
 
   public static URI randomUriWithSuffix(String suffix) {

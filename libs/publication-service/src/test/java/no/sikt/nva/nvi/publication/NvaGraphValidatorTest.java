@@ -13,6 +13,8 @@ import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.vocabulary.RDF;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /** Unit tests for the NVA input shape. The NVI shape is covered by NviGraphValidatorTest. */
 class NvaGraphValidatorTest {
@@ -97,11 +99,12 @@ class NvaGraphValidatorTest {
     assertThat(validation.hasViolations()).isFalse();
   }
 
-  @Test
-  void shouldAcceptEveryVerificationStatusDefinedByNva() {
+  @ParameterizedTest
+  @ValueSource(strings = {"Verified", "NotVerified", "CannotBeEstablished"})
+  void shouldAcceptEveryVerificationStatusDefinedByNva(String verificationStatus) {
     var model = createModel();
     model.removeAll(resource(model, "person"), property(model, "verificationStatus"), null);
-    addToModel(model, ":person :verificationStatus \"CannotBeEstablished\" .");
+    addToModel(model, ":person :verificationStatus \"%s\" .".formatted(verificationStatus));
 
     var validation = nvaGraphValidator.validate(model);
 

@@ -60,6 +60,9 @@ public final class TestConstants {
   public static final String BODY_FIELD = "body";
   public static final String LANGUAGE_FIELD = "language";
   public static final String ABSTRACT_FIELD = "abstract";
+  public static final String SCIENTIFIC_VALUE_FIELD = "scientificValue";
+  public static final String PRINT_ISSN_FIELD = "printIssn";
+  public static final String YEAR_FIELD = "year";
   public static final String ACADEMIC_CHAPTER = "AcademicChapter";
   public static final String ACADEMIC_LITERATURE_REVIEW = "AcademicLiteratureReview";
   public static final String ACADEMIC_ARTICLE = "AcademicArticle";
