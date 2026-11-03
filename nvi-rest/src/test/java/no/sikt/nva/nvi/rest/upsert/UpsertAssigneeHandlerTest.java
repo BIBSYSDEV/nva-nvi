@@ -39,7 +39,6 @@ import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.GatewayResponse;
-import nva.commons.apigateway.exceptions.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.zalando.problem.Problem;
@@ -268,11 +267,7 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
 
   private void mockUserIdentity(String userName, List<String> accessRights) {
     var user = UserDto.builder().withUsername(userName).withAccessRights(accessRights).build();
-    try {
-      when(MOCK_IDENTITY_SERVICE_CLIENT.getUser(userName)).thenReturn(user);
-    } catch (NotFoundException e) {
-      throw new RuntimeException(e);
-    }
+    when(MOCK_IDENTITY_SERVICE_CLIENT.getUser(userName)).thenReturn(user);
   }
 
   private void mockNviCuratorAccessForUser(String userName) {

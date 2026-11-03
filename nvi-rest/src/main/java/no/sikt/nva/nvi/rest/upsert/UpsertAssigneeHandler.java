@@ -20,12 +20,12 @@ import no.sikt.nva.nvi.rest.ViewingScopeHandler;
 import no.sikt.nva.nvi.rest.model.UpsertAssigneeRequest;
 import no.sikt.nva.nvi.viewingscope.ViewingScopeValidator;
 import no.unit.nva.clients.IdentityServiceClient;
+import no.unit.nva.clients.IdentityServiceNotFoundException;
 import no.unit.nva.clients.UserDto;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
-import nva.commons.apigateway.exceptions.NotFoundException;
 import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
@@ -120,7 +120,7 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
       if (isNull(user) || !isIsNviCurator(user)) {
         throw new UnauthorizedException();
       }
-    } catch (NotFoundException e) {
+    } catch (IdentityServiceNotFoundException e) {
       throw new UnauthorizedException();
     }
   }

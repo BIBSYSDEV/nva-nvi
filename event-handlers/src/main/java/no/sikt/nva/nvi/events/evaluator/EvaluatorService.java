@@ -30,7 +30,7 @@ import no.sikt.nva.nvi.common.service.model.CandidateAndPeriods;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.publication.PublicationLoaderService;
 import no.unit.nva.clients.IdentityServiceClient;
-import nva.commons.apigateway.exceptions.ApiGatewayException;
+import no.unit.nva.clients.IdentityServiceException;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
@@ -79,7 +79,7 @@ public class EvaluatorService {
           .filter(customer -> nonNull(customer.cristinId()))
           .map(Customer::fromCustomerDto)
           .collect(Collectors.toMap(Customer::cristinId, Function.identity()));
-    } catch (ApiGatewayException exception) {
+    } catch (IdentityServiceException exception) {
       LOGGER.error("Failed to fetch customer list", exception);
       throw new RuntimeException(exception);
     }

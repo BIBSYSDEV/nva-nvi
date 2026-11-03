@@ -48,7 +48,6 @@ import no.sikt.nva.nvi.index.model.search.OrderByFields;
 import no.sikt.nva.nvi.test.TestUtils;
 import no.sikt.nva.nvi.viewingscope.FakeViewingScopeValidator;
 import nva.commons.apigateway.AccessRight;
-import nva.commons.apigateway.exceptions.NotFoundException;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -236,8 +235,7 @@ class SearchNviCandidatesHandlerTest extends SearchNviCandidatesHandlerTestBase 
   }
 
   @Test
-  void shouldReturnResultsWithUsersViewingScopeAsDefaultAffiliationIfNotSet()
-      throws IOException, NotFoundException {
+  void shouldReturnResultsWithUsersViewingScopeAsDefaultAffiliationIfNotSet() throws IOException {
     var usersViewingScope = List.of(randomSiktSubUnit());
     var viewingScopeIncludedUnits = generateRandomUrisWithLastPathElements(usersViewingScope);
 
@@ -359,12 +357,8 @@ class SearchNviCandidatesHandlerTest extends SearchNviCandidatesHandlerTestBase 
   }
 
   private void mockIdentityService(String userName) {
-    try {
-      when(MOCK_IDENTITY_SERVICE_CLIENT.getUser(userName))
-          .thenReturn(buildGetUserResponse(List.of(TOP_LEVEL_CRISTIN_ORG)));
-    } catch (NotFoundException e) {
-      throw new RuntimeException(e);
-    }
+    when(MOCK_IDENTITY_SERVICE_CLIENT.getUser(userName))
+        .thenReturn(buildGetUserResponse(List.of(TOP_LEVEL_CRISTIN_ORG)));
   }
 
   private URI constructBasePath() {

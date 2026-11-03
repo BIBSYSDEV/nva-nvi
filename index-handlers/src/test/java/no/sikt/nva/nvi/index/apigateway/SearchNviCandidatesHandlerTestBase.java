@@ -28,7 +28,6 @@ import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
-import nva.commons.apigateway.exceptions.NotFoundException;
 import org.zalando.problem.Problem;
 
 public class SearchNviCandidatesHandlerTestBase {
@@ -96,12 +95,8 @@ public class SearchNviCandidatesHandlerTestBase {
   }
 
   protected static void mockIdentityService(String username, URI... organizations) {
-    try {
-      when(MOCK_IDENTITY_SERVICE_CLIENT.getUser(username))
-          .thenReturn(buildGetUserResponse(List.of(organizations)));
-    } catch (NotFoundException e) {
-      throw new RuntimeException(e);
-    }
+    when(MOCK_IDENTITY_SERVICE_CLIENT.getUser(username))
+        .thenReturn(buildGetUserResponse(List.of(organizations)));
   }
 
   protected static UserDto buildGetUserResponse(List<URI> usersViewingScopeIncludedUnits) {
