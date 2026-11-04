@@ -9,6 +9,7 @@ import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomTopLevelOr
 
 import java.math.BigDecimal;
 import java.net.URI;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -114,6 +115,12 @@ public class UpsertRequestBuilder {
         new PublicationDetailsDtoBuilder(publicationDetails)
             .withPublicationDate(publicationDate)
             .build();
+    return this;
+  }
+
+  public UpsertRequestBuilder withModifiedDate(Instant modifiedDate) {
+    this.publicationDetails =
+        new PublicationDetailsDtoBuilder(publicationDetails).withModifiedDate(modifiedDate).build();
     return this;
   }
 

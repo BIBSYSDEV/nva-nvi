@@ -52,6 +52,8 @@ public class EvaluatorService {
       "Publication is already reported and cannot be updated.";
   private static final String CLOSED_PERIOD_CANDIDATE_MESSAGE =
       "Candidate is in a closed period and cannot be updated.";
+  private static final String STALE_SNAPSHOT_MESSAGE =
+      "Publication snapshot with modified date {} is older than the stored candidate.";
   private final CandidateService candidateService;
   private final IdentityServiceClient identityServiceClient;
   private final PublicationLoaderService publicationLoader;
@@ -122,6 +124,11 @@ public class EvaluatorService {
 
   private boolean shouldSkipEvaluation(
       CandidateAndPeriods candidateAndPeriods, PublicationDto publication) {
+    if (isStaleSnapshot(candidateAndPeriods, publication)) {
+      LOGGER.warn(STALE_SNAPSHOT_MESSAGE, publication.modifiedDate());
+      return true;
+    }
+
     if (hasInvalidPublicationYear(publication)) {
       LOGGER.warn(MALFORMED_DATE_MESSAGE, publication.publicationDate());
       return true;
@@ -139,6 +146,15 @@ public class EvaluatorService {
       return true;
     }
     return false;
+  }
+
+  private static boolean isStaleSnapshot(
+      CandidateAndPeriods candidateAndPeriods, PublicationDto publication) {
+    return candidateAndPeriods
+        .getCandidate()
+        .map(Candidate::publicationDetails)
+        .map(details -> details.isNewerThan(publication.modifiedDate()))
+        .orElse(false);
   }
 
   private boolean isNonCandidate(PublicationDto publication) {

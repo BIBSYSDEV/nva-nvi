@@ -73,6 +73,9 @@ public record SampleExpandedPublication(
     URI handle,
     List<SampleAdditionalIdentifier> additionalIdentifiers) {
 
+  /** Matches the value in the template, so that sample publications have a known modified date. */
+  public static final String DEFAULT_MODIFIED_DATE = "2023-06-05T10:47:02.627823Z";
+
   private static final String TEMPLATE_JSON_PATH = "template_publication.json";
   private static final int CONTRIBUTORS_PREVIEW_SIZE = 10;
 
@@ -200,7 +203,7 @@ public record SampleExpandedPublication(
     private SampleExpandedPageCount pageCount = new SampleExpandedPageCount(null, null, null);
     private SampleExpandedPublicationDate publicationDate;
     private String instanceType = ACADEMIC_ARTICLE;
-    private String modifiedDate;
+    private String modifiedDate = DEFAULT_MODIFIED_DATE;
     private List<SampleExpandedContributor> contributors;
     private List<SampleExpandedOrganization> topLevelOrganizations;
     private SampleExpandedPublicationContext publicationContext;
