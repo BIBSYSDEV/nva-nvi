@@ -64,12 +64,12 @@ class FetchNviCandidateContextHandlerTest {
 
   @ParameterizedTest(name = "mediaType {0} is invalid")
   @MethodSource("unsupportedMediaTypes")
-  void shouldReturnUnsupportedMediaTypeIfRequestHeaderAcceptsAnythingOtherThanJsonOrJsonLdOrDefault(
+  void shouldReturnNotAcceptableIfRequestHeaderAcceptsAnythingOtherThanJsonOrJsonLdOrDefault(
       String mediaType) throws IOException {
     var request = generateHandlerRequest(Map.of(ACCEPT, mediaType));
     fetchNviCandidateContextHandler.handleRequest(request, output, context);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
-    assertThat(response.getStatusCode()).isEqualTo(HttpURLConnection.HTTP_UNSUPPORTED_TYPE);
+    assertThat(response.getStatusCode()).isEqualTo(HttpURLConnection.HTTP_NOT_ACCEPTABLE);
     var problem = response.getBodyObject(Problem.class);
     assertThat(problem.getDetail()).contains(UNSUPPORTED_ACCEPT_HEADER_MESSAGE);
   }

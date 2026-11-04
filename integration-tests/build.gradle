@@ -17,7 +17,6 @@ dependencies {
     testImplementation(nvaCatalog.junit.jupiter.params)
     testImplementation(nvaCatalog.mockito.core)
     testImplementation(nvaCatalog.slf4j.api)
-    testImplementation(nvaLibs.apigateway)
     testImplementation(nvaLibs.clients)
     testImplementation(nvaLibs.core)
     testImplementation(nvaLibs.json)

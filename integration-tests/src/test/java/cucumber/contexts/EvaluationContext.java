@@ -20,7 +20,6 @@ import no.unit.nva.clients.CustomerDto;
 import no.unit.nva.clients.CustomerList;
 import no.unit.nva.clients.IdentityServiceClient;
 import no.unit.nva.stubs.FakeContext;
-import nva.commons.apigateway.exceptions.ApiGatewayException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,11 +51,7 @@ public class EvaluationContext {
   }
 
   public void mockGetAllCustomersResponse(List<CustomerDto> customers) {
-    try {
-      when(identityServiceClient.getAllCustomers()).thenReturn(new CustomerList(customers));
-    } catch (ApiGatewayException exception) {
-      throw new RuntimeException(exception);
-    }
+    when(identityServiceClient.getAllCustomers()).thenReturn(new CustomerList(customers));
   }
 
   public void evaluatePublicationAndPersistResult(SampleExpandedPublication publication) {

@@ -32,7 +32,6 @@ import no.unit.nva.clients.IdentityServiceClient;
 import no.unit.nva.identifiers.SortableIdentifier;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeContext;
-import nva.commons.apigateway.exceptions.ApiGatewayException;
 import org.junit.jupiter.api.BeforeEach;
 
 class EvaluationTest {
@@ -82,11 +81,7 @@ class EvaluationTest {
   }
 
   protected void mockGetAllCustomersResponse(List<CustomerDto> customers) {
-    try {
-      when(identityServiceClient.getAllCustomers()).thenReturn(new CustomerList(customers));
-    } catch (ApiGatewayException exception) {
-      throw new RuntimeException(exception);
-    }
+    when(identityServiceClient.getAllCustomers()).thenReturn(new CustomerList(customers));
   }
 
   protected void assertThatPublicationIsValidCandidate(URI publicationId) {
