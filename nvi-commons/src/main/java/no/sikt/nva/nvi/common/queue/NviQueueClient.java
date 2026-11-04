@@ -150,15 +150,13 @@ public class NviQueueClient implements QueueClient {
   private NviReceiveMessageResponse createResponse(ReceiveMessageResponse receiveMessageResponse) {
     return new NviReceiveMessageResponse(
         receiveMessageResponse.messages().stream()
-            .map(
-                m ->
-                    new NviReceiveMessage(
-                        m.body(),
-                        m.messageId(),
-                        m.messageAttributes().entrySet().stream()
-                            .collect(
-                                Collectors.toMap(Entry::getKey, e -> e.getValue().stringValue())),
-                        m.receiptHandle()))
+            .map(m ->
+                new NviReceiveMessage(
+                    m.body(),
+                    m.messageId(),
+                    m.messageAttributes().entrySet().stream()
+                        .collect(Collectors.toMap(Entry::getKey, e -> e.getValue().stringValue())),
+                    m.receiptHandle()))
             .toList());
   }
 }

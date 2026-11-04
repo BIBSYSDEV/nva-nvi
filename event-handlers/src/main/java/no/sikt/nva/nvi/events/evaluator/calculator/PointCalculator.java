@@ -125,10 +125,8 @@ public class PointCalculator {
     var numberOfAffiliations = nviCreator.getValue().size();
     var pointsForAffiliation = divide(numberOfAffiliations, pointsForCreator);
     return nviCreator.getValue().stream()
-        .map(
-            affiliationId ->
-                new CreatorAffiliationPoints(
-                    nviCreator.getKey(), affiliationId, pointsForAffiliation));
+        .map(affiliationId ->
+            new CreatorAffiliationPoints(nviCreator.getKey(), affiliationId, pointsForAffiliation));
   }
 
   private InstitutionPoints calculateInstitutionPoints(Entry<URI, Long> institutionCreatorCount) {
@@ -168,10 +166,9 @@ public class PointCalculator {
                 NviCreator::id, creator -> creator.getNviAffiliationsPartOf(institutionId)))
         .entrySet()
         .stream()
-        .flatMap(
-            entry ->
-                calculatePointsForAffiliation(
-                    entry, institutionPoints, institutionCreatorCount.getValue()))
+        .flatMap(entry ->
+            calculatePointsForAffiliation(
+                entry, institutionPoints, institutionCreatorCount.getValue()))
         .toList();
   }
 

@@ -118,10 +118,9 @@ class IndexDocumentHandlerTestBase {
   }
 
   protected static IndexDocumentWithConsumptionAttributes parseJson(String persistedIndexDocument) {
-    return attempt(
-            () ->
-                dtoObjectMapper.readValue(
-                    persistedIndexDocument, IndexDocumentWithConsumptionAttributes.class))
+    return attempt(() ->
+            dtoObjectMapper.readValue(
+                persistedIndexDocument, IndexDocumentWithConsumptionAttributes.class))
         .orElseThrow();
   }
 }

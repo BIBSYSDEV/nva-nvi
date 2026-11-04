@@ -336,9 +336,8 @@ class CandidateSearchClientTest {
     assertThat(searchResponse.hits().hits()).hasSize(1);
     assertTrue(
         requireNonNull(searchResponse.hits().hits().getFirst().source()).approvals().stream()
-            .anyMatch(
-                approval ->
-                    approval.institutionId().equals(searchParameters.topLevelCristinOrg())));
+            .anyMatch(approval ->
+                approval.institutionId().equals(searchParameters.topLevelCristinOrg())));
   }
 
   @Test

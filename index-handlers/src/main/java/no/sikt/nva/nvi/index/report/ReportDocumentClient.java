@@ -24,37 +24,35 @@ public class ReportDocumentClient {
   private static final String SCROLL_TIMEOUT = "1m";
   private static final int SCROLL_PAGE_SIZE = 250;
   static final SourceConfig REPORT_SOURCE_CONFIG =
-      SourceConfig.of(
-          s ->
-              s.filter(
-                  f ->
-                      f.includes(
-                              List.of(
-                                  "identifier",
-                                  "reportingPeriod",
-                                  "globalApprovalStatus",
-                                  "publicationTypeChannelLevelPoints",
-                                  "internationalCollaborationFactor",
-                                  "creatorShareCount",
-                                  "publicationDetails.id",
-                                  "publicationDetails.type",
-                                  "publicationDetails.title",
-                                  "publicationDetails.publicationDate",
-                                  "publicationDetails.nviContributors",
-                                  "publicationDetails.publicationChannel",
-                                  "publicationDetails.pages",
-                                  "publicationDetails.language",
-                                  "approvals.institutionId",
-                                  "approvals.approvalStatus",
-                                  "approvals.points",
-                                  "approvals.sector",
-                                  "approvals.rboInstitution"))
-                          .excludes(
-                              List.of(
-                                  "publicationDetails.nviContributors.role",
-                                  "publicationDetails.nviContributors.affiliations.partOfIdentifiers",
-                                  "approvals.points.institutionId",
-                                  "approvals.points.institutionPoints"))));
+      SourceConfig.of(s ->
+          s.filter(f ->
+              f.includes(
+                      List.of(
+                          "identifier",
+                          "reportingPeriod",
+                          "globalApprovalStatus",
+                          "publicationTypeChannelLevelPoints",
+                          "internationalCollaborationFactor",
+                          "creatorShareCount",
+                          "publicationDetails.id",
+                          "publicationDetails.type",
+                          "publicationDetails.title",
+                          "publicationDetails.publicationDate",
+                          "publicationDetails.nviContributors",
+                          "publicationDetails.publicationChannel",
+                          "publicationDetails.pages",
+                          "publicationDetails.language",
+                          "approvals.institutionId",
+                          "approvals.approvalStatus",
+                          "approvals.points",
+                          "approvals.sector",
+                          "approvals.rboInstitution"))
+                  .excludes(
+                      List.of(
+                          "publicationDetails.nviContributors.role",
+                          "publicationDetails.nviContributors.affiliations.partOfIdentifiers",
+                          "approvals.points.institutionId",
+                          "approvals.points.institutionPoints"))));
 
   private final OpenSearchClient client;
   private final String indexName;

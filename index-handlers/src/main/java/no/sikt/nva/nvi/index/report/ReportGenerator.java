@@ -114,10 +114,9 @@ public class ReportGenerator {
   private static Stream<Row> toReportRows(
       ReportDocument document, Predicate<NviContributor> contributorFilter) {
     return document.approvals().stream()
-        .flatMap(
-            approval ->
-                InstitutionReportMapper.mapToReportRows(
-                    document, approval.institutionId(), contributorFilter));
+        .flatMap(approval ->
+            InstitutionReportMapper.mapToReportRows(
+                document, approval.institutionId(), contributorFilter));
   }
 
   private static byte[] generateReport(List<Row> rows, MediaType mediaType) {
@@ -137,10 +136,9 @@ public class ReportGenerator {
       Predicate<NviContributor> contributorFilter) {
     if (query instanceof InstitutionQuery institutionQuery) {
       return documents.stream()
-          .flatMap(
-              document ->
-                  InstitutionReportMapper.mapToReportRows(
-                      document, institutionQuery.institutionId(), contributorFilter))
+          .flatMap(document ->
+              InstitutionReportMapper.mapToReportRows(
+                  document, institutionQuery.institutionId(), contributorFilter))
           .toList();
     }
     return documents.stream()

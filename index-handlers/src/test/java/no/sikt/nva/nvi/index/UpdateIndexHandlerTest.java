@@ -196,15 +196,13 @@ class UpdateIndexHandlerTest {
     var event = new SQSEvent();
     var messages =
         candidates.stream()
-            .map(
-                candidate ->
-                    new PersistedIndexDocumentMessage(generateBucketUri(candidate)).toJsonString())
-            .map(
-                body -> {
-                  var message = new SQSMessage();
-                  message.setBody(body);
-                  return message;
-                })
+            .map(candidate ->
+                new PersistedIndexDocumentMessage(generateBucketUri(candidate)).toJsonString())
+            .map(body -> {
+              var message = new SQSMessage();
+              message.setBody(body);
+              return message;
+            })
             .toList();
     event.setRecords(messages);
     return event;
@@ -218,10 +216,9 @@ class UpdateIndexHandlerTest {
             .generate();
     var indexDocumentWithConsumptionAttributes =
         IndexDocumentWithConsumptionAttributes.from(indexDocument, getSearchIndexName(ENVIRONMENT));
-    attempt(
-            () ->
-                s3Driver.insertFile(
-                    createPath(candidate), indexDocumentWithConsumptionAttributes.toJsonString()))
+    attempt(() ->
+            s3Driver.insertFile(
+                createPath(candidate), indexDocumentWithConsumptionAttributes.toJsonString()))
         .orElseThrow();
     return indexDocumentWithConsumptionAttributes;
   }

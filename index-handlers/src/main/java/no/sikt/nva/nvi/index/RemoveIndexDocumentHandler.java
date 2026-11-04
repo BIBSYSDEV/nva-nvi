@@ -54,19 +54,17 @@ public class RemoveIndexDocumentHandler implements RequestHandler<SQSEvent, Void
 
   private void removeDocumentFromIndex(UUID identifier) {
     attempt(() -> searchClient.removeDocumentFromIndex(identifier))
-        .orElse(
-            failure -> {
-              handleFailure(failure, FAILED_TO_REMOVE_DOCUMENT_MESSAGE, identifier.toString());
-              return null;
-            });
+        .orElse(failure -> {
+          handleFailure(failure, FAILED_TO_REMOVE_DOCUMENT_MESSAGE, identifier.toString());
+          return null;
+        });
   }
 
   private DynamoDbChangeMessage mapToDbChangeMessage(String body) {
     return attempt(() -> DynamoDbChangeMessage.from(body))
-        .orElse(
-            failure -> {
-              handleFailure(failure, FAILED_TO_PARSE_EVENT_MESSAGE, body);
-              return null;
-            });
+        .orElse(failure -> {
+          handleFailure(failure, FAILED_TO_PARSE_EVENT_MESSAGE, body);
+          return null;
+        });
   }
 }

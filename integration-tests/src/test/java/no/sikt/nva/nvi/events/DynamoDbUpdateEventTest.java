@@ -102,7 +102,7 @@ class DynamoDbUpdateEventTest {
         .allMatch(hasTopic(expectedTopic));
   }
 
-  @ParameterizedTest()
+  @ParameterizedTest
   @MethodSource("otherDaoInsertEventProvider")
   void shouldDoNothingWhenReceivingEventWithOtherDaoTypes(DynamodbEvent dynamoDbEvent) {
     processDynamoEvent(dynamoDbEvent);

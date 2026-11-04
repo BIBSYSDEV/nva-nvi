@@ -267,10 +267,9 @@ class PointCalculationTest extends EvaluationTest {
     var candidate = candidateService.getCandidateByPublicationId(publicationId);
     assertThat(candidate.getInstitutionPoints())
         .isNotEmpty()
-        .allSatisfy(
-            points ->
-                assertThat(points.sector().toString())
-                    .isEqualTo(getInstitutionSectorFromMockedCustomers(points.institutionId())));
+        .allSatisfy(points ->
+            assertThat(points.sector().toString())
+                .isEqualTo(getInstitutionSectorFromMockedCustomers(points.institutionId())));
   }
 
   private String getInstitutionSectorFromMockedCustomers(URI institutionId) {

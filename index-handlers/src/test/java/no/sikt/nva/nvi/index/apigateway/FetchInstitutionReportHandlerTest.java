@@ -756,10 +756,8 @@ class FetchInstitutionReportHandlerTest {
   private Stream<List<String>> getExpectedRows(
       NviCandidateIndexDocument document, URI topLevelCristinOrg) {
     return document.getNviContributors().stream()
-        .map(
-            nviContributor ->
-                getExpectedRowsForContributorAffiliations(
-                    document, topLevelCristinOrg, nviContributor))
+        .map(nviContributor ->
+            getExpectedRowsForContributorAffiliations(document, topLevelCristinOrg, nviContributor))
         .flatMap(List::stream);
   }
 
@@ -768,9 +766,8 @@ class FetchInstitutionReportHandlerTest {
     return nviContributor.nviAffiliations().stream()
         .filter(
             affiliation -> isPartOfOrEqualToTopLevelOrganization(topLevelCristinOrg, affiliation))
-        .map(
-            affiliation ->
-                getExpectedRow(document, nviContributor, affiliation, topLevelCristinOrg))
+        .map(affiliation ->
+            getExpectedRow(document, nviContributor, affiliation, topLevelCristinOrg))
         .toList();
   }
 

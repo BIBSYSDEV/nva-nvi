@@ -46,11 +46,10 @@ public class DbCreatorTypeListConverter implements AttributeConverter<List<DbCre
   }
 
   private DbCreatorType toCreator(Map<String, AttributeValue> attributeValueMap) {
-    return attempt(
-            () ->
-                dtoObjectMapper.readValue(
-                    EnhancedDocument.fromAttributeValueMap(attributeValueMap).toJson(),
-                    DbCreatorType.class))
+    return attempt(() ->
+            dtoObjectMapper.readValue(
+                EnhancedDocument.fromAttributeValueMap(attributeValueMap).toJson(),
+                DbCreatorType.class))
         .orElseThrow();
   }
 
