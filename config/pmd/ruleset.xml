@@ -49,6 +49,8 @@
     <exclude name="UnnecessaryConstructor"/>
     <!-- Conflicts with the rule category/java/codestyle.xml/AvoidProtectedMethodInFinalClassNotExtending -->
     <exclude name="CommentDefaultAccessModifier"/>
+    <!-- We declare local variables next to their first use -->
+    <exclude name="LocalVariableDeclarationShouldBeAtStartOfBlock"/>
   </rule>
 
 
