@@ -11,7 +11,16 @@ nva {
         languageVersion = 25
     }
     pmd {
-        rulesetFile = rootProject.file('config/pmd/ruleset.xml')
+        excludedRules = [
+                'AvoidFieldNameMatchingMethodName',
+                'AvoidThrowingRawExceptionTypes',
+                'CloseResource',
+                'GuardLogStatement',
+                'LocalVariableDeclarationShouldBeAtStartOfBlock',
+                'ShortMethodName',
+                'TestClassWithoutTestCases',
+                'UnitTestContainsTooManyAsserts'
+        ]
     }
 }
 
