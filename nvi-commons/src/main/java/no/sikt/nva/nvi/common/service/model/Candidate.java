@@ -443,9 +443,8 @@ public record Candidate(
       Candidate candidate, InstitutionPoints institutionPoints) {
     return Optional.ofNullable(
             candidate.getPointValueForInstitution(institutionPoints.institutionId()))
-        .map(
-            currentPoints ->
-                isEqualWithSameScale(currentPoints, institutionPoints.institutionPoints()))
+        .map(currentPoints ->
+            isEqualWithSameScale(currentPoints, institutionPoints.institutionPoints()))
         .orElse(false);
   }
 

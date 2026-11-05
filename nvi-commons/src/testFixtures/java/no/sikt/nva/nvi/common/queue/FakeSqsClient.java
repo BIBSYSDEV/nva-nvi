@@ -92,16 +92,15 @@ public class FakeSqsClient implements QueueClient {
         sentMessages.stream()
             .filter(message -> queueUrl.equals(message.queueUrl()))
             .limit(maxNumberOfMessages)
-            .map(
-                sendMessageRequest ->
-                    new NviReceiveMessage(
-                        sendMessageRequest.messageBody(),
-                        null,
-                        sendMessageRequest.messageAttributes().entrySet().stream()
-                            .collect(
-                                Collectors.toMap(
-                                    Entry::getKey, entry -> entry.getValue().stringValue())),
-                        null))
+            .map(sendMessageRequest ->
+                new NviReceiveMessage(
+                    sendMessageRequest.messageBody(),
+                    null,
+                    sendMessageRequest.messageAttributes().entrySet().stream()
+                        .collect(
+                            Collectors.toMap(
+                                Entry::getKey, entry -> entry.getValue().stringValue())),
+                    null))
             .toList());
   }
 

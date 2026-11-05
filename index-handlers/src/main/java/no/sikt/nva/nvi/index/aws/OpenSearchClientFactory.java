@@ -61,11 +61,10 @@ public final class OpenSearchClientFactory {
       HttpHost httpHost, CachedJwtProvider cachedJwtProvider) {
     return ApacheHttpClient5TransportBuilder.builder(httpHost)
         .setMapper(new JacksonJsonpMapper())
-        .setHttpClientConfigCallback(
-            builder ->
-                builder
-                    .disableContentCompression()
-                    .addRequestInterceptorFirst(getHttpRequestInterceptor(cachedJwtProvider)))
+        .setHttpClientConfigCallback(builder ->
+            builder
+                .disableContentCompression()
+                .addRequestInterceptorFirst(getHttpRequestInterceptor(cachedJwtProvider)))
         .build();
   }
 

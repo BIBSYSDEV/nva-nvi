@@ -16,10 +16,9 @@ public enum OrderByFields {
     return Arrays.stream(values())
         .filter(field -> field.getValue().equalsIgnoreCase(value))
         .findFirst()
-        .orElseThrow(
-            () ->
-                new IllegalArgumentException(
-                    "Invalid orderBy field. Valid values are: " + validValues()));
+        .orElseThrow(() ->
+            new IllegalArgumentException(
+                "Invalid orderBy field. Valid values are: " + validValues()));
   }
 
   public static List<String> validValues() {

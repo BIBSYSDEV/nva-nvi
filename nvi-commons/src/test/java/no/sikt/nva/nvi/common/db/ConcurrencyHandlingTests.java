@@ -324,12 +324,11 @@ class ConcurrencyHandlingTests {
       var secondUpdate = createUpdateStatusRequest(ApprovalStatus.REJECTED, user);
 
       assertThatNoException()
-          .isThrownBy(
-              () -> {
-                approvalService.updateApproval(readCandidate1, firstUpdate, user);
-                var readCandidate2 = scenario.getCandidateByIdentifier(candidateIdentifier);
-                approvalService.updateApproval(readCandidate2, secondUpdate, user);
-              });
+          .isThrownBy(() -> {
+            approvalService.updateApproval(readCandidate1, firstUpdate, user);
+            var readCandidate2 = scenario.getCandidateByIdentifier(candidateIdentifier);
+            approvalService.updateApproval(readCandidate2, secondUpdate, user);
+          });
     }
 
     @Test
@@ -344,11 +343,10 @@ class ConcurrencyHandlingTests {
       var secondUpdate = createUpdateStatusRequest(ApprovalStatus.APPROVED, secondUser);
 
       assertThatNoException()
-          .isThrownBy(
-              () -> {
-                approvalService.updateApproval(candidate, firstUpdate, firstUser);
-                approvalService.updateApproval(candidate, secondUpdate, secondUser);
-              });
+          .isThrownBy(() -> {
+            approvalService.updateApproval(candidate, firstUpdate, firstUser);
+            approvalService.updateApproval(candidate, secondUpdate, secondUser);
+          });
     }
 
     @Test

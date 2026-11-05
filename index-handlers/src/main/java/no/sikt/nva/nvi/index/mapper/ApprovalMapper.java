@@ -58,11 +58,10 @@ final class ApprovalMapper {
   private Map<String, String> extractLabels(URI institutionId) {
     return labelsFromCandidate(institutionId)
         .or(() -> labelsFromPublication(institutionId))
-        .orElseGet(
-            () -> {
-              LOGGER.warn("No labels found for institution {}", institutionId);
-              return emptyMap();
-            });
+        .orElseGet(() -> {
+          LOGGER.warn("No labels found for institution {}", institutionId);
+          return emptyMap();
+        });
   }
 
   private Optional<Map<String, String>> labelsFromCandidate(URI institutionId) {

@@ -64,27 +64,23 @@ public class CandidateSearchClient implements SearchClient<NviCandidateIndexDocu
   @Override
   public IndexResponse addDocumentToIndex(NviCandidateIndexDocument indexDocument) {
     return attempt(() -> client.index(constructIndexRequest(indexDocument)))
-        .map(
-            indexResponse -> {
-              LOGGER.info("Indexed document from index: {}", indexDocument.identifier());
-              return indexResponse;
-            })
-        .orElseThrow(
-            failure ->
-                handleFailure("Failed to add/update document from index", failure.getException()));
+        .map(indexResponse -> {
+          LOGGER.info("Indexed document from index: {}", indexDocument.identifier());
+          return indexResponse;
+        })
+        .orElseThrow(failure ->
+            handleFailure("Failed to add/update document from index", failure.getException()));
   }
 
   @Override
   public DeleteResponse removeDocumentFromIndex(UUID identifier) {
     return attempt(() -> client.delete(contructDeleteRequest(identifier)))
-        .map(
-            deleteResponse -> {
-              LOGGER.info("Removing document from index: {}", identifier);
-              return deleteResponse;
-            })
-        .orElseThrow(
-            failure ->
-                handleFailure("Failed to remove document from index", failure.getException()));
+        .map(deleteResponse -> {
+          LOGGER.info("Removing document from index: {}", identifier);
+          return deleteResponse;
+        })
+        .orElseThrow(failure ->
+            handleFailure("Failed to remove document from index", failure.getException()));
   }
 
   @Override
@@ -130,9 +126,8 @@ public class CandidateSearchClient implements SearchClient<NviCandidateIndexDocu
 
   public void createIndex() {
     attempt(() -> client.indices().create(getCreateIndexRequest()))
-        .orElseThrow(
-            failure ->
-                handleFailure("Error while creating index: " + indexName, failure.getException()));
+        .orElseThrow(failure ->
+            handleFailure("Error while creating index: " + indexName, failure.getException()));
   }
 
   public void refreshIndex() {

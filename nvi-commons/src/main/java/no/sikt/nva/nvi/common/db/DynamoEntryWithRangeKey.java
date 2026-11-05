@@ -16,10 +16,9 @@ public interface DynamoEntryWithRangeKey extends Typed {
   String FIELD_DELIMITER = "#";
 
   static Dao parseAttributeValuesMap(Map<String, AttributeValue> value, Class<Dao> daoClass) {
-    return attempt(
-            () ->
-                dtoObjectMapper.readValue(
-                    EnhancedDocument.fromAttributeValueMap(value).toJson(), daoClass))
+    return attempt(() ->
+            dtoObjectMapper.readValue(
+                EnhancedDocument.fromAttributeValueMap(value).toJson(), daoClass))
         .orElseThrow();
   }
 

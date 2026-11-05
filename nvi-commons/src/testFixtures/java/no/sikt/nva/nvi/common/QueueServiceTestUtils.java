@@ -34,12 +34,11 @@ public final class QueueServiceTestUtils {
     var sqsEvent = new SQSEvent();
     var messages =
         messageBatch.entries().stream()
-            .map(
-                entry -> {
-                  var message = new SQSMessage();
-                  message.setBody(entry.messageBody());
-                  return message;
-                })
+            .map(entry -> {
+              var message = new SQSMessage();
+              message.setBody(entry.messageBody());
+              return message;
+            })
             .toList();
     sqsEvent.setRecords(messages);
     return sqsEvent;

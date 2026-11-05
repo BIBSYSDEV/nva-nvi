@@ -243,7 +243,7 @@ class CandidateTest extends CandidateTestSetup {
     assertEquals(approvalStatus.getValue(), updatedCandidate.getGlobalApprovalStatus().getValue());
   }
 
-  @Test()
+  @Test
   @DisplayName("Should return global approval status pending when any approval is pending")
   void shouldReturnGlobalApprovalStatusPendingWhenAnyApprovalIsPending() {
     var createRequest = randomUpsertRequestBuilder().build();
@@ -277,7 +277,7 @@ class CandidateTest extends CandidateTestSetup {
     assertEquals(expectedDto, actualDto);
   }
 
-  @Test()
+  @Test
   @DisplayName(
       "Should return global approval status dispute when a candidate has at least one Rejected and"
           + " one Approved approval")
@@ -551,15 +551,14 @@ class CandidateTest extends CandidateTestSetup {
 
   private List<ApprovalDto> mapToApprovalDtos(Candidate candidate) {
     return candidate.approvals().values().stream()
-        .map(
-            approval ->
-                ApprovalDto.builder()
-                    .withInstitutionId(approval.institutionId())
-                    .withPoints(candidate.getPointValueForInstitution(approval.institutionId()))
-                    .withStatus(ApprovalStatusDto.from(approval))
-                    .withFinalizedBy(approval.getFinalizedByUserName())
-                    .withAssignee(approval.getAssigneeUsername())
-                    .build())
+        .map(approval ->
+            ApprovalDto.builder()
+                .withInstitutionId(approval.institutionId())
+                .withPoints(candidate.getPointValueForInstitution(approval.institutionId()))
+                .withStatus(ApprovalStatusDto.from(approval))
+                .withFinalizedBy(approval.getFinalizedByUserName())
+                .withAssignee(approval.getAssigneeUsername())
+                .build())
         .toList();
   }
 

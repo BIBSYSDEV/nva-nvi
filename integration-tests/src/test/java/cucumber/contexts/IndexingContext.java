@@ -58,11 +58,10 @@ public class IndexingContext {
   public void overwriteSource(Candidate candidate, SampleExpandedPublication publication) {
     var path =
         UriWrapper.fromUri(candidate.publicationDetails().publicationBucketUri()).toS3bucketPath();
-    attempt(
-            () ->
-                scenario
-                    .getS3DriverForExpandedResourcesBucket()
-                    .insertFile(path, publication.toJsonString()))
+    attempt(() ->
+            scenario
+                .getS3DriverForExpandedResourcesBucket()
+                .insertFile(path, publication.toJsonString()))
         .orElseThrow();
   }
 

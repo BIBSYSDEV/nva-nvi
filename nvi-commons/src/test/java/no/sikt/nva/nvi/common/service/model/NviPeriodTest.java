@@ -149,7 +149,7 @@ class NviPeriodTest {
     assertEquals(expectedDto, actualDto);
   }
 
-  @ParameterizedTest()
+  @ParameterizedTest
   @MethodSource("periodToPeriodStatusProvider")
   void shouldConvertPeriodToPeriodStatusCorrectly(NviPeriod period, PeriodStatus expectedStatus) {
     var periodDto = NviPeriodDto.from(period);

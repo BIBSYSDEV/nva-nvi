@@ -78,9 +78,8 @@ public class SearchNviCandidatesHandler
     var candidateSearchParameters =
         CandidateSearchParameters.fromRequestInfo(requestInfo, affiliations);
     return attempt(() -> searchClient.search(candidateSearchParameters))
-        .map(
-            searchResponse ->
-                resultConverter.toPaginatedResult(searchResponse, candidateSearchParameters))
+        .map(searchResponse ->
+            resultConverter.toPaginatedResult(searchResponse, candidateSearchParameters))
         .orElseThrow();
   }
 

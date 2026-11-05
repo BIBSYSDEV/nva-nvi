@@ -230,13 +230,12 @@ public record CandidateQuery(
 
   private Optional<Query> createTitleQuery(String title) {
     return Optional.ofNullable(title)
-        .map(
-            t ->
-                new MatchPhraseQuery.Builder()
-                    .field(jsonPathOf(PUBLICATION_DETAILS, TITLE))
-                    .query(t)
-                    .build()
-                    .toQuery());
+        .map(t ->
+            new MatchPhraseQuery.Builder()
+                .field(jsonPathOf(PUBLICATION_DETAILS, TITLE))
+                .query(t)
+                .build()
+                .toQuery());
   }
 
   private Optional<Query> createGlobalStatusQuery() {

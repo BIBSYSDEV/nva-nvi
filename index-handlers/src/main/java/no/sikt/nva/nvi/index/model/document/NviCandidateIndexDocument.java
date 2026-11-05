@@ -128,9 +128,8 @@ public record NviCandidateIndexDocument(
     }
     LOGGER.info("Processing candidate={} for institution={}", identifier, topLevelOrganization);
     return getNviContributors().stream()
-        .flatMap(
-            nviContributor ->
-                generateRowsForContributorAffiliations(nviContributor, topLevelOrganization))
+        .flatMap(nviContributor ->
+            generateRowsForContributorAffiliations(nviContributor, topLevelOrganization))
         .toList();
   }
 

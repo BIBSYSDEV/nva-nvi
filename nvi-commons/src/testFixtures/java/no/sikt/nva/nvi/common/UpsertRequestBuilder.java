@@ -171,10 +171,8 @@ public class UpsertRequestBuilder {
 
   private List<CreatorAffiliationPoints> getCreatorPoints(NviCreator creator) {
     return creator.nviAffiliations().stream()
-        .map(
-            affiliation ->
-                new CreatorAffiliationPoints(
-                    creator.id(), affiliation, pointCalculation.basePoints()))
+        .map(affiliation ->
+            new CreatorAffiliationPoints(creator.id(), affiliation, pointCalculation.basePoints()))
         .toList();
   }
 

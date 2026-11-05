@@ -273,12 +273,11 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
 
       assertThat(response.getHits())
           .hasSameSizeAs(expectedDocumentKeys)
-          .allSatisfy(
-              doc -> {
-                var actualTitle = doc.publicationDetails().title();
-                assertThat(doc.id()).isEqualTo(DOCUMENTS.get(actualTitle).id());
-                assertThat(actualTitle).isIn(expectedDocumentKeys);
-              });
+          .allSatisfy(doc -> {
+            var actualTitle = doc.publicationDetails().title();
+            assertThat(doc.id()).isEqualTo(DOCUMENTS.get(actualTitle).id());
+            assertThat(actualTitle).isIn(expectedDocumentKeys);
+          });
     }
 
     /**

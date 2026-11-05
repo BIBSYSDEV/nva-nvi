@@ -480,12 +480,11 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var approval = candidate.approvals().get(institution.id());
     var samePointsWithDifferentScale =
         upsertCandidateRequest.pointCalculation().institutionPoints().stream()
-            .map(
-                institutionPoints ->
-                    new InstitutionPoints(
-                        institutionPoints.institutionId(),
-                        institutionPoints.institutionPoints().setScale(1, EXPECTED_ROUNDING_MODE),
-                        institutionPoints.creatorAffiliationPoints()))
+            .map(institutionPoints ->
+                new InstitutionPoints(
+                    institutionPoints.institutionId(),
+                    institutionPoints.institutionPoints().setScale(1, EXPECTED_ROUNDING_MODE),
+                    institutionPoints.creatorAffiliationPoints()))
             .toList();
 
     var updatedPointCalculation =

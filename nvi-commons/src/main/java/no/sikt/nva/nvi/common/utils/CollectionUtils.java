@@ -39,12 +39,11 @@ public final class CollectionUtils {
     var batchCount = (messages.size() + batchSize - 1) / batchSize;
 
     return IntStream.range(0, batchCount)
-        .mapToObj(
-            i -> {
-              var from = i * batchSize;
-              var to = Math.min(from + batchSize, totalSize);
-              return orderedMessages.subList(from, to);
-            });
+        .mapToObj(i -> {
+          var from = i * batchSize;
+          var to = Math.min(from + batchSize, totalSize);
+          return orderedMessages.subList(from, to);
+        });
   }
 
   public static List<Integer> splitEvenly(int total, int numberOfChunks) {
