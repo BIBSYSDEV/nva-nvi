@@ -16,7 +16,6 @@ nva {
                 'AvoidThrowingRawExceptionTypes',
                 'CloseResource',
                 'GuardLogStatement',
-                'LocalVariableDeclarationShouldBeAtStartOfBlock',
                 'ShortMethodName',
                 'TestClassWithoutTestCases',
                 'UnitTestContainsTooManyAsserts'
