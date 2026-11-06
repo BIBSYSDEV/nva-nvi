@@ -1,0 +1,29 @@
+# Shared model nodes that appear in more than one nva-nvi diagram.
+# Import one node with `name: @models.node`, then override its label where a diagram needs
+# a more specific one, for example `identity.label: "nva-identity-service\nGET /customer"`.
+# Keep labels here generic so every diagram can reuse them unchanged.
+
+...@styles
+
+# Storage owned or used by nva-nvi
+table: DynamoDB nva-nvi table {class: store}
+sws: "OpenSearch (SWS)\nnvi-candidates index" {class: store}
+resources_bucket: "persisted-resources bucket\nresources/ prefix" {class: store}
+nvi_candidates_bucket: "persisted-resources bucket\nnvi-candidates/ prefix" {class: store}
+reports_bucket: reports bucket {class: store}
+
+# Other NVA services
+identity: nva-identity-service {class: ext}
+cristin: nva-cristin-service {class: ext}
+expand: "nva-publication-api\nExpandDataEntriesHandler" {class: ext}
+datareport: nva-data-report-api {class: ext}
+spa: NVA-Frontend {class: ext}
+
+# Messaging
+shared_bus: "EventBridge shared bus\nPublicationService.ExpandedEntry.Persisted" {class: ext}
+internal_bus: EventBridge nvi-internal-bus {class: ext}
+eval_queue: SQS ResourceEvaluationQueue {class: queue}
+
+# People
+operator: "Operator\n(AWS console)" {class: person}
+curator: NVI curator {class: person}

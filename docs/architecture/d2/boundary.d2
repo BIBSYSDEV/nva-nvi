@@ -1,0 +1,69 @@
+# nva-nvi system boundary: what enters and leaves the service.
+# Mirrors the boundary diagram in ../README.md.
+# Render: ./render.sh (from docs/architecture)
+...@styles
+direction: right
+
+inbound: Data in {
+  class: group
+  expand: @models.expand
+  bus: @models.shared_bus
+  resources: @models.resources_bucket
+  spa: @models.spa
+  spa.label: "NVA-Frontend\nNVI curators, NVI admins, editors"
+  expansion: "nva-publication-api\nexpansion (report status)" {class: ext}
+  operator: @models.operator
+}
+
+nvi: nva-nvi {
+  evaluation: Evaluation pipeline {class: svc}
+  table: @models.table
+  indexing: Indexing pipeline {class: svc}
+  apigw: "API Gateway\n/scientific-index" {class: svc}
+  rest: REST and search handlers {class: svc}
+  reports: Report handlers {class: svc}
+  manual: Manual and batch handlers {class: svc}
+}
+
+deps: Synchronous dependencies {
+  class: group
+  identity: @models.identity
+  identity.label: "nva-identity-service\n/customer, /users-roles"
+  cristin: @models.cristin
+  cristin.label: "nva-cristin-service\n/cristin/organization"
+}
+
+outbound: Data out {
+  class: group
+  sws: @models.sws
+  prefix: @models.nvi_candidates_bucket
+  reports_bucket: @models.reports_bucket
+  reports_bucket.label: "reports bucket\npresigned URLs, 3-day expiry"
+  datareport: @models.datareport
+}
+
+inbound.expand -> inbound.bus {class: async}
+inbound.bus -> nvi.evaluation {class: async}
+inbound.resources -> nvi.evaluation
+inbound.resources -> nvi.indexing
+nvi.evaluation -> deps.identity: all customers
+nvi.evaluation -> nvi.table
+nvi.table -> nvi.indexing: stream {class: async}
+nvi.indexing -> outbound.prefix
+nvi.indexing -> outbound.sws
+outbound.prefix -> outbound.datareport: S3 Object Created {class: async}
+
+inbound.spa -> nvi.apigw
+inbound.expansion -> nvi.apigw: GET report-status
+nvi.apigw -> nvi.rest
+nvi.apigw -> nvi.reports
+nvi.rest -> nvi.table
+nvi.rest -> outbound.sws
+nvi.rest -> deps.identity: viewing scope
+nvi.rest -> deps.cristin: sub-units
+nvi.reports -> outbound.sws
+nvi.reports -> outbound.reports_bucket
+# The frontend then polls the reports bucket through a presigned URL; left out to keep the layout compact.
+
+inbound.operator -> nvi.manual
+nvi.manual -> nvi.table

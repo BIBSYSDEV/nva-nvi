@@ -7,3 +7,6 @@
 # These are Windows script files and should use crlf
 *.bat           text eol=crlf
 
+
+# Committed D2 renders; collapse their diffs in pull requests.
+docs/architecture/diagrams/** linguist-generated=true

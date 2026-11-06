@@ -1,0 +1,58 @@
+# nva-nvi evaluation: publication event to candidate.
+# Mirrors ../evaluation.md.
+# Render: ./render.sh (from docs/architecture)
+...@styles
+direction: down
+
+trigger_a: "Trigger A: a publication changes in NVA" {
+  class: group
+  expand: @models.expand
+  expand.label: "nva-publication-api\nExpandDataEntriesHandler\nwrites the expanded publication to S3\nand emits the event"
+  bus: @models.shared_bus
+  bus.label: "EventBridge shared bus\ndetail-type: Lambda Function Invocation Result - Success\ntopic: PublicationService.ExpandedEntry.Persisted"
+}
+
+trigger_b: "Trigger B: an operator re-evaluates a year" {
+  class: group
+  operator: @models.operator
+  reeval: BatchReEvaluateNviCandidatesHandler {class: svc}
+  internal_bus: @models.internal_bus
+  internal_bus.label: "EventBridge nvi-internal-bus\ntopic NviService.ReEvaluate"
+}
+
+queue_handler: "QueuePersistedResourceHandler\nkeeps only URIs under resources/" {class: svc}
+eval_queue: @models.eval_queue
+eval_queue.label: "SQS ResourceEvaluationQueue\nbatch size 1, 5 receives"
+eval_dlq: "EvaluationDLQ\nSlack alarm" {class: dlq}
+eval_handler: "EvaluateNviCandidateHandler\n+ EvaluatorService" {class: svc}
+loader: "PublicationLoaderService (libs/publication-service)\nJSON-LD to RDF graph, SHACL validation,\nSPARQL projections, framing to PublicationDto" {class: svc}
+s3: @models.resources_bucket
+s3.label: "persisted-resources bucket\nresources/ prefix, gzipped JSON-LD"
+identity: @models.identity
+identity.label: "nva-identity-service\nGET /customer"
+outcome: Outcome {shape: diamond}
+skip: "Skip: no write\ninvalid year, already reported,\nor existing candidate in a closed period" {class: outcome}
+non_candidate: "Non-candidate\nmark existing candidate not applicable" {class: outcome}
+candidate: "Candidate\nupsert candidate, points,\none PENDING approval per NVI institution" {class: outcome}
+table: @models.table
+
+trigger_a.expand -> trigger_a.bus {class: async}
+trigger_a.bus -> queue_handler {class: async}
+queue_handler -> eval_queue {class: async}
+eval_queue -> eval_handler {class: async}
+eval_queue -> eval_dlq: after 5 failures {class: async}
+eval_handler -> loader
+loader -> s3
+eval_handler -> identity: customers with nviInstitution flag
+eval_handler -> outcome
+outcome -> skip
+outcome -> non_candidate
+outcome -> candidate
+non_candidate -> table
+candidate -> table
+
+trigger_b.operator -> trigger_b.reeval: invoke with a year
+trigger_b.reeval -> table: "candidates for the year\n(SearchByYear index)"
+trigger_b.reeval -> eval_queue: "publication bucket URIs,\nbatches of 10" {class: async}
+trigger_b.reeval -> trigger_b.internal_bus: next page {class: async}
+trigger_b.internal_bus -> trigger_b.reeval {class: async}

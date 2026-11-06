@@ -1,0 +1,38 @@
+# nva-nvi curation: worklist search and approval.
+# Mirrors the sequence diagram in ../curation-api.md.
+# Render: ./render.sh (from docs/architecture)
+...@styles
+shape: sequence_diagram
+
+curator: @models.curator
+curator.label: "NVI curator\n(institution A)"
+fe: @models.spa
+search: SearchNviCandidatesHandler {class: svc}
+identity: @models.identity
+cristin: @models.cristin
+os: @models.sws
+os.label: OpenSearch nvi-candidates
+status: UpdateNviCandidateStatusHandler {class: svc}
+table: @models.table
+
+curator -> fe: open the NVI worklist
+fe -> search: "GET /scientific-index/candidate\n?year=...&status=...&affiliations=..."
+alt caller is not an NVI admin: {
+  search -> identity: "GET /users-roles/users/{username}\n(viewing scope)"
+  search -> cristin: "GET /cristin/organization/{unit}\nfor each unit (sub-units via hasPart)"
+  search -> search: "reject affiliations outside the viewing scope.\nWithout an affiliations parameter,\nthe viewing scope is the filter"
+}
+search -> os: search with filters and status aggregations
+os -> search: hits
+search -> fe: paginated candidates
+
+curator -> fe: approve or reject a candidate
+fe -> status: "PUT /scientific-index/candidate/{identifier}/status\n{institutionId, status, reason?}"
+status -> status: "require MANAGE_NVI_CANDIDATES.\ninstitutionId must equal the caller's\ntop-level Cristin organization"
+status -> table: read candidate
+status -> identity: viewing scope of the caller
+status -> cristin: sub-units of the viewing scope
+status -> status: "at least one NVI creator affiliation\nmust be inside the scope"
+status -> table: update the approval row for institution A
+status -> fe: updated candidate
+table."the write enters the indexing pipeline,\nso the worklist shows the new status once indexed"
