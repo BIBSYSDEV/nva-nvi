@@ -125,8 +125,8 @@ x-amazon-apigateway-gateway-responses:
           "instance": "$context.path"
         }
 
-# Shared. Set security per operation, never at the root: that broke CORS in nva-nvi (nva-nvi#619,
-# reverted in nva-nvi#623).
+# Shared. Set security per operation, since API Gateway does not use root-level security. Name any
+# extra anchors the same way: x-<name>-security: &<name>.
 x-authenticated-security: &authenticated
   - CognitoUserPool:
       - https://api.nva.unit.no/scopes/backend
