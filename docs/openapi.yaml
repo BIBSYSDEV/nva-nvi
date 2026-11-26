@@ -714,7 +714,6 @@ paths:
           schema:
             type: string
       security: *authenticated
-      x-amazon-apigateway-request-validator: validate_body_and_parameters
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RemoveNoteHandler.Arn}:live/invocations
