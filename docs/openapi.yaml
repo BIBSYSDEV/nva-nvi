@@ -1,18 +1,14 @@
 # Follows the NVA team template for OpenAPI documents: docs/openapi.yaml in nva-gradle-template.
-#
-# The parts marked "Shared" are identical in every NVA service. Change them in the template first,
-# then sync the services. The README in nva-gradle-template explains the conventions.
+# The README there lists the parts that are identical in every service and explains the conventions.
 openapi: 3.0.3
 info:
   title: NVA Scientific Index API
   description: Public API for scientific index candidates in NVA.
   version: 1.0.1
-  # Shared
   contact:
     name: Nasjonalt vitenarkiv (NVA)
     email: kontakt@sikt.no
     url: https://nva.sikt.no
-  # Shared
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
@@ -39,7 +35,6 @@ tags:
   - name: Report (partially implemented)
     description: Report endpoints that are not fully implemented yet
 
-# Shared
 x-amazon-apigateway-request-validators:
   validate_body:
     validateRequestBody: true
@@ -51,8 +46,6 @@ x-amazon-apigateway-request-validators:
     validateRequestBody: true
     validateRequestParameters: true
 
-# Shared. These give the errors that API Gateway produces itself the same Problem body, media type
-# and CORS header as the errors from the handlers.
 x-amazon-apigateway-gateway-responses:
   BAD_REQUEST_BODY:
     statusCode: 400
@@ -125,8 +118,6 @@ x-amazon-apigateway-gateway-responses:
           "instance": "$context.path"
         }
 
-# Shared. Set security per operation, since API Gateway does not use root-level security. Name any
-# extra anchors the same way: x-<name>-security: &<name>.
 x-authenticated-security: &authenticated
   - CognitoUserPool:
       - https://api.nva.unit.no/scopes/backend
@@ -1602,7 +1593,6 @@ components:
           items:
             type: string
           description: List of contributors that cause or are affected by the issue, if relevant.
-    # Shared. Matches the body that ApiGatewayHandler in nva-commons writes for errors.
     Problem:
       type: object
       description: The error body of every NVA API, a problem details object as in RFC 9457.
@@ -1644,7 +1634,6 @@ components:
         status: 404
         detail: Could not find the requested resource
         requestId: 99b02848-3d7c-4a93-9041-a45bb86c3fe2
-    # Shared
     ValidationError:
       type: object
       description: A validation rule that the request breaks.
@@ -2032,8 +2021,6 @@ components:
           items:
             $ref: "#/components/schemas/UnitSummary"
 
-  # Shared, when used. Keep only the responses the service references, since Spectral warns about
-  # unused components. Name any other status after its reason phrase, for example MethodNotAllowed.
   responses:
     BadRequest:
       description: The request is malformed or fails validation.
@@ -2090,7 +2077,6 @@ components:
           schema:
             $ref: "#/components/schemas/Problem"
 
-  # Shared. APIs that also serve external clients add `- Ref: ExternalCognitoAuthorizerArn`.
   securitySchemes:
     CognitoUserPool:
       type: apiKey
