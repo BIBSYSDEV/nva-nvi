@@ -1,8 +1,10 @@
+# Follows the NVA team template for OpenAPI documents: docs/openapi.yaml in nva-gradle-template.
+# The README there lists the parts that are identical in every service and explains the conventions.
 openapi: 3.0.3
 info:
   title: NVA Scientific Index API
-  version: 1.0.1
   description: Public API for scientific index candidates in NVA.
+  version: 1.0.1
   contact:
     name: Nasjonalt vitenarkiv (NVA)
     email: kontakt@sikt.no
@@ -19,24 +21,8 @@ servers:
     description: Development environment
   - url: https://api.sandbox.nva.aws.unit.no/scientific-index
     description: Sandbox environment
-x-amazon-apigateway-request-validators:
-  validate_body:
-    validateRequestBody: true
-    validateRequestParameters: false
-x-amazon-apigateway-gateway-responses:
-  BAD_REQUEST_BODY:
-    statusCode: 400
-    responseParameters:
-      gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
-    responseTemplates:
-      application/json: |-
-        {
-          "title": $context.error.messageString,
-          "detail": "$context.error.validationErrorString",
-          "status": 400,
-          "requestId": "$context.requestId",
-          "instance": "$context.path"
-        }
+  - url: https://api.e2e.nva.aws.unit.no/scientific-index
+    description: End-to-end test environment
 tags:
   - name: Context
     description: JSON-LD context operations
@@ -49,10 +35,96 @@ tags:
   - name: Report (partially implemented)
     description: Report endpoints that are not fully implemented yet
 
+x-amazon-apigateway-request-validators:
+  validate_body:
+    validateRequestBody: true
+    validateRequestParameters: false
+  validate_parameters:
+    validateRequestBody: false
+    validateRequestParameters: true
+  validate_body_and_parameters:
+    validateRequestBody: true
+    validateRequestParameters: true
+
+x-amazon-apigateway-gateway-responses:
+  BAD_REQUEST_BODY:
+    statusCode: 400
+    responseParameters:
+      gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+      gatewayresponse.header.Content-Type: "'application/problem+json'"
+    responseTemplates:
+      application/json: |-
+        {
+          "title": "Bad Request",
+          "status": 400,
+          "detail": "$context.error.message: $context.error.validationErrorString",
+          "requestId": "$context.requestId",
+          "instance": "$context.path"
+        }
+  BAD_REQUEST_PARAMETERS:
+    statusCode: 400
+    responseParameters:
+      gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+      gatewayresponse.header.Content-Type: "'application/problem+json'"
+    responseTemplates:
+      application/json: |-
+        {
+          "title": "Bad Request",
+          "status": 400,
+          "detail": $context.error.messageString,
+          "requestId": "$context.requestId",
+          "instance": "$context.path"
+        }
+  UNAUTHORIZED:
+    statusCode: 401
+    responseParameters:
+      gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+      gatewayresponse.header.Content-Type: "'application/problem+json'"
+    responseTemplates:
+      application/json: |-
+        {
+          "title": "Unauthorized",
+          "status": 401,
+          "detail": $context.error.messageString,
+          "requestId": "$context.requestId",
+          "instance": "$context.path"
+        }
+  ACCESS_DENIED:
+    statusCode: 403
+    responseParameters:
+      gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+      gatewayresponse.header.Content-Type: "'application/problem+json'"
+    responseTemplates:
+      application/json: |-
+        {
+          "title": "Forbidden",
+          "status": 403,
+          "detail": $context.error.messageString,
+          "requestId": "$context.requestId",
+          "instance": "$context.path"
+        }
+  MISSING_AUTHENTICATION_TOKEN:
+    statusCode: 403
+    responseParameters:
+      gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+      gatewayresponse.header.Content-Type: "'application/problem+json'"
+    responseTemplates:
+      application/json: |-
+        {
+          "title": "Forbidden",
+          "status": 403,
+          "detail": $context.error.messageString,
+          "requestId": "$context.requestId",
+          "instance": "$context.path"
+        }
+
 x-authenticated-security: &authenticated
   - CognitoUserPool:
-      - "https://api.nva.unit.no/scopes/backend"
-      - "https://api.nva.unit.no/scopes/frontend"
+      - https://api.nva.unit.no/scopes/backend
+      - https://api.nva.unit.no/scopes/frontend
+x-backend-security: &backend
+  - CognitoUserPool:
+      - https://api.nva.unit.no/scopes/backend
 
 x-example-data:
   org-20754-2-1-0: &org-20754-2-1-0
@@ -92,18 +164,17 @@ paths:
     get:
       tags:
         - Context
-      description: Get JSON-LD context for NVI
       summary: Get JSON-LD context
+      description: Get JSON-LD context for NVI.
       operationId: getNviContext
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchNviCandidateContextHandler.Arn}:live/invocations
-        responses: {}
         httpMethod: POST
         type: AWS_PROXY
       responses:
         "200":
-          description: OK
+          description: OK.
           content:
             application/json:
               schema:
@@ -111,16 +182,16 @@ paths:
             application/ld+json:
               schema:
                 $ref: "#/components/schemas/NviCandidateContext"
-        "415":
-          $ref: "#/components/responses/UnsupportedMediaType"
+        "406":
+          $ref: "#/components/responses/NotAcceptable"
         "500":
           $ref: "#/components/responses/InternalServerError"
   /period:
     post:
       tags:
         - Period
-      description: Create NVI period
       summary: Create period
+      description: Create NVI period.
       operationId: createNviPeriod
       requestBody:
         required: true
@@ -129,16 +200,15 @@ paths:
             schema:
               $ref: "#/components/schemas/UpsertNviPeriodRequest"
       security: *authenticated
-      x-amazon-apigateway-request-validator: validate_body
+      x-amazon-apigateway-request-validator: validate_body_and_parameters
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateNviPeriodHandler.Arn}:live/invocations
-        responses: {}
         httpMethod: POST
         type: AWS_PROXY
       responses:
         "201":
-          description: "Period created"
+          description: "Period created."
           content:
             application/json:
               schema:
@@ -154,19 +224,18 @@ paths:
     get:
       tags:
         - Period
-      description: List NVI periods
       summary: List periods
+      description: List NVI periods.
       operationId: listNviPeriods
       security: *authenticated
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchNviPeriodsHandler.Arn}:live/invocations
-        responses: {}
         httpMethod: POST
         type: AWS_PROXY
       responses:
         "200":
-          description: "Periods fetched"
+          description: "Periods fetched."
           content:
             application/json:
               schema:
@@ -178,8 +247,8 @@ paths:
     put:
       tags:
         - Period
-      description: Update NVI period
       summary: Update period
+      description: Update NVI period.
       operationId: updateNviPeriod
       requestBody:
         required: true
@@ -188,16 +257,15 @@ paths:
             schema:
               $ref: "#/components/schemas/UpsertNviPeriodRequest"
       security: *authenticated
-      x-amazon-apigateway-request-validator: validate_body
+      x-amazon-apigateway-request-validator: validate_body_and_parameters
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UpdateNviPeriodHandler.Arn}:live/invocations
-        responses: {}
         httpMethod: POST
         type: AWS_PROXY
       responses:
         "200":
-          description: "Period updated"
+          description: "Period updated."
           content:
             application/json:
               schema:
@@ -215,25 +283,24 @@ paths:
     get:
       tags:
         - Period
-      description: Get NVI period
       summary: Get period
+      description: Get NVI period.
       operationId: getNviPeriod
       parameters:
         - in: path
           name: periodIdentifier
-          description: The identifier of the reporting period
+          description: The identifier of the reporting period.
           required: true
           schema:
             type: string
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchNviPeriodHandler.Arn}:live/invocations
-        responses: {}
         httpMethod: POST
         type: AWS_PROXY
       responses:
         "200":
-          description: "Period fetched successfully"
+          description: "Period fetched successfully."
           content:
             application/json:
               schema:
@@ -247,15 +314,15 @@ paths:
     get:
       tags:
         - Candidate
-      description: Search for NVI candidates
       summary: Search for candidates
+      description: Search for NVI candidates.
       operationId: searchNviCandidate
       parameters:
         - in: query
           name: query
           schema:
             type: string
-          description: Term to search for in NVI candidates
+          description: Term to search for in NVI candidates.
         - in: query
           name: affiliations
           description: |
@@ -371,7 +438,7 @@ paths:
           schema:
             type: string
             pattern: "^[0-9]{4}$"
-          description: Filters by publication year
+          description: Filters by publication year.
         - in: query
           name: category
           schema:
@@ -382,7 +449,7 @@ paths:
           name: title
           schema:
             type: string
-          description: Filters by publication title
+          description: Filters by publication title.
         - in: query
           name: assignee
           schema:
@@ -394,19 +461,19 @@ paths:
           example: "12345@20754.0.0.0"
         - in: query
           name: excludeUnassigned
-          description: Exclude candidates that have no assigned curator
+          description: Exclude candidates that have no assigned curator.
           required: false
           schema:
             type: boolean
         - in: query
           name: orderBy
-          description: Order by field
+          description: Order by field.
           schema:
             type: string
             enum: ["createdDate"]
         - in: query
           name: sortOrder
-          description: Order direction
+          description: Order direction.
           schema:
             type: string
             enum: ["asc", "desc"]
@@ -414,12 +481,11 @@ paths:
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SearchNviCandidatesHandler.Arn}:live/invocations
-        responses: {}
         httpMethod: POST
         type: AWS_PROXY
       responses:
         "200":
-          description: "OK"
+          description: "OK."
           content:
             application/json:
               schema:
@@ -434,13 +500,13 @@ paths:
     get:
       tags:
         - Candidate
-      description: Get NVI candidate
       summary: Get candidate
+      description: Get NVI candidate.
       operationId: getNviCandidate
       parameters:
         - in: path
           name: candidateIdentifier
-          description: The identifier of the candidate
+          description: The identifier of the candidate.
           required: true
           schema:
             type: string
@@ -448,12 +514,11 @@ paths:
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchNviCandidateHandler.Arn}:live/invocations
-        responses: {}
         httpMethod: POST
         type: AWS_PROXY
       responses:
         "200":
-          description: "OK"
+          description: "OK."
           content:
             application/json:
               schema:
@@ -468,8 +533,8 @@ paths:
     get:
       tags:
         - Candidate
-      description: Get NVI candidate by publication identifier
       summary: Get candidate by publication identifier
+      description: Get NVI candidate by publication identifier.
       operationId: getNviCandidateByPublicationIdentifier
       parameters:
         - $ref: "#/components/parameters/PublicationIdentifierPathParameter"
@@ -477,12 +542,11 @@ paths:
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchNviCandidateByPublicationIdHandler.Arn}:live/invocations
-        responses: {}
         httpMethod: POST
         type: AWS_PROXY
       responses:
         "200":
-          description: "OK"
+          description: "OK."
           content:
             application/json:
               schema:
@@ -499,15 +563,15 @@ paths:
     put:
       tags:
         - Candidate
+      summary: Update Candidate Approval Status
       description: >
         Update the approval status of a candidate on behalf of the user's organization.
         A reason must be provided when the status is set to Rejected.
-      summary: Update Candidate Approval Status
       operationId: updateNviCandidateApprovalStatus
       parameters:
         - in: path
           name: candidateIdentifier
-          description: The identifier of the candidate
+          description: The identifier of the candidate.
           required: true
           schema:
             type: string
@@ -518,16 +582,15 @@ paths:
             schema:
               $ref: "#/components/schemas/ApprovalStatusRequest"
       security: *authenticated
-      x-amazon-apigateway-request-validator: validate_body
+      x-amazon-apigateway-request-validator: validate_body_and_parameters
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UpdateNviCandidateStatusHandler.Arn}:live/invocations
-        responses: {}
         httpMethod: POST
         type: AWS_PROXY
       responses:
         "200":
-          description: "Approval status updated"
+          description: "Approval status updated."
           content:
             application/json:
               schema:
@@ -544,15 +607,15 @@ paths:
     put:
       tags:
         - Candidate
+      summary: Update Candidate Assignee
       description: >
         Set or replace the curator assigned to review the candidate on behalf of the
         user's organization.
-      summary: Update Candidate Assignee
       operationId: updateNviCandidateAssignee
       parameters:
         - in: path
           name: candidateIdentifier
-          description: The identifier of the candidate
+          description: The identifier of the candidate.
           required: true
           schema:
             type: string
@@ -563,16 +626,15 @@ paths:
             schema:
               $ref: "#/components/schemas/AssigneeRequest"
       security: *authenticated
-      x-amazon-apigateway-request-validator: validate_body
+      x-amazon-apigateway-request-validator: validate_body_and_parameters
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UpsertAssigneeHandler.Arn}:live/invocations
-        responses: {}
         httpMethod: POST
         type: AWS_PROXY
       responses:
         "200":
-          description: "Assignee updated"
+          description: "Assignee updated."
           content:
             application/json:
               schema:
@@ -589,15 +651,15 @@ paths:
     post:
       tags:
         - Candidate
+      summary: Create note on candidate
       description: >
         Create note on NVI candidate.
         Notes can only be added to candidates that are applicable for NVI reporting.
-      summary: Create note on candidate
       operationId: createNviCandidateNotes
       parameters:
         - in: path
           name: candidateIdentifier
-          description: The identifier of the candidate
+          description: The identifier of the candidate.
           required: true
           schema:
             type: string
@@ -608,16 +670,15 @@ paths:
             schema:
               $ref: "#/components/schemas/CreateNoteRequest"
       security: *authenticated
-      x-amazon-apigateway-request-validator: validate_body
+      x-amazon-apigateway-request-validator: validate_body_and_parameters
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateNoteHandler.Arn}:live/invocations
-        responses: {}
         httpMethod: POST
         type: AWS_PROXY
       responses:
         "200":
-          description: "Note added"
+          description: "Note added."
           content:
             application/json:
               schema:
@@ -636,33 +697,31 @@ paths:
     delete:
       tags:
         - Candidate
-      description: Delete note on NVI candidate
       summary: Delete note
+      description: Delete note on NVI candidate.
       operationId: deleteNviCandidateNote
       parameters:
         - in: path
           name: candidateIdentifier
-          description: The identifier of the candidate
+          description: The identifier of the candidate.
           required: true
           schema:
             type: string
         - in: path
           name: noteIdentifier
-          description: The identifier of the note
+          description: The identifier of the note.
           required: true
           schema:
             type: string
       security: *authenticated
-      x-amazon-apigateway-request-validator: validate_body
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RemoveNoteHandler.Arn}:live/invocations
-        responses: {}
         httpMethod: POST
         type: AWS_PROXY
       responses:
         "200":
-          description: "Note deleted"
+          description: "Note deleted."
           content:
             application/json:
               schema:
@@ -677,6 +736,7 @@ paths:
     get:
       tags:
         - Report
+      summary: Get requesting users organization approval aggregations for a given year
       description: >
         Get organization approval aggregations for a given year. Available to NVI curators,
         editors, admins and backend clients. The institutionId query parameter selects which
@@ -684,12 +744,11 @@ paths:
         other users can only specify their own and are otherwise rejected with 401 Unauthorized.
         Clients without a top level organization must specify it, and are otherwise rejected
         with 400 Bad Request.
-      summary: Get requesting users organization approval aggregations for a given year
       operationId: getNviOrganizationAggregationsByYear
       parameters:
         - in: path
           name: year
-          description: The year of the nvi period
+          description: The year of the NVI period.
           required: true
           schema:
             type: string
@@ -704,12 +763,11 @@ paths:
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchInstitutionStatusAggregationHandler.Arn}:live/invocations
-        responses: {}
         httpMethod: POST
         type: AWS_PROXY
       responses:
         "200":
-          description: "OK"
+          description: "OK."
           content:
             application/json:
               schema:
@@ -724,6 +782,7 @@ paths:
     get:
       tags:
         - Report
+      summary: Get NVI institution report with points per contributor for a given year
       description: >
         Get NVI report for a given year. Available to NVI curators, editors, admins and backend
         clients. The institutionId query parameter selects which
@@ -731,12 +790,11 @@ paths:
         other users can only specify their own and are otherwise rejected with 401 Unauthorized.
         Clients without a top level organization must specify it, and are otherwise rejected
         with 400 Bad Request.
-      summary: Get NVI institution report with points per contributor for a given year
       operationId: getNviReportByYear
       parameters:
         - in: path
           name: year
-          description: The year of the nvi period
+          description: The year of the NVI period.
           required: true
           schema:
             type: string
@@ -765,23 +823,22 @@ paths:
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchInstitutionReportHandler.Arn}:live/invocations
-        responses: {}
         httpMethod: POST
         type: AWS_PROXY
       responses:
         "200":
-          description: "OK"
+          description: "OK."
           content:
             application/vnd.ms-excel:
               schema:
                 type: string
                 format: binary
-                description: Base64-encoded Excel (.xls) file
+                description: Base64-encoded Excel (.xls) file.
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
               schema:
                 type: string
                 format: binary
-                description: Base64-encoded Excel (.xlsx) file
+                description: Base64-encoded Excel (.xlsx) file.
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -792,22 +849,21 @@ paths:
     get:
       tags:
         - Report
+      summary: Get report status for a publication
       description: >
         Get the NVI report status for a publication, indicating whether the publication
         is reported, under review, or not a candidate.
-      summary: Get report status for a publication
       operationId: getReportStatusByPublicationId
       parameters:
         - $ref: "#/components/parameters/PublicationIdentifierPathParameter"
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchReportStatusByPublicationIdHandler.Arn}:live/invocations
-        responses: {}
         httpMethod: POST
         type: AWS_PROXY
       responses:
         "200":
-          description: "OK"
+          description: "OK."
           content:
             application/json:
               schema:
@@ -830,21 +886,20 @@ paths:
     get:
       tags:
         - Report
+      summary: Get all periods report
       description: >
         Get report for all periods.
         Requires an NVI administrator, curator or editor role, or an internal backend client.
-      summary: Get all periods report
       operationId: getAllPeriodsReport
       security: *authenticated
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchReportHandler.Arn}:live/invocations
-        responses: {}
         httpMethod: POST
         type: AWS_PROXY
       responses:
         "200":
-          description: "OK"
+          description: "OK."
           content:
             application/json:
               schema:
@@ -860,10 +915,10 @@ paths:
     get:
       tags:
         - Report
+      summary: Get period report
       description: >
         Get report for a specific period.
         Requires an NVI administrator, curator or editor role, or an internal backend client.
-      summary: Get period report
       operationId: getPeriodReport
       parameters:
         - in: path
@@ -877,12 +932,11 @@ paths:
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchReportHandler.Arn}:live/invocations
-        responses: {}
         httpMethod: POST
         type: AWS_PROXY
       responses:
         "200":
-          description: "OK"
+          description: "OK."
           content:
             application/json:
               schema:
@@ -902,10 +956,10 @@ paths:
     get:
       tags:
         - Report
+      summary: Get all institutions report for a period
       description: >
         Get all institutions report for a specific period.
         Requires an NVI administrator, curator or editor role, or an internal backend client.
-      summary: Get all institutions report for a period
       operationId: getAllInstitutionsReport
       parameters:
         - in: path
@@ -940,12 +994,11 @@ paths:
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchReportHandler.Arn}:live/invocations
-        responses: {}
         httpMethod: POST
         type: AWS_PROXY
       responses:
         "200":
-          description: "OK"
+          description: "OK."
           content:
             application/json:
               schema:
@@ -965,10 +1018,10 @@ paths:
     get:
       tags:
         - Report (partially implemented)
+      summary: Get institution report for a period
       description: >
         Get specific institution report for a specific period.
         Requires an NVI administrator, curator or editor role, or an internal backend client.
-      summary: Get institution report for a period
       operationId: getInstitutionReport
       parameters:
         - in: path
@@ -1004,12 +1057,11 @@ paths:
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchReportHandler.Arn}:live/invocations
-        responses: {}
         httpMethod: POST
         type: AWS_PROXY
       responses:
         "200":
-          description: "OK"
+          description: "OK."
           content:
             application/json:
               schema:
@@ -1079,7 +1131,7 @@ paths:
               schema:
                 type: string
                 format: binary
-                description: Base64-encoded Excel (.xlsx) file
+                description: Base64-encoded Excel (.xlsx) file.
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -1192,10 +1244,10 @@ components:
                 - UNKNOWN
             description:
               type: string
-              description: The description of the report status
+              description: The description of the report status.
         period:
           type: string
-          description: The nvi period in which the publication was published
+          description: The NVI period in which the publication was published.
     CandidateSearchResponse:
       type: object
       properties:
@@ -1209,12 +1261,12 @@ components:
           type: string
           format: uri
           nullable: true
-          description: The uri to the next page of results, if there is one
+          description: The URI to the next page of results, if there is one.
         previousResults:
           type: string
           format: uri
           nullable: true
-          description: The uri to the previous page of results, if there is one
+          description: The URI to the previous page of results, if there is one.
         hits:
           type: array
           items:
@@ -1293,12 +1345,12 @@ components:
           $ref: "#/components/schemas/NviPeriod"
         status:
           type: string
-          description: The report status of the candidate
+          description: The report status of the candidate.
           example: "Reported"
         reportedDate:
           type: string
           format: date-time
-          description: Timestamp for when the candidate was marked as reported
+          description: Timestamp for when the candidate was marked as reported.
           example: "2026-01-15T12:00:00Z"
         allowedOperations:
           type: array
@@ -1336,18 +1388,18 @@ components:
       properties:
         year:
           type: string
-          description: The NVI reporting period year
+          description: The NVI reporting period year.
           example: "2025"
         topLevelOrganizationId:
           type: string
           format: uri
-          description: URI of the top-level organization
+          description: URI of the top-level organization.
           example: "https://api.nva.unit.no/cristin/organization/123.0.0.0"
         totals:
           $ref: "#/components/schemas/TopLevelAggregation"
         byOrganization:
           type: object
-          description: Aggregated status for each organization, keyed by organization URI
+          description: Aggregated status for each organization, keyed by organization URI.
           additionalProperties:
             $ref: "#/components/schemas/DirectAffiliationAggregation"
           example:
@@ -1382,7 +1434,7 @@ components:
 
     OrganizationStatusAggregationBase:
       type: object
-      description: Base schema for organization status aggregations
+      description: Base schema for organization status aggregations.
       required:
         - candidateCount
         - points
@@ -1391,12 +1443,12 @@ components:
       properties:
         candidateCount:
           type: integer
-          description: Number of NVI candidates
+          description: Number of NVI candidates.
           minimum: 0
           example: 20
         points:
           type: number
-          description: Total NVI points from creators
+          description: Total NVI points from creators.
           format: double
           example: 31.1234
         globalApprovalStatus:
@@ -1436,7 +1488,7 @@ components:
 
     GlobalApprovalStatusCounts:
       type: object
-      description: Count of candidates by global approval status
+      description: Count of candidates by global approval status.
       required:
         - Dispute
         - Pending
@@ -1457,7 +1509,7 @@ components:
           minimum: 0
     ApprovalStatusCounts:
       type: object
-      description: Count of candidates by approval status
+      description: Count of candidates by approval status.
       required:
         - New
         - Pending
@@ -1486,7 +1538,7 @@ components:
           enum: ["Approved", "Pending", "Rejected"]
         finalizedBy:
           type: string
-          description: Username of the user who finalized the approval
+          description: Username of the user who finalized the approval.
         finalizedDate:
           type: string
           format: date-time
@@ -1498,7 +1550,7 @@ components:
           format: uuid
         user:
           type: string
-          description: Username of the user who created the note
+          description: Username of the user who created the note.
         text:
           type: string
         createdDate:
@@ -1507,11 +1559,11 @@ components:
     Context:
       type: string
       pattern: "^https://.*$"
-      description: The JSON-LD context object for the data, which describes the object in the data and allows machine processing of the data at a semantic level
+      description: The JSON-LD context object for the data, which describes the object in the data and allows machine processing of the data at a semantic level.
     Id:
       type: string
       pattern: "^https://.*$"
-      description: The URI of the object ID
+      description: The URI of the object ID.
     CandidateProblem:
       type: object
       description: An issue with the candidate that may impact available operations for the user.
@@ -1542,30 +1594,58 @@ components:
           description: List of contributors that cause or are affected by the issue, if relevant.
     Problem:
       type: object
-      description: NVA error reporting object
+      description: The error body of every NVA API, a problem details object as in RFC 9457.
       required:
         - title
-        - detail
         - status
+        - detail
       properties:
         title:
           type: string
-          description: Human-readable description of the error status
-        detail:
-          type: string
-          description: A more detailed error message describing the error and potential mitigations
+          description: The reason phrase of the HTTP status code, such as Not Found.
         status:
           type: integer
-          description: The HTTP status code associated with the problem
+          description: The HTTP status code.
+        detail:
+          type: string
+          description: What went wrong in this request, and how to resolve it when that is known.
         requestId:
           type: string
-          description: Identifier of the request causing the problem
+          description: The identifier of the request. Include it when reporting a problem.
         instance:
           type: string
-          description: The requested path associated with the error
-        type:
+          description: The path of the request. Only set on errors that API Gateway produces itself.
+        resource:
+          type: object
+          description: The resource the problem concerns, such as the tombstone of a deleted resource. Only set on some 410 responses.
+        conflictingKeys:
+          type: object
+          additionalProperties:
+            type: string
+          description: The names and values of the identifiers that conflict with existing data. Only set on some 409 responses.
+        errors:
+          type: array
+          description: One entry for each validation rule the request breaks. Only set on some 400 responses.
+          items:
+            $ref: "#/components/schemas/ValidationError"
+      example:
+        title: Not Found
+        status: 404
+        detail: Could not find the requested resource
+        requestId: 99b02848-3d7c-4a93-9041-a45bb86c3fe2
+    ValidationError:
+      type: object
+      description: A validation rule that the request breaks.
+      required:
+        - detail
+        - pointer
+      properties:
+        detail:
           type: string
-          description: A URI describing the error and mitigations, in generic cases, this is about:blank
+          description: What is wrong with the field.
+        pointer:
+          type: string
+          description: A JSON pointer (RFC 6901) to the invalid field in the request body, or the name of an invalid query or path parameter.
     InstitutionPoints:
       type: object
       properties:
@@ -1623,7 +1703,7 @@ components:
           enum: [AllPeriodsReport]
         id:
           type: string
-          description: Query ID for this report
+          description: Query ID for this report.
           format: uri
           example: https://api.nva.unit.no/scientific-index/reports
         periods:
@@ -1643,7 +1723,7 @@ components:
       properties:
         id:
           type: string
-          description: Query ID for this report
+          description: Query ID for this report.
           format: uri
           example: https://api.nva.unit.no/scientific-index/reports/2025
         type:
@@ -1667,7 +1747,7 @@ components:
       properties:
         id:
           type: string
-          description: Query ID for this report
+          description: Query ID for this report.
           format: uri
           example: https://api.nva.unit.no/scientific-index/reports/2025/institutions
         type:
@@ -1695,7 +1775,7 @@ components:
       properties:
         id:
           type: string
-          description: Query ID for this report
+          description: Query ID for this report.
           format: uri
           example: https://api.nva.unit.no/scientific-index/reports/2025/institutions/20754.0.0.0
         type:
@@ -1767,19 +1847,19 @@ components:
         validPoints:
           type: number
           format: double
-          description: Sum of NVI points for undisputed candidates
+          description: Sum of NVI points for undisputed candidates.
         disputedCount:
           type: integer
           minimum: 0
-          description: Number of candidates with global approval status Dispute
+          description: Number of candidates with global approval status Dispute.
         undisputedProcessedCount:
           type: integer
           minimum: 0
-          description: Number of undisputed candidates that have been fully processed
+          description: Number of undisputed candidates that have been fully processed.
         undisputedTotalCount:
           type: integer
           minimum: 0
-          description: Total number of undisputed candidates
+          description: Total number of undisputed candidates.
       example:
         validPoints: 12.3456
         disputedCount: 4
@@ -1814,11 +1894,11 @@ components:
             globalApprovedCount:
               type: integer
               minimum: 0
-              description: Number of candidates with global approval status Approved
+              description: Number of candidates with global approval status Approved.
             globalRejectedCount:
               type: integer
               minimum: 0
-              description: Number of candidates with global approval status Rejected
+              description: Number of candidates with global approval status Rejected.
 
     UnitTotals:
       description: Aggregate totals for an organizational unit.
@@ -1936,63 +2016,63 @@ components:
           $ref: "#/components/schemas/UndisputedCandidatesByLocalApprovalStatus"
         units:
           type: array
-          description: Nested sub-unit summaries
+          description: Nested sub-unit summaries.
           items:
             $ref: "#/components/schemas/UnitSummary"
 
   responses:
     BadRequest:
-      description: Bad request
+      description: The request is malformed or fails validation.
       content:
-        application/json:
+        application/problem+json:
           schema:
             $ref: "#/components/schemas/Problem"
     Unauthorized:
-      description: Unauthorized - missing or invalid credentials
+      description: The request has no valid access token.
       content:
-        application/json:
+        application/problem+json:
           schema:
             $ref: "#/components/schemas/Problem"
     Forbidden:
-      description: Forbidden - authenticated but not permitted
+      description: The caller is not allowed to perform this operation.
       content:
-        application/json:
+        application/problem+json:
           schema:
             $ref: "#/components/schemas/Problem"
     NotFound:
-      description: Not found
+      description: The resource does not exist.
       content:
-        application/json:
+        application/problem+json:
           schema:
             $ref: "#/components/schemas/Problem"
     MethodNotAllowed:
-      description: Method not allowed
+      description: The operation is not allowed on this resource.
       content:
-        application/json:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    NotAcceptable:
+      description: The service cannot respond with any media type in the Accept header.
+      content:
+        application/problem+json:
           schema:
             $ref: "#/components/schemas/Problem"
     Conflict:
-      description: Conflict
+      description: The request conflicts with the current state of the resource.
       content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/Problem"
-    UnsupportedMediaType:
-      description: Unsupported media type
-      content:
-        application/json:
+        application/problem+json:
           schema:
             $ref: "#/components/schemas/Problem"
     InternalServerError:
-      description: Internal server error
+      description: The service failed unexpectedly.
       content:
-        application/json:
+        application/problem+json:
           schema:
             $ref: "#/components/schemas/Problem"
     BadGateway:
-      description: Bad gateway
+      description: A service this API depends on failed or returned an invalid response.
       content:
-        application/json:
+        application/problem+json:
           schema:
             $ref: "#/components/schemas/Problem"
 
